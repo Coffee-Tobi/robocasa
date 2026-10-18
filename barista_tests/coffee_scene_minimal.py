@@ -5,6 +5,8 @@ Run: MUJOCO_GL=osmesa NUMBA_DISABLE_JIT=1 OPENBLAS_NUM_THREADS=1 python barista_
 """
 from pathlib import Path
 import traceback
+import shutil
+import subprocess
 import robocasa
 import robosuite
 import cv2
@@ -45,6 +47,34 @@ try:
     output = Path(__file__).resolve().parent / "robocasa_coffee.png"
     cv2.imwrite(str(output), cv2.cvtColor(np.flipud(rgb), cv2.COLOR_RGB2BGR))
     print("Bild gespeichert:", output, flush=True)
+    raw = output.parent / "robocasa_coffee_raw.mp4"
+    final = output.parent / "robocasa_coffee.mp4"
+    writer = cv2.VideoWriter(str(raw), cv2.VideoWriter_fourcc(*"mp4v"), 12, (640, 480))
+    if not writer.isOpened():
+        raise RuntimeError("VideoWriter konnte nicht gestartet werden.")
+    try:
+        # Record the initialized *real* RoboCasa simulation, without pretending
+        # that a coffee-making policy has already been implemented.
+        for step in range(120):
+            env.step(np.zeros(env.action_dim))
+            rgb = env.sim.render(height=480, width=640, camera_name=cam)
+            writer.write(cv2.cvtColor(np.flipud(rgb), cv2.COLOR_RGB2BGR))
+    finally:
+        writer.release()
+    if shutil.which("ffmpeg"):
+        proc = subprocess.run(
+            ["ffmpeg", "-y", "-loglevel", "error", "-i", str(raw),
+             "-c:v", "libx264", "-preset", "veryfast", "-crf", "24",
+             "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(final)],
+            capture_output=True, text=True)
+        if proc.returncode == 0:
+            raw.unlink()
+            print("Video gespeichert:", final, flush=True)
+        else:
+            print("FFmpeg fehlgeschlagen:", proc.stderr[-400:], flush=True)
+            print("Video im MP4v-Format:", raw, flush=True)
+    else:
+        print("Video im MP4v-Format:", raw, flush=True)
 except Exception:
     print("Szene noch unvollständig. Letzter Fehler:", flush=True)
     traceback.print_exc(limit=8)
