@@ -44,7 +44,7 @@ try:
     # Pad center is ~3-4 mm higher than tracked EEF; use real pad center heights.
     # Move in small increments while continuously checking side alignment.
     reached=False
-    for level in range(1,16):
+    for level in range(1,31):
         pads=pad_positions()
         pad_mid=pads.mean(axis=0)
         cube_now=cube()
