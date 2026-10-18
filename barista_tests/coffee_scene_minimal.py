@@ -47,34 +47,35 @@ try:
     output = Path(__file__).resolve().parent / "robocasa_coffee.png"
     cv2.imwrite(str(output), cv2.cvtColor(np.flipud(rgb), cv2.COLOR_RGB2BGR))
     print("Bild gespeichert:", output, flush=True)
-    raw = output.parent / "robocasa_coffee_raw.mp4"
+    if not shutil.which("ffmpeg"):
+        raise RuntimeError("ffmpeg fehlt. Bitte installieren, bevor das Video erstellt wird.")
     final = output.parent / "robocasa_coffee.mp4"
-    writer = cv2.VideoWriter(str(raw), cv2.VideoWriter_fourcc(*"mp4v"), 12, (640, 480))
-    if not writer.isOpened():
-        raise RuntimeError("VideoWriter konnte nicht gestartet werden.")
+    partial = output.parent / "robocasa_coffee_in_progress.mp4"
+    command = [
+        "ffmpeg", "-y", "-loglevel", "error",
+        "-f", "rawvideo", "-pix_fmt", "rgb24",
+        "-s", "640x480", "-r", "12", "-i", "-",
+        "-an", "-c:v", "libx264", "-preset", "veryfast",
+        "-crf", "24", "-pix_fmt", "yuv420p",
+        "-movflags", "+faststart", str(partial),
+    ]
+    proc = subprocess.Popen(command, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
-        # Record the initialized *real* RoboCasa simulation, without pretending
-        # that a coffee-making policy has already been implemented.
         for step in range(120):
             env.step(np.zeros(env.action_dim))
             rgb = env.sim.render(height=480, width=640, camera_name=cam)
-            writer.write(cv2.cvtColor(np.flipud(rgb), cv2.COLOR_RGB2BGR))
+            frame = np.ascontiguousarray(np.flipud(rgb), dtype=np.uint8)
+            proc.stdin.write(frame.tobytes())
     finally:
-        writer.release()
-    if shutil.which("ffmpeg"):
-        proc = subprocess.run(
-            ["ffmpeg", "-y", "-loglevel", "error", "-i", str(raw),
-             "-c:v", "libx264", "-preset", "veryfast", "-crf", "24",
-             "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(final)],
-            capture_output=True, text=True)
-        if proc.returncode == 0:
-            raw.unlink()
-            print("Video gespeichert:", final, flush=True)
-        else:
-            print("FFmpeg fehlgeschlagen:", proc.stderr[-400:], flush=True)
-            print("Video im MP4v-Format:", raw, flush=True)
-    else:
-        print("Video im MP4v-Format:", raw, flush=True)
+        if proc.stdin and not proc.stdin.closed:
+            proc.stdin.close()
+        stderr = proc.stderr.read().decode("utf-8", errors="replace")
+        code = proc.wait()
+    if code != 0:
+        raise RuntimeError("Videocodierung fehlgeschlagen: " + stderr[-800:])
+    partial.replace(final)
+    print("FERTIG: H.264-Video gespeichert:", final, flush=True)
+
 except Exception:
     print("Szene noch unvollständig. Letzter Fehler:", flush=True)
     traceback.print_exc(limit=8)
