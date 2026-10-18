@@ -35,7 +35,7 @@ try:
     print("Aktionsdimension:", env.action_dim, flush=True)
     # Obtain the actual measured 3D tool position from MuJoCo (in meters).
     def tool_pos():
-        return np.asarray(env.sim.data.site_xpos[robot.eef_site_id], dtype=float).copy()
+        return np.asarray(env.sim.data.site_xpos[robot.eef_site_id[robot.arms[0]]], dtype=float).copy()
 
     start = tool_pos()
     target = start + np.array([0.07, 0.0, 0.0])
