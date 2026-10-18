@@ -6,6 +6,7 @@ Run: MUJOCO_GL=osmesa NUMBA_DISABLE_JIT=1 OPENBLAS_NUM_THREADS=1 python barista_
 from pathlib import Path
 import json
 import shutil
+import zipfile
 import subprocess
 import urllib.request
 
@@ -40,6 +41,38 @@ for source, dest in FILES:
         tmp.unlink(missing_ok=True)
         raise RuntimeError("Download fehlgeschlagen (" + source + "). " + str(exc)) from exc
     print("  Groesse:", round(dest.stat().st_size / 1e6, 2), "MB", flush=True)
+
+# Restore only original assets explicitly referenced by this episode.
+# Must happen BEFORE importing RoboCasa, which builds its available-object registry at import time.
+with open(EP / "ep_meta.json") as stream:
+    epinfo = json.load(stream)
+assets_root = Path("/workspaces/robocasa/robocasa/models/assets/objects")
+archive = Path("/tmp/robocasa-objaverse.zip")
+missing = []
+restored = []
+with zipfile.ZipFile(archive) if archive.exists() else __import__("contextlib").nullcontext() as zf:
+    for cfg in epinfo.get("object_cfgs", []):
+        info = cfg.get("info") or {}
+        original = str(info.get("mjcf_path", "")).replace("\\\\", "/")
+        if "/objects/" not in original:
+            continue
+        rel = original.split("/objects/")[-1]
+        dest = assets_root / rel
+        if dest.exists():
+            continue
+        if zf is not None and rel.startswith("objaverse/"):
+            folder = "/".join(rel.split("/")[:-1]) + "/"
+            matching = [n for n in zf.namelist() if n.startswith(folder)]
+            if matching:
+                zf.extractall(assets_root, members=matching)
+                restored.append(folder)
+        if not dest.exists():
+            missing.append(rel)
+print("Gezielt entpackte Originalmodelle:", restored, flush=True)
+if missing:
+    raise SystemExit("Originalmodelle fehlen weiterhin: " + repr(missing) +
+                     ". Keine weitere riesige Bibliothek automatisch herunterladen.")
+print("Alle referenzierten Episodenobjekte vorhanden.",flush=True)
 
 import numpy as np
 import robocasa
