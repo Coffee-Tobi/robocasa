@@ -26,9 +26,9 @@ if not mugs:
 env = None
 try:
     env = robosuite.make(
-        "PrepareCoffee", robots="Panda",
+        "PrepareCoffee", robots="PandaOmron",
         has_renderer=False, has_offscreen_renderer=False,
-        use_camera_obs=False, render_camera="robot0_robotview",
+        use_camera_obs=False, render_camera="robot0_agentview_center",
         obj_registries=("objaverse",),
         use_distractors=False, seed=0,
     )
