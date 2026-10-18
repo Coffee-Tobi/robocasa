@@ -28,7 +28,8 @@ try:
     env = robosuite.make(
         "PrepareCoffee", robots="Panda",
         has_renderer=False, has_offscreen_renderer=False,
-        use_camera_obs=False, obj_registries=("objaverse",),
+        use_camera_obs=False, render_camera="robot0_robotview",
+        obj_registries=("objaverse",),
         use_distractors=False, seed=0,
     )
     env.reset()
