@@ -1,8 +1,10 @@
 # RoboBarista – Projekttracker und Roadmap
 
-> **Stand:** 20.10.2026 · **Verbindliche aktuelle Strategie:** Drei Stufen – (1) drei simulierte Kameras und räumliche Erkennung, (2) camera-derived Demonstrationen ohne Live-Nachregelung mit FAIRINO FR5 nachahmen, (3) Latte Art.  
-> **Projektcode:** [Coffee-Tobi/robocasa, Branch barista-dev](https://github.com/Coffee-Tobi/robocasa/tree/barista-dev) · **Tracker:** Markdown und CSV, da GitHub Issues im Repository deaktiviert sind.  
+> **Stand:** 21.10.2026 · **Verbindliche aktuelle Strategie:** (1) Drei Kameras + **ein seitlicher AprilTag 3** am Kännchen + `pupil-apriltags` + eigene Mehrkamera-Optimierung; danach zeitgestempeltes 6D-Kännchen-Motion-Capture, (2) FR5-Dry-Run anhand der Demonstration ohne Live-Nachregelung, (3) echte Latte Art.  
+> **Projektcode:** [Coffee-Tobi/robocasa, Branch main](https://github.com/Coffee-Tobi/robocasa/tree/main) · **Tracker:** Markdown und CSV, da GitHub Issues im Repository deaktiviert sind.  
 > **Herstellerentscheidung:** FAIRINO FR5 **als Planungsbasis, noch kein Hardwarekauf**. Ein Arm verwendet mögliche Greifaufsätze **nacheinander, nicht gleichzeitig**.
+
+**Aktuell maßgeblich:** [Konsolidierter Projektplan](./ROBOBARISTA_DREI_STUFEN_MVP.md) und [16 Kamera-/Tag-Benchmarkwerte](../results/2026-10-21_rig_comparison_user_report.csv). Die folgenden detaillierten RB-Aufgaben sind ein **historischer langfristiger Backlog**; einzelne unveränderte ältere Testannahmen sind keine aktualisierte Designentscheidung. Es wurden **keine** Linear-Issues angelegt.
 
 ## Unsere drei Umsetzungsstufen (maßgeblich)
 
@@ -619,4 +621,4 @@ Die älteren Kennungen `M0–M7` sind **thematische Kategorien, keine verpflicht
 
 ## Tracking
 
-Die CSV-Datei [ROBOBARISTA_BACKLOG.csv](./ROBOBARISTA_BACKLOG.csv) enthält Aufgaben und Stufen. [LINEAR_IMPORT.csv](./LINEAR_IMPORT.csv) enthält die Importvorlage. **Die Dateien wurden auf GitHub aktualisiert, aber es sind noch keine eigenständigen Linear-Issues daraus angelegt.** Auf GitHub sind Issues momentan deaktiviert.
+Die CSV-Datei [ROBOBARISTA_BACKLOG.csv](./ROBOBARISTA_BACKLOG.csv) enthält den langfristigen Aufgabenbestand. Die ungenutzte, aus derselben Liste abgeleitete frühere Linear-Importvorlage wurde beim Aufräumen gelöscht (in der GitHub-Historie weiterhin vorhanden). **Es wurden keine Linear-Issues angelegt.** GitHub Issues sind derzeit deaktiviert. Die verbindlichen nächsten Schritte stehen in [ROBOBARISTA_DREI_STUFEN_MVP.md](./ROBOBARISTA_DREI_STUFEN_MVP.md).
