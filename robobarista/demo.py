@@ -105,7 +105,7 @@ def run(args):
     data=mujoco.MjData(model)
     mujoco.mj_forward(model,data)
     renderer=mujoco.Renderer(model,height=args.height,width=args.width)
-    cameras = side_camera_layout(args.cameras) if args.pitcher_side_tags else CAMERAS
+    cameras = side_camera_layout(args.cameras,args.pitcher_tags) if args.pitcher_side_tags else CAMERAS
     calibrations={name:Calibration.from_mujoco(model,data,name,args.width,args.height)
                   for name in cameras}
     defs=tag_definitions(pitcher_side_tags=args.pitcher_side_tags,
