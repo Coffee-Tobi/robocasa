@@ -50,3 +50,19 @@ def test_optional_pitcher_side_mounts_are_rigid_and_known():
         assert np.linalg.det(T[:3,:3]) > 0.999
     assert scene.SIDE_PITCHER_TAGS['pitcher_near'][0][1] < 0
     assert scene.SIDE_PITCHER_TAGS['pitcher_far'][0][1] > 0
+
+
+def test_camera_rig_count_and_single_side_tag_option():
+    import pytest
+    assert len(scene.side_camera_layout(3))==3
+    assert len(scene.side_camera_layout(4))==4
+    assert set(scene.side_camera_layout(3)).issubset(scene.side_camera_layout(4))
+    assert set(scene.side_camera_layout(4))-set(scene.side_camera_layout(3))=={'rgbd_near_center'}
+    with pytest.raises(ValueError):
+        scene.side_camera_layout(5)
+    one=scene.tag_definitions(pitcher_side_tags=True,pitcher_tag_count=1)
+    two=scene.tag_definitions(pitcher_side_tags=True,pitcher_tag_count=2)
+    assert scene.SIDE_PITCHER_TAG_IDS['pitcher_near'] in one
+    assert scene.SIDE_PITCHER_TAG_IDS['pitcher_far'] not in one
+    assert set(one).issubset(two)
+    assert len([x for x,_ in one.values() if x=='pitcher'])==1
