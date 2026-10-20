@@ -138,6 +138,64 @@ def bundle_adjust_tag(observations, side):
                 depth_views=sum(o['depth'] is not None for o in observations))
 
 
+
+def bundle_adjust_object(observations, tag_definitions, side_by_id):
+    """Fit one rigid body using 2D corners from multiple distinct rigid tags.
+
+    observations: (tag_id, solve_single_output) pairs; no simulator body pose used.
+    Every tag may have its own measured size and fixed object-to-tag transform.
+    """
+    obs = [(tid, o) for tid, o in observations if o is not None]
+    if not obs:
+        return None
+
+    # Convert each single-tag estimate into an initial body-pose guess.
+    guesses = [object_from_tag(o, tag_definitions[tid][1]) for tid, o in obs]
+    start_pos = np.median([g['position'] for g in guesses], axis=0)
+    start_rot = Rotation.from_matrix(
+        np.array([g['rotation'] for g in guesses])).mean().as_rotvec()
+    init = np.r_[start_rot, start_pos]
+
+    def residual(x):
+        body_R = Rotation.from_rotvec(x[:3]).as_matrix()
+        body_t = x[3:]
+        errors = []
+        for tid, o in obs:
+            T_body_tag = tag_definitions[tid][1]
+            tag_R = T_body_tag[:3, :3]
+            tag_t = T_body_tag[:3, 3]
+            corners_in_body = (tag_R @ marker_corners(side_by_id[tid]).T).T + tag_t
+            world_corners = (body_R @ corners_in_body.T).T + body_t
+            cal = o['calibration']
+            cam_corners = np.array([cal.world_to_camera(v) for v in world_corners])
+            if np.any(cam_corners[:, 2] <= 0.02):
+                return np.ones(len(obs) * 9) * 1e4
+            uv = (cal.K @ cam_corners.T).T
+            uv = uv[:, :2] / uv[:, 2:]
+            errors.extend((uv - o['corners']).reshape(-1))
+            if o['depth'] is not None:
+                tag_center_world = body_R @ tag_t + body_t
+                tag_z = cal.world_to_camera(tag_center_world)[2]
+                errors.append((tag_z - o['depth']) / 0.010)
+            else:
+                errors.append(0.0)
+        return np.asarray(errors)
+
+    result = least_squares(residual, init, loss='huber',
+                           f_scale=2, max_nfev=200)
+    final_residuals = residual(result.x).reshape(len(obs), 9)
+    return {
+        'position': result.x[3:],
+        'rotation': Rotation.from_rotvec(result.x[:3]).as_matrix(),
+        'reprojection_rmse_px': float(np.sqrt(np.mean(final_residuals[:, :8] ** 2))),
+        'cameras_seen': len(set(id(o['calibration']) for _, o in obs)),
+        'tag_detections': len(obs),
+        'tags_seen': sorted(set(tid for tid, _ in obs)),
+        'depth_views': sum(o['depth'] is not None for _, o in obs),
+        'converged': bool(result.success),
+    }
+
+
 def object_from_tag(estimated_tag, T_object_tag):
     """Return body pose using known tag placement in the object frame.
 
