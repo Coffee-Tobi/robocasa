@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import cv2
 from PIL import Image, ImageDraw
-from .scene import (generate_scene, CAMERAS, CAMERAS_SIDE, TAG_IDS,
+from .scene import (generate_scene, CAMERAS, side_camera_layout, TAG_IDS,
                     SIDE_PITCHER_TAG_IDS, SIDE_TAG_SIDE_M, MARKER_ACTIVE_M,
                     MARKER_TEXTURE_PX, MARKER_QUIET_PX,
                     SPOUT_TIP_LOCAL_M, tag_definitions)
@@ -47,8 +47,9 @@ def get_gt(model,data,object_name):
 
 
 def save_montage(rgbs,depths,path):
-    w,h=540,400
-    canvas=Image.new('RGB',(w*3,h*2+40),'#f3f4f6')
+    # Dynamic layout so 4th camera is visible instead of cropping it.
+    w,h=(450,340) if len(rgbs)>3 else (540,400)
+    canvas=Image.new('RGB',(w*len(rgbs),h*2+40),'#f3f4f6')
     d=ImageDraw.Draw(canvas)
     for n,(name,img) in enumerate(rgbs.items()):
         rgb=Image.fromarray(img).resize((w,h),Image.Resampling.LANCZOS)
@@ -96,15 +97,19 @@ def run(args):
     import mujoco
     out=Path(args.output).resolve()
     out.mkdir(parents=True,exist_ok=True)
-    scene_path=generate_scene(Path(args.vendor_dir).resolve(), pitcher_side_tags=args.pitcher_side_tags)
+    scene_path=generate_scene(Path(args.vendor_dir).resolve(),
+                              pitcher_side_tags=args.pitcher_side_tags,
+                              camera_count=args.cameras,
+                              pitcher_tag_count=args.pitcher_tags)
     model=mujoco.MjModel.from_xml_path(str(scene_path))
     data=mujoco.MjData(model)
     mujoco.mj_forward(model,data)
     renderer=mujoco.Renderer(model,height=args.height,width=args.width)
-    cameras = CAMERAS_SIDE if args.pitcher_side_tags else CAMERAS
+    cameras = side_camera_layout(args.cameras) if args.pitcher_side_tags else CAMERAS
     calibrations={name:Calibration.from_mujoco(model,data,name,args.width,args.height)
                   for name in cameras}
-    defs=tag_definitions(pitcher_side_tags=args.pitcher_side_tags)
+    defs=tag_definitions(pitcher_side_tags=args.pitcher_side_tags,
+                         pitcher_tag_count=args.pitcher_tags)
     side_active = SIDE_TAG_SIDE_M * (MARKER_TEXTURE_PX - 2 * MARKER_QUIET_PX) / MARKER_TEXTURE_PX
     side_tag_ids = set(SIDE_PITCHER_TAG_IDS.values())
     tag_sides = {tid: (side_active if tid in side_tag_ids and args.pitcher_side_tags
@@ -132,7 +137,8 @@ def run(args):
         for name,calib in calibrations.items():
             rgb,depth=render_pair(renderer,data,name)
             annotated=rgb.copy()
-            detections=detect_tags(rgb,include_apriltags=args.pitcher_side_tags)
+            detections=detect_tags(rgb,include_apriltags=args.pitcher_side_tags,
+                                   detector=args.detector)
             for tag_id,pixels in detections:
                 if tag_id not in defs: continue
                 cv2.polylines(annotated,[np.round(pixels).astype('int32')],True,(0,255,0),2)
@@ -249,6 +255,9 @@ def run(args):
                 if 'spout_to_cup_error_mm' in r]
     summary={'status':'PASS' if passed else 'FAIL',
         'experiment':'pitcher_side_tags' if args.pitcher_side_tags else 'original_top_tags',
+        'detector':args.detector if args.pitcher_side_tags else 'opencv',
+        'pitcher_tag_count':args.pitcher_tags if args.pitcher_side_tags else 1,
+        'configured_camera_count':len(cameras),
         'spout_geometry':'simplified known CAD offset; real fixture/calibration not validated',
         'max_spout_tip_error_mm':max(tip_errors) if tip_errors else None,
         'max_relative_tip_to_cup_error_mm':max(rel_errors) if rel_errors else None,
@@ -284,6 +293,12 @@ def run(args):
 
 def main():
     p=argparse.ArgumentParser()
+    p.add_argument('--cameras',type=int,choices=(3,4),default=3,
+                   help='Number of simulated cameras in side-tag experiment')
+    p.add_argument('--pitcher-tags',type=int,choices=(1,2),default=2,
+                   help='Number of rigid AprilTags on the pitcher (near/far)')
+    p.add_argument('--detector',choices=('opencv','pupil'),default='opencv',
+                   help='OpenCV AprilTag vs native AprilTag-3 pupil binding')
     p.add_argument('--pitcher-side-tags',action='store_true',
                    help='Opt-in two-sided pitcher marker and camera experiment')
     p.add_argument('--max-spout-mm',type=float,default=0.5)
