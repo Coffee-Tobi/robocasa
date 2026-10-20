@@ -1,0 +1,17 @@
+variant,pose_method,detector,apriltags,cameras,pitcher_status,scene_status,pitcher_valid_trials,max_spout_tip_error_mm,max_pitcher_rotation_deg,failure_reason_summary
+bundle_adjust_opencv_1tag_3cam,bundle_adjust,opencv,1,3,FAIL,FAIL,3,1.4676222031817032,0.4680824680746021,pitcher_spout_error
+bundle_adjust_opencv_1tag_4cam,bundle_adjust,opencv,1,4,FAIL,FAIL,3,1.402792061447802,0.45433485237220606,pitcher_spout_error
+bundle_adjust_opencv_2tag_3cam,bundle_adjust,opencv,2,3,FAIL,FAIL,3,0.5604481969837517,0.3924851363948116,pitcher_spout_error;obstacle_only_1_camera_and_inaccurate
+bundle_adjust_opencv_2tag_4cam,bundle_adjust,opencv,2,4,FAIL,FAIL,3,0.5726022553885293,0.3602436314204118,pitcher_spout_error;obstacle_only_1_camera_and_inaccurate
+bundle_adjust_pupil_1tag_3cam,bundle_adjust,pupil,1,3,PASS,PASS,3,0.13777915758536008,0.045832767365699856,none
+bundle_adjust_pupil_1tag_4cam,bundle_adjust,pupil,1,4,PASS,PASS,3,0.15065319883757927,0.05044618515518034,none
+bundle_adjust_pupil_2tag_3cam,bundle_adjust,pupil,2,3,PASS,FAIL,3,0.09425979560972246,0.07524182424729331,obstacle_only_1_camera_and_inaccurate
+bundle_adjust_pupil_2tag_4cam,bundle_adjust,pupil,2,4,PASS,FAIL,3,0.0848129900622537,0.05412481271782483,obstacle_only_1_camera_and_inaccurate
+caliscope_opencv_1tag_3cam,caliscope,opencv,1,3,FAIL,FAIL,3,4.289198381614172,1.7395287935631318,pitcher_spout_and_angle_errors;obstacle_trial2_over_5mm
+caliscope_opencv_1tag_4cam,caliscope,opencv,1,4,FAIL,FAIL,3,3.7326576398576825,1.546745422825716,pitcher_spout_and_angle_errors
+caliscope_opencv_2tag_3cam,caliscope,opencv,2,3,FAIL,FAIL,3,4.0000615378909234,1.4980776670592673,pitcher_spout_and_angle_errors;obstacle_only_1_camera_no_pose
+caliscope_opencv_2tag_4cam,caliscope,opencv,2,4,FAIL,FAIL,3,1.186015006755782,0.5425711371729707,pitcher_spout_error;obstacle_only_1_camera_no_pose
+caliscope_pupil_1tag_3cam,caliscope,pupil,1,3,PASS,FAIL,3,0.17781184068320569,0.06795742486040382,obstacle_trial2_5.3666mm_over_5mm
+caliscope_pupil_1tag_4cam,caliscope,pupil,1,4,PASS,PASS,3,0.17695260590927245,0.05760986806721414,none
+caliscope_pupil_2tag_3cam,caliscope,pupil,2,3,PASS,FAIL,3,0.16343840919684888,0.0689141579109217,obstacle_only_1_camera_no_pose
+caliscope_pupil_2tag_4cam,caliscope,pupil,2,4,PASS,FAIL,3,0.05495711955703933,0.03520983704337764,obstacle_only_1_camera_no_pose
