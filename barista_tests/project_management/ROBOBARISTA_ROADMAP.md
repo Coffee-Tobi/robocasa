@@ -66,7 +66,7 @@ Die älteren Kennungen `M0–M7` sind **thematische Kategorien, keine verpflicht
 | [RB-03](#rb-03) | Systemarchitektur und gemeinsame Datenformate planen | Stufe 1 | M0 | P0 | 2/5 | Backlog | RB-01 |
 | [RB-04](#rb-04) | Verfügbarkeit vorhandener Latte-Art-Projekte und Lizenzen prüfen | Später/Optional | M0 | P1 | 1/5 | Backlog | RB-01 |
 | [RB-05](#rb-05) | Latte-Art-Videos für Vergleich und Qualitätsbewertung sammeln | Stufe 3 | M1 | P1 | 1/5 | Backlog | RB-01 |
-| [RB-06](#rb-06) | Virtuelle Demo und Kameravideos als Referenz mit Zeitstempeln definieren | Stufe 3 | M1 | P0 | 1/5 | Backlog | RB-47 |
+| [RB-06](#rb-06) | Virtuelle Demo und Kameravideos als Referenz mit Zeitstempeln definieren | Stufe 2 | M1 | P0 | 1/5 | Backlog | RB-47 |
 | [RB-07](#rb-07) | Kännchen, Tasse und FR5 in allen drei Kameras erkennen und tracken | Stufe 1 | M1 | P0 | 2/5 | Backlog | RB-47 |
 | [RB-08](#rb-08) | Ausgießerspitze, Tassenrand und Marker-Orientierung bildbasiert erfassen | Stufe 1 | M1 | P0 | 3/5 | Backlog | RB-07 |
 | [RB-09](#rb-09) | Drei Kameras + wahrgenommene und wahre 3D-Pose gemeinsam visualisieren | Stufe 1 | M1 | P0 | 1/5 | Backlog | RB-16; RB-47 |
@@ -88,7 +88,7 @@ Die älteren Kennungen `M0–M7` sind **thematische Kategorien, keine verpflicht
 | [RB-25](#rb-25) | Leichte MuJoCo-Szene mit FR5, Milchkännchen und geneigter Tasse starten | Stufe 1 | M4 | P0 | 3/5 | Backlog | RB-23; RB-24 |
 | [RB-26](#rb-26) | DMP-Trajektorie mit FR5-IK und kalibriertem Ausgießer-TCP abfahren | Stufe 2 | M4 | P0 | 4/5 | Backlog | RB-20; RB-50; RB-25 |
 | [RB-27](#rb-27) | Kollisionen, Reichweite, Tassen- und Griffgeometrie prüfen | Stufe 2 | M4 | P0 | 3/5 | Backlog | RB-26 |
-| [RB-28](#rb-28) | Geometrischen Auftreffpunkt ohne Flüssigkeitssimulation prüfen | Stufe 3 | M5 | P1 | 2/5 | Backlog | RB-17; RB-25 |
+| [RB-28](#rb-28) | Geometrischen Auftreffpunkt ohne Flüssigkeitssimulation prüfen | Stufe 2 | M5 | P1 | 2/5 | Backlog | RB-17; RB-25 |
 | [RB-29](#rb-29) | Ersten Versuch mit echter Milch unter konstanten Bedingungen planen | Stufe 3 | M5 | P1 | 3/5 | Backlog | RB-51; RB-28 |
 | [RB-30](#rb-30) | Optionalen Flusssensor nur bei Bedarf evaluieren – keine eigene Fluidphysik | Später/Optional | M5 | P2 | 2/5 | Backlog | RB-29 |
 | [RB-31](#rb-31) | Geschwindigkeitsprofil für KI, Kameras, Rendering und Physik erstellen | Stufe 2 | M6 | P1 | 2/5 | Backlog | RB-47; RB-03 |
@@ -96,7 +96,7 @@ Die älteren Kennungen `M0–M7` sind **thematische Kategorien, keine verpflicht
 | [RB-33](#rb-33) | Schnelle wiederholte Replanung und Sensorkontrolle | Später/Optional | M6 | P2 | 4/5 | Backlog | RB-32 |
 | [RB-34](#rb-34) | Visuelle Latte-Art-Rückmeldung zu Bewegungskorrekturen nutzen | Später/Optional | M6 | P2 | 4/5 | Backlog | RB-11; RB-12; RB-29; RB-32 |
 | [RB-35](#rb-35) | Robustheit gegen Startpositions- und Kameraveränderungen testen | Später/Optional | M7 | P2 | 4/5 | Backlog | RB-48; RB-51 |
-| [RB-36](#rb-36) | Vollständiger FR5-Dry-Run mit 3D-Kamera-Tracking und aufgezeichneter Bewegung | Stufe 3 | M7 | P0 | 4/5 | Backlog | RB-51; RB-27 |
+| [RB-36](#rb-36) | Vollständiger FR5-Dry-Run mit 3D-Kamera-Tracking und aufgezeichneter Bewegung | Stufe 2 | M7 | P0 | 4/5 | Backlog | RB-51; RB-27 |
 | [RB-37](#rb-37) | Ersten kontrollierten realen Eingießversuch durchführen | Stufe 3 | M7 | P1 | 4/5 | Backlog | RB-36; RB-29 |
 | [RB-38](#rb-38) | Milch aufschäumen und Schaumqualität bewerten (späterer Teil) | Später/Optional | M7 | P2 | 5/5 | Backlog | RB-36 |
 | [RB-39](#rb-39) | Espressomaschine und Mühle bedienen (späterer Teil) | Später/Optional | M7 | P2 | 4/5 | Backlog | RB-36 |
@@ -105,7 +105,7 @@ Die älteren Kennungen `M0–M7` sind **thematische Kategorien, keine verpflicht
 | [RB-42](#rb-42) | One-Shot-Paper: 6D-Vive-Tracking, 100-Hz-Becherencoder und frei verfügbaren Code verifizieren | Stufe 3 | M0 | P1 | 2/5 | Backlog | RB-01 |
 | [RB-43](#rb-43) | OPTIONAL: Externe 6D-Tracker bei unzureichender Kamera-Pose nutzen | Später/Optional | M0 | P2 | 3/5 | Backlog | RB-48 |
 | [RB-44](#rb-44) | Gelernte Kamera-Bewegung ohne Online-Korrektur reproduzieren | Stufe 2 | M3 | P0 | 2/5 | Backlog | RB-20 |
-| [RB-45](#rb-45) | Motorisierten kippbaren Becherhalter nur bei Bedarf ergänzen | Stufe 3 | M4 | P2 | 3/5 | Backlog | RB-24; RB-17; RB-44 |
+| [RB-45](#rb-45) | Motorisierten kippbaren Becherhalter nur bei Bedarf ergänzen | Später/Optional | M4 | P2 | 3/5 | Backlog | RB-24; RB-17; RB-44 |
 | [RB-46](#rb-46) | Qualitätsprüfung zwischen Versuchen automatisieren | Stufe 3 | M7 | P1 | 2/5 | Backlog | RB-12; RB-37 |
 | [RB-47](#rb-47) | Drei kalibrierbare virtuelle Kameras mit synchronen RGB-Frames einrichten | Stufe 1 | M1 | P0 | 2/5 | Backlog | RB-14; RB-25 |
 | [RB-48](#rb-48) | Kamera-3D-Posen gegen die wahre MuJoCo-Pose quantitativ validieren | Stufe 1 | M2 | P0 | 3/5 | Backlog | RB-16; RB-15 |
@@ -186,7 +186,7 @@ Die älteren Kennungen `M0–M7` sind **thematische Kategorien, keine verpflicht
 <a id="rb-06"></a>
 #### RB-06 – Virtuelle Demo und Kameravideos als Referenz mit Zeitstempeln definieren
 
-- **Stufe:** Stufe 3 · **Status:** Backlog · **Priorität:** P0 · **Schwierigkeit:** 1/5
+- **Stufe:** Stufe 2 · **Status:** Backlog · **Priorität:** P0 · **Schwierigkeit:** 1/5
 - **Abhängigkeiten:** [RB-47](#rb-47)
 - **Freie Tools / Projekte (Kandidaten):** OpenCV / ffmpeg
 - [ ] **Abnahme:** Gleichzeitig drei Kamera-Videos/Framefolgen, Kamera-Posen, Zeitstempel und virtuelle Demonstration im gleichen Testlauf verfügbar
@@ -429,7 +429,7 @@ Die älteren Kennungen `M0–M7` sind **thematische Kategorien, keine verpflicht
 <a id="rb-45"></a>
 #### RB-45 – Motorisierten kippbaren Becherhalter nur bei Bedarf ergänzen
 
-- **Stufe:** Stufe 3 · **Status:** Backlog · **Priorität:** P2 · **Schwierigkeit:** 3/5
+- **Stufe:** Später/Optional · **Status:** Backlog · **Priorität:** P2 · **Schwierigkeit:** 3/5
 - **Abhängigkeiten:** [RB-24](#rb-24), [RB-17](#rb-17), [RB-44](#rb-44)
 - **Freie Tools / Projekte (Kandidaten):** NEMA 17 / AS5600 / ESP32 / bestehende Stepper-Libraries
 - [ ] **Abnahme:** Nur nach echtem Pour-Versuch prüfen, ob feste Tassenneigung unzureichend ist; motorisierte Becherneigung als Erweiterung statt zweitem Arm
@@ -459,7 +459,7 @@ Die älteren Kennungen `M0–M7` sind **thematische Kategorien, keine verpflicht
 <a id="rb-28"></a>
 #### RB-28 – Geometrischen Auftreffpunkt ohne Flüssigkeitssimulation prüfen
 
-- **Stufe:** Stufe 3 · **Status:** Backlog · **Priorität:** P1 · **Schwierigkeit:** 2/5
+- **Stufe:** Stufe 2 · **Status:** Backlog · **Priorität:** P1 · **Schwierigkeit:** 2/5
 - **Abhängigkeiten:** [RB-17](#rb-17), [RB-25](#rb-25)
 - **Freie Tools / Projekte (Kandidaten):** OpenCV / MuJoCo-Geometrie / Rerun
 - [ ] **Abnahme:** Ausgießerposition, Becherwinkel und theoretischer Auftreffpunkt als Geometrie visualisiert; keine Flüssigkeitsphysik
@@ -537,7 +537,7 @@ Die älteren Kennungen `M0–M7` sind **thematische Kategorien, keine verpflicht
 <a id="rb-36"></a>
 #### RB-36 – Vollständiger FR5-Dry-Run mit 3D-Kamera-Tracking und aufgezeichneter Bewegung
 
-- **Stufe:** Stufe 3 · **Status:** Backlog · **Priorität:** P0 · **Schwierigkeit:** 4/5
+- **Stufe:** Stufe 2 · **Status:** Backlog · **Priorität:** P0 · **Schwierigkeit:** 4/5
 - **Abhängigkeiten:** [RB-51](#rb-51), [RB-27](#rb-27)
 - **Freie Tools / Projekte (Kandidaten):** MuJoCo / Rerun / OpenCV
 - [ ] **Abnahme:** Von drei Kameraaufnahmen über 6D-Pose/Bewegungslernen bis zur FR5-Ausführung reproduzierbar ohne Fluid-Simulation und ohne Online-Adaptation
