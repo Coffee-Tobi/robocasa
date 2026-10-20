@@ -19,3 +19,13 @@ def test_marker_tags_are_known_transforms():
     for label,T in tags.values():
         assert T.shape==(4,4)
         assert len(label)>0
+
+def test_markers_can_be_attached_to_moving_robot_links():
+    """MuJoCo rejects plane geoms inside nonstatic articulated bodies."""
+    root = ET.Element('body', {'name': 'moving_robot_wrist'})
+    tag = scene._tag(root, 'robot_tool', scene.TAG_IDS['robot_tool'], [0, 0, 0])
+    assert tag.get('type') == 'box'
+    assert tag.get('contype') == '0'
+    assert tag.get('conaffinity') == '0'
+    assert tag.get('mass') == '0'
+    assert float(tag.get('size').split()[2]) > 0
