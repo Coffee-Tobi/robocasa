@@ -10,6 +10,21 @@
 2. **Laufzeit → Alle ausführen**. Keine ZIP und keine manuelle Dateiübertragung nötig. Der Notebook-Code klont dieses Repository, installiert MuJoCo und OpenCV, lädt die FAIRINO-3D-Assets aus dem **MIT-lizenzierten [ma-weiss/Fairino-Mujoco](https://github.com/ma-weiss/Fairino-Mujoco)**-Projekt (geprüfter Commit `459570714fc68c92e1fb3605cb60b4d8ef84419b`) und rendert die Szene.
 3. Den Testbericht (`runs/first_benchmark/summary.json`) und die Kameramontage (`rgbd_montage.jpg`) ansehen. **FAIL ist ein valides Forschungsergebnis, kein Erfolg.**
 
+## Neues Experiment: Direktes Kännchen-Motion-Capture (Opt-in)
+
+Die Projektentscheidung ist jetzt **Option 2: 6D-Bewegung des Milchkännchens erfassen**, nicht Handhandschuhe oder den Roboterarm manuell führen. Siehe [Dreistufenplan](planning/ROBOBARISTA_DREI_STUFEN_MVP.md).
+
+**Im Colab-Notebook gibt es Schritt 7:** Zwei echte AprilTag-36h11-Markierungen auf starren, seitlichen, entgegengesetzt ausgerichteten virtuellen Montageflächen am Milchkännchen; zwei nähere Schrägkameras und eine dritte Gegenkamera; gemeinsame 6D-Pose-Schätzung aus den Bildpunkten beider Tags. Die Originalvariante mit oberem ArUco-Marker bleibt als Baseline erhalten.
+
+Der Side-Tag-Test prüft drei **statische** Neigungs-/Positionskonfigurationen, nicht kontinuierliches Motion Capture. Pro Test werden der Positionsfehler des Kännchens, der Winkelabweichung, der **Ausgießerspitzenfehler**, die erkannten Kameras und separat der **relative Spitzen-zu-Tasse-Fehler** protokolliert. Die Side-Tag-Abnahme fordert höchstens 0,5 mm **absolute** Spitzenabweichung und 1° Kännchenwinkel sowie mindestens zwei Kameras je Objekt. Der relative Fehler zur Tasse bleibt explizit separat, bis die Tassenreferenz verbessert ist.
+
+**Keine Zusicherung einer erreichten Genauigkeit:** Der neue Side-Tag-Modus wurde in dieser Chatumgebung nicht mit vollständigem MuJoCo-Rendering ausgeführt. Er muss in Colab anhand der drei Bildmontagen, Marker-Sichtbarkeit und des Messberichts überprüft werden. Selbst ein PASS unter idealen Simulationsbedingungen garantiert keine 0,5-mm-Präzision im realen Aufbau. Besonders Markerträger-, Objekt-/Spitzen-Kalibrierung, Objektbewegung, Kamerazeitsynchronisierung und reale Kalibrierfehler sind noch zu testen.
+
+Für einen direkten Vergleich im installierten Colab-Projekt:
+```bash
+MUJOCO_GL=osmesa PYOPENGL_PLATFORM=osmesa python -m robobarista.demo --pitcher-side-tags --output runs/pitcher_side_tags --trials 3 --width 1280 --height 960 --max-spout-mm 0.5 --max-pitcher-rotation-deg 1
+```
+
 ## Was läuft
 
 - Ein FR5-Roboter mit vorhandenen Meshes und PGI-140-80-W-Greifer (vom Drittprojekt übernommen), einfache Arbeitsfläche mit vorerst geometrisch vereinfachtem Becher, Kännchen, Behälter und Hindernis; **statische Pose** für reproduzierbaren ersten Wahrnehmungstest.
