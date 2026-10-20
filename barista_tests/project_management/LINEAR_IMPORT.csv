@@ -1,0 +1,452 @@
+﻿Title,Description,Priority,Status,Labels
+"[RB-01] MVP-Umfang: zunächst Latte Art eingießen, ein Arm, geneigte feste Tasse","**RB-01 · RoboBarista | M0**
+
+**Abnahme:** MVP und bewusst ausgeschlossene Funktionen schriftlich festgelegt
+
+**Open-Source-Kandidaten:** Markdown / GitHub
+
+**Schwierigkeit:** 1/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** keine
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M0,P0"
+"[RB-02] Messbare Erfolgskriterien für Wahrnehmung, Latte Art und Robotik","**RB-02 · RoboBarista | M0**
+
+**Abnahme:** Messgrößen für Treffpunkt, Musterqualität, Pose, Erfolgsquote und Latenz dokumentiert
+
+**Open-Source-Kandidaten:** OpenCV
+
+**Schwierigkeit:** 2/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-01
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M0,P0"
+[RB-03] Systemarchitektur und gemeinsame Datenformate planen,"**RB-03 · RoboBarista | M0**
+
+**Abnahme:** Schnittstellen für Frame, Zeitstempel, Pose, Aktionen und Vorhersage dokumentiert
+
+**Open-Source-Kandidaten:** ROS 2 / Python / Rerun
+
+**Schwierigkeit:** 2/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-01
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M0,P0"
+"[RB-04] Open-Source-Auswahl, Datenlizenzen und Reproduzierbarkeit prüfen","**RB-04 · RoboBarista | M0**
+
+**Abnahme:** Für jede ausgewählte Bibliothek Version, Lizenz, Grenzen und Quelle vermerkt
+
+**Open-Source-Kandidaten:** GitHub / Hugging Face
+
+**Schwierigkeit:** 1/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-01
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M0,P1"
+[RB-05] Geeignete Latte-Art-Demonstrationsvideos zusammentragen,"**RB-05 · RoboBarista | M1**
+
+**Abnahme:** Mindestens drei rechtmäßig nutzbare Aufnahmen mit gut sichtbarem Kännchen und Becher ausgewählt
+
+**Open-Source-Kandidaten:** ffmpeg / yt-dlp nur mit passenden Nutzungsrechten
+
+**Schwierigkeit:** 1/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-01
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M1,P0"
+[RB-06] Erstes Video und Kamera-Perspektive als Referenz definieren,"**RB-06 · RoboBarista | M1**
+
+**Abnahme:** Ein Referenzvideo mit FPS, Auflösung, Perspektive und Frame-Beispielen dokumentiert
+
+**Open-Source-Kandidaten:** OpenCV / ffmpeg
+
+**Schwierigkeit:** 1/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-05
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M1,P0"
+[RB-07] Tasse und Milchkännchen im Video segmentieren und verfolgen,"**RB-07 · RoboBarista | M1**
+
+**Abnahme:** Beide Objekte über ein durchgehendes Testvideo mit visualisierter Maske verfolgt
+
+**Open-Source-Kandidaten:** SAM 2 / OpenCV
+
+**Schwierigkeit:** 2/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-06
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M1,P0"
+[RB-08] Ausgießerspitze und Tassenrand im Bild verfolgen,"**RB-08 · RoboBarista | M1**
+
+**Abnahme:** Pro Frame Position und Konfidenz der Ausgießerspitze und des Tassenrandes gespeichert
+
+**Open-Source-Kandidaten:** OpenCV / SAM 2 / Keypoint-Modell
+
+**Schwierigkeit:** 3/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-07
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M1,P0"
+[RB-09] Wahrnehmung als Overlay und Zeitleiste darstellen,"**RB-09 · RoboBarista | M1**
+
+**Abnahme:** Video, erkannte Objekte, Positionswerte und Zeitstempel synchron sichtbar
+
+**Open-Source-Kandidaten:** Rerun
+
+**Schwierigkeit:** 1/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-07
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M1,P0"
+[RB-10] Kleinen annotierten Testdatensatz und Auswertung erstellen,"**RB-10 · RoboBarista | M1**
+
+**Abnahme:** Trainings- und Testszenen getrennt; definierte Metriken und Beispielannotationsdatei vorhanden
+
+**Open-Source-Kandidaten:** CVAT / Label Studio
+
+**Schwierigkeit:** 2/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-07
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M1,P1"
+[RB-11] Milchstrahl und Auftreffpunkt auf der Kaffeeoberfläche erkennen,"**RB-11 · RoboBarista | M1**
+
+**Abnahme:** Treffpunkt bei geeigneten Videos mit überprüfter Unsicherheit frameweise sichtbar
+
+**Open-Source-Kandidaten:** OpenCV / SAM 2 / eigenes kleines Segmentierungsmodell
+
+**Schwierigkeit:** 4/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-08; RB-10
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M1,P1"
+"[RB-12] Schaumoberfläche, Füllstand und Latte-Art-Konturen analysieren","**RB-12 · RoboBarista | M1**
+
+**Abnahme:** Weißes Muster, Tassenfüllstand und Entwicklung über Zeit werden nachvollziehbar angezeigt
+
+**Open-Source-Kandidaten:** OpenCV / Bildsegmentierung
+
+**Schwierigkeit:** 4/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-10
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M1,P1"
+[RB-13] Qualitäts- und Unsicherheitstest der Kamerawahrnehmung,"**RB-13 · RoboBarista | M1**
+
+**Abnahme:** Fehlende Sicht, Verdeckung, Reflexion und Tracking-Fehler werden erkannt statt still geschätzt
+
+**Open-Source-Kandidaten:** OpenCV / eigene Tests
+
+**Schwierigkeit:** 3/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-08; RB-11
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M1,P1"
+[RB-14] Kamerazahl und Positionierung für räumliche Messung festlegen,"**RB-14 · RoboBarista | M2**
+
+**Abnahme:** Konkretes Layout (Draufsicht plus Seitenansicht, optional Handkamera) mit Sichtfeldbegründung
+
+**Open-Source-Kandidaten:** OpenCV / Kamera-Geometrie
+
+**Schwierigkeit:** 2/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-08
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M2,P0"
+[RB-15] Kameras kalibrieren und Koordinatensysteme verknüpfen,"**RB-15 · RoboBarista | M2**
+
+**Abnahme:** Transformationskette Kamera → Tasse → Roboter mit Kalibrierfehler dokumentiert
+
+**Open-Source-Kandidaten:** OpenCV ArUco / Kalibr
+
+**Schwierigkeit:** 3/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-14
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M2,P0"
+[RB-16] 3D-Pose von Tasse und Ausgießer rekonstruieren,"**RB-16 · RoboBarista | M2**
+
+**Abnahme:** 3D-Position, Orientierung und Unsicherheit in mehreren bekannten Testszenen überprüft
+
+**Open-Source-Kandidaten:** OpenCV / Triangulation / PnP
+
+**Schwierigkeit:** 4/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-08; RB-15
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M2,P0"
+"[RB-17] Becherwinkel, Oberfläche und Ausgießerabstand erfassen","**RB-17 · RoboBarista | M2**
+
+**Abnahme:** Becherneigung, Oberflächenhöhe und Ausgießerabstand werden pro Frame geschätzt
+
+**Open-Source-Kandidaten:** OpenCV / Geometrie
+
+**Schwierigkeit:** 3/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-11; RB-16
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M2,P1"
+[RB-18] Aus Videos Bewegungsbahnen mit Zeitbezug extrahieren,"**RB-18 · RoboBarista | M3**
+
+**Abnahme:** Reproduzierbare Sequenz aus Ausgießerpose und Zeitstempeln liegt vor
+
+**Open-Source-Kandidaten:** OpenCV / SciPy
+
+**Schwierigkeit:** 3/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-16
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M3,P0"
+"[RB-19] Neigung, Geschwindigkeit und Beschleunigung der Kanne lernen","**RB-19 · RoboBarista | M3**
+
+**Abnahme:** Zeitliche Kinematik inklusive Kannenwinkel mit Plausibilitätsgrafiken rekonstruiert
+
+**Open-Source-Kandidaten:** SciPy / NumPy
+
+**Schwierigkeit:** 3/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-17; RB-18
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M3,P0"
+[RB-20] DMP-Basismodell einer Latte-Art-Eingießbewegung trainieren,"**RB-20 · RoboBarista | M3**
+
+**Abnahme:** Gelernte Bewegung im virtuellen Kännchen ohne manuell programmierte Trajektorie reproduziert
+
+**Open-Source-Kandidaten:** dfki-ric/movement_primitives
+
+**Schwierigkeit:** 3/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-18; RB-19
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M3,P0"
+[RB-21] Gelernte Bewegung auf neue Startpositionen und Tempi übertragen,"**RB-21 · RoboBarista | M3**
+
+**Abnahme:** Startpositionen, Zielpositionen und Tempo variieren ohne komplette Neudemonstration
+
+**Open-Source-Kandidaten:** Movement Primitives
+
+**Schwierigkeit:** 4/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-20
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M3,P1"
+[RB-22] Alternativen zu DMPs vergleichbar testen,"**RB-22 · RoboBarista | M3**
+
+**Abnahme:** Vergleich von Datendurst, Adaptivität, Interpretierbarkeit, Qualität und Latenz dokumentiert
+
+**Open-Source-Kandidaten:** LeRobot / Diffusion Policy / ACT
+
+**Schwierigkeit:** 4/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-20
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Low,Backlog,"RoboBarista,M3,P2"
+[RB-23] Geeigneten Einarm-Roboter mit Greifer und Arbeitsraum wählen,"**RB-23 · RoboBarista | M4**
+
+**Abnahme:** Robotermodell erfüllt notwendige Reichweite, Kännchenlast und Orientierung
+
+**Open-Source-Kandidaten:** MuJoCo / MoveIt 2 / URDF
+
+**Schwierigkeit:** 2/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-01; RB-19
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M4,P0"
+[RB-24] Geneigten festen Becherhalter als MVP definieren,"**RB-24 · RoboBarista | M4**
+
+**Abnahme:** Neigungswinkel und Position variierbar; ein Arm muss nur Kännchen bewegen
+
+**Open-Source-Kandidaten:** MuJoCo / CAD optional
+
+**Schwierigkeit:** 2/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-17; RB-23
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M4,P0"
+"[RB-25] Minimale Simulation: Roboter, Kännchen, Tasse ohne Flüssigkeit","**RB-25 · RoboBarista | M4**
+
+**Abnahme:** Reproduzierbare Szene rendert Kameras und erlaubt physikalische Roboterbewegungen
+
+**Open-Source-Kandidaten:** MuJoCo / robosuite
+
+**Schwierigkeit:** 3/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-23; RB-24
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M4,P0"
+[RB-26] Gelernte Ausgießertrajektorien durch inverse Kinematik ausführen,"**RB-26 · RoboBarista | M4**
+
+**Abnahme:** Robotergreifer folgt Position und Orientierung der gelernten Bahn mit gemessenem Fehler
+
+**Open-Source-Kandidaten:** MoveIt 2 / MuJoCo IK
+
+**Schwierigkeit:** 4/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-20; RB-25
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M4,P0"
+"[RB-27] Kollisionen, Reichweite, Tassen- und Griffgeometrie prüfen","**RB-27 · RoboBarista | M4**
+
+**Abnahme:** Sicherer Abstand und erreichbare Orientierungen bei variablen Becherlagen getestet
+
+**Open-Source-Kandidaten:** MoveIt 2 / MuJoCo
+
+**Schwierigkeit:** 3/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-26
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M4,P1"
+[RB-28] Vereinfachtes Modell des Milchstrahls und Auftreffpunkts bauen,"**RB-28 · RoboBarista | M5**
+
+**Abnahme:** Strahlrichtung, Ausgießerhöhe, Treffpunkt und einfache Flussrate nachvollziehbar berechenbar
+
+**Open-Source-Kandidaten:** MuJoCo + Geometrie / SciPy
+
+**Schwierigkeit:** 3/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-17; RB-25
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M5,P1"
+[RB-29] Dynamisches Modell für Musterentwicklung aus Videodaten untersuchen,"**RB-29 · RoboBarista | M5**
+
+**Abnahme:** Vorhersage nächster Musterveränderungen auf zuvor ungesehenen Beispielen evaluiert
+
+**Open-Source-Kandidaten:** PyTorch / OpenCV
+
+**Schwierigkeit:** 4/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-11; RB-12; RB-28
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M5,P1"
+[RB-30] Physikbasierten Milch-/Schaum-/Crema-Simulator nur bei Bedarf evaluieren,"**RB-30 · RoboBarista | M5**
+
+**Abnahme:** Machbarkeitsvergleich von Physiksimulation und datengetriebenem Ersatzmodell inklusive Rechenzeit
+
+**Open-Source-Kandidaten:** SPlisHSPlasH / ggf. externe CFD
+
+**Schwierigkeit:** 5/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-28; RB-29
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Low,Backlog,"RoboBarista,M5,P2"
+"[RB-31] Geschwindigkeitsprofil für KI, Kameras, Rendering und Physik erstellen","**RB-31 · RoboBarista | M6**
+
+**Abnahme:** Latenz pro Komponente separat und wiederholbar gemessen, nicht nur Gesamtzeit
+
+**Open-Source-Kandidaten:** Python perf_counter / torch profiler / Rerun
+
+**Schwierigkeit:** 2/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-03
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M6,P0"
+[RB-32] Adaptive geschlossene Regelung anhand visueller Positionsfehler,"**RB-32 · RoboBarista | M6**
+
+**Abnahme:** Verschobene Tasse führt bei gleichem gelernten Ziel zu korrekter Bahnkorrektur
+
+**Open-Source-Kandidaten:** MoveIt Servo / ROS 2
+
+**Schwierigkeit:** 4/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-16; RB-26; RB-31
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M6,P0"
+[RB-33] Schnelle wiederholte Replanung und Sensorkontrolle,"**RB-33 · RoboBarista | M6**
+
+**Abnahme:** Messbare Update-Frequenz und Ende-zu-Ende-Latenz mit Zielwert dokumentiert
+
+**Open-Source-Kandidaten:** ROS 2 / asynchrones Policy-Serving
+
+**Schwierigkeit:** 4/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-32
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M6,P1"
+[RB-34] Live-Latte-Art-Feedback in Bewegungskorrekturen übersetzen,"**RB-34 · RoboBarista | M6**
+
+**Abnahme:** Abweichender Auftreffpunkt oder Muster führt zu nachvollziehbarer Anpassung der Bewegung
+
+**Open-Source-Kandidaten:** Rerun / PyTorch / MoveIt Servo
+
+**Schwierigkeit:** 4/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-11; RB-12; RB-29; RB-32
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M6,P1"
+[RB-35] Robustheit gegen Startpositions- und Kameraveränderungen testen,"**RB-35 · RoboBarista | M7**
+
+**Abnahme:** Messbare Erfolgsquote über viele Seeds, Positionen und Sichtbedingungen
+
+**Open-Source-Kandidaten:** MuJoCo / pytest / Rerun
+
+**Schwierigkeit:** 4/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-32; RB-33
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M7,P1"
+[RB-36] Gelerntes Gießen mit visueller Rückmeldung integrieren,"**RB-36 · RoboBarista | M7**
+
+**Abnahme:** Kompletter virtueller Eingießdurchgang inkl. Wahrnehmung, Korrektur und Resultatbewertung
+
+**Open-Source-Kandidaten:** Python / MuJoCo / Rerun
+
+**Schwierigkeit:** 4/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-26; RB-28; RB-34
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M7,P1"
+[RB-37] Übertragung auf reale Kamera und realen Roboter vorbereiten,"**RB-37 · RoboBarista | M7**
+
+**Abnahme:** Sicherheitskonzept, reale Kalibrierung und Sim-to-Real-Risiken dokumentiert
+
+**Open-Source-Kandidaten:** ROS 2 / MoveIt 2 / OpenCV
+
+**Schwierigkeit:** 4/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-35; RB-36
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Low,Backlog,"RoboBarista,M7,P2"
+[RB-38] Milch aufschäumen und Schaumqualität bewerten (späterer Teil),"**RB-38 · RoboBarista | M7**
+
+**Abnahme:** Eigenes Subprojekt mit Dampfposition, Temperatur, Schaumbildung und Reinigung angelegt
+
+**Open-Source-Kandidaten:** Computer Vision / Temperatur- und Drucksensorik
+
+**Schwierigkeit:** 5/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-36
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Low,Backlog,"RoboBarista,M7,P2"
+[RB-39] Espressomaschine und Mühle bedienen (späterer Teil),"**RB-39 · RoboBarista | M7**
+
+**Abnahme:** Aufgabensequenz und Anforderungen für Mahlgut, Siebträger, Extraktion skizziert
+
+**Open-Source-Kandidaten:** LeRobot / robosuite / ROS 2
+
+**Schwierigkeit:** 4/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-36
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Low,Backlog,"RoboBarista,M7,P2"
+"[RB-40] Dampflanze reinigen, Fehler erkennen und Arbeitsabläufe koordinieren","**RB-40 · RoboBarista | M7**
+
+**Abnahme:** Schrittfolge, Abschlusskriterien, Sicherheits- und Hygieneschritte definiert
+
+**Open-Source-Kandidaten:** Zustandsautomat / ROS 2
+
+**Schwierigkeit:** 3/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-38; RB-39
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Low,Backlog,"RoboBarista,M7,P2"
+"[RB-41] Ergebnisse, Modelle, Videos und Tests reproduzierbar archivieren","**RB-41 · RoboBarista | M7**
+
+**Abnahme:** Jeder Test verlinkt Codeversion, Datenversion, Seed, Video und Metriken
+
+**Open-Source-Kandidaten:** GitHub / Hugging Face Datasets / DVC
+
+**Schwierigkeit:** 2/5
+
+**Abhängigkeiten (RB-Kennungen, noch manuell als Linear-Beziehungen zu verknüpfen):** RB-03; RB-10
+
+**Quell-Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M7,P1"
