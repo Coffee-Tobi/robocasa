@@ -158,6 +158,9 @@ def run(args):
                 views=len(set(id(obs['calibration']) for _,obs in all_observations))
                 row={'trial':trial,'object':label,
                      'tag_ids':sorted(set(tid for tid,_ in all_observations)),
+                     'visible_cameras':sorted(name for name,cam in calibrations.items()
+                                              if any(obs['calibration'] is cam
+                                                     for _,obs in all_observations)),
                      'cameras_seen':views, 'failed':est is None,
                      'truth_position_m':gt['position'], 'truth_rotation':gt['rotation']}
                 if est is not None:
@@ -190,6 +193,22 @@ def run(args):
                                reprojection_rmse_px=est['reprojection_rmse_px'],
                                depth_views=est['depth_views'],converged=est['converged'])
                 reports.append(row)
+    # Separate metric: the relative tip-to-cup vector matters for latte art.
+    # Even a perfect pitcher pose will not rescue a mislocalized cup.
+    if args.pitcher_side_tags:
+        for trial in range(args.trials):
+            per_trial={r['object']:r for r in reports if r['trial']==trial}
+            pitcher=per_trial.get('pitcher')
+            cup=per_trial.get('cup')
+            if not pitcher or not cup or pitcher['failed'] or cup['failed']:
+                continue
+            tip_true=(np.array(pitcher['truth_position_m']) +
+                      np.array(pitcher['truth_rotation']) @ SPOUT_TIP_LOCAL_M)
+            tip_est=(np.array(pitcher['estimate_position_m']) +
+                     np.array(pitcher['estimate_rotation']) @ SPOUT_TIP_LOCAL_M)
+            rel_true=tip_true - np.array(cup['truth_position_m'])
+            rel_est=tip_est - np.array(cup['estimate_position_m'])
+            pitcher['spout_to_cup_error_mm']=float(np.linalg.norm(rel_est-rel_true)*1000)
     renderer.close()
     save_montage(frames,depth_frames,out/'rgbd_montage.jpg')
     save_plot(reports,calibrations,out)
@@ -197,10 +216,10 @@ def run(args):
     (out/'measurements.json').write_text(json.dumps(serializable,indent=2))
     with (out/'pose_errors.csv').open('w',newline='') as f:
         writer=csv.writer(f)
-        writer.writerow(['trial','object','translation_mm','rotation_deg','spout_tip_error_mm','cameras_seen','reprojection_px','failed'])
+        writer.writerow(['trial','object','translation_mm','rotation_deg','spout_tip_error_mm','spout_to_cup_error_mm','cameras_seen','reprojection_px','failed'])
         for r in reports:
             writer.writerow([r['trial'],r['object'],r.get('translation_mm'),r.get('rotation_deg'),
-                             r.get('spout_tip_error_mm'),r['cameras_seen'],
+                             r.get('spout_tip_error_mm'),r.get('spout_to_cup_error_mm'),r['cameras_seen'],
                              r.get('reprojection_rmse_px'),r['failed']])
     complete=[r for r in reports if not r['failed']]
     missing=[{'trial':r['trial'],'object':r['object'],'cameras':r['cameras_seen']}
@@ -226,10 +245,15 @@ def run(args):
                 and max(T,default=float('inf'))<=args.max_translation_mm
                 and max(R,default=float('inf'))<=args.max_rotation_deg)
     tip_errors=[r['spout_tip_error_mm'] for r in reports if 'spout_tip_error_mm' in r]
+    rel_errors=[r['spout_to_cup_error_mm'] for r in reports
+                if 'spout_to_cup_error_mm' in r]
     summary={'status':'PASS' if passed else 'FAIL',
         'experiment':'pitcher_side_tags' if args.pitcher_side_tags else 'original_top_tags',
         'spout_geometry':'simplified known CAD offset; real fixture/calibration not validated',
         'max_spout_tip_error_mm':max(tip_errors) if tip_errors else None,
+        'max_relative_tip_to_cup_error_mm':max(rel_errors) if rel_errors else None,
+        'relative_tip_to_cup_goal_mm':0.5 if args.pitcher_side_tags else None,
+        'relative_goal_in_acceptance_gate':False,  # next step needs better cup calibration
         'allowed_spout_tip_error_mm':args.max_spout_mm if args.pitcher_side_tags else None,
         'allowed_pitcher_rotation_deg':args.max_pitcher_rotation_deg if args.pitcher_side_tags else None,
         'important':'Full 3D renderer benchmark, not equivalent to actual sensor performance',
@@ -248,6 +272,10 @@ def run(args):
     print('\nObject | mm | degrees | visible cameras')
     for r in reports:
         print(r['object'],r.get('translation_mm','not detected'),r.get('rotation_deg','-'),r['cameras_seen'], 'spout_mm:',r.get('spout_tip_error_mm','-'))
+    if args.pitcher_side_tags:
+        print('Max relative spout-to-cup error (mm):',
+              summary['max_relative_tip_to_cup_error_mm'],
+              '| future research goal:',summary['relative_tip_to_cup_goal_mm'])
     print('\nResult:',summary['status'],'| data in',out)
     if not passed:
         print('Accuracy gate NOT passed. Check image visibility, marker orientation/UV and calibration.',file=sys.stderr)
