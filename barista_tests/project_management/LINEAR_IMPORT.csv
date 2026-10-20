@@ -1,599 +1,562 @@
 ﻿Title,Description,Priority,Status,Labels
-[RB-01] MVP eingrenzen: ein Heart-Pour mit messbarer Demonstration und Reproduktion,"**RB-01 · RoboBarista | M0**
+"[RB-01] MVP festlegen: FR5, 3 Kameras, Demonstration, Dry-Run, später Latte Art","**RB-01 | Stufe 1 | M0**
 
-**Abnahme:** Eine Heart-Latte-Art-Bewegung aus real gemessenen 6D-Daten, ein Kännchenarm, kontrollierte Tassenpose, standardisierte Milch; erste Version darf feste Tassenneigung nutzen. Erst wenn nötig Erweiterung mit motorischer Tassenneigung. Gewöhnliche Videos nur zur Qualitätskontrolle.
+**Ziel/Abnahme:** Expliziter Plan in drei Stufen: 1) drei simulierte RGB-Kameras und daraus sichtbare/prüfbare 3D-Pose von FR5, Kännchen/Ausgießer und Tasse; 2) gemessene virtuelle Demonstration zeitlich nachahmen, ohne Live-Regelung; 3) reales Latte-Art-Eingießen. Keine eigene Flüssigkeitsphysik, keine Espresso-/Siebträger-/Aufschäumaufgaben.
 
-**Open-Source-Kandidaten:** Markdown / GitHub
+**Freie Tools:** Markdown / GitHub
 
-**Schwierigkeit:** 1/5
-
-**Abhängigkeiten:** keine (nach Import als echte Relations verknüpfen)
-
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
-
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M0,P0"
-"[RB-02] Messbare Erfolgskriterien für Wahrnehmung, Latte Art und Robotik","**RB-02 · RoboBarista | M0**
-
-**Abnahme:** Metriken: Kännchenpose/-tempo, Tassenpose, Treffpunkt, reale Musterqualität und Latenz; keine verpflichtenden Live-Messungen von Milchschaum, Temperatur oder Flussrate
-
-**Open-Source-Kandidaten:** OpenCV
-
-**Schwierigkeit:** 2/5
-
-**Abhängigkeiten:** RB-01 (nach Import als echte Relations verknüpfen)
-
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
-
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M0,P0"
-[RB-03] Systemarchitektur und gemeinsame Datenformate planen,"**RB-03 · RoboBarista | M0**
-
-**Abnahme:** Explizite Architektur: zeitgestempelte 6D-Demonstrationspose + Tassenwinkel → DMP → Robotik; Kameraprüfung vor dem Gießen und Bildbewertung nach dem Gießen; Online-Korrektur optional
-
-**Open-Source-Kandidaten:** ROS 2 / Python / Rerun
-
-**Schwierigkeit:** 2/5
-
-**Abhängigkeiten:** RB-01 (nach Import als echte Relations verknüpfen)
-
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
-
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M0,P0"
-[RB-04] Verfügbarkeit vorhandener Latte-Art-Projekte und Lizenzen prüfen,"**RB-04 · RoboBarista | M0**
-
-**Abnahme:** Kommerzielle Projekte Artly/COFE+ und veröffentlichte One-Shot/π0-Forschung mit Quellenstand, Offenheit des Codes, Lizenzen, Patenten und Implementierungsnachweisen verglichen
-
-**Open-Source-Kandidaten:** One-Shot Latte Art arXiv:2610.16179 / CatalyzeX / ridxm latte-art-robot
+**Abhängigkeiten:** keine (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 1/5
 
-**Abhängigkeiten:** RB-01 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M0,Stufe-1,P0"
+"[RB-02] Messbare Erfolgskriterien für Wahrnehmung, Latte Art und Robotik","**RB-02 | Stufe 1 | M0**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Kamera-Posefehler in cm/mm und Grad gegen unabhängige MuJoCo-Ground-Truth, Tracking-Ausfälle und Sichtbarkeit, zeitlicher Trajektorien- und TCP-Wiedergabefehler, später Qualität echter Heart-Pours definiert
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M0,P1"
-[RB-05] Latte-Art-Videos für Vergleich und Qualitätsbewertung sammeln,"**RB-05 · RoboBarista | M1**
+**Freie Tools:** OpenCV
 
-**Abnahme:** Mindestens ein rechtmäßig verwendbares Video mit bekannter Kameraperspektive als visuelle Referenz; Bewegung muss für MVP nicht allein aus Video rekonstruiert werden
+**Abhängigkeiten:** RB-01 (später als native Relationen verknüpfen)
 
-**Open-Source-Kandidaten:** One-Shot-Latte-Art / ridxm latte-pour-demos / ffmpeg
+**Schwierigkeit:** 2/5
+
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M0,Stufe-1,P0"
+[RB-03] Systemarchitektur und gemeinsame Datenformate planen,"**RB-03 | Stufe 1 | M0**
+
+**Ziel/Abnahme:** Herstellerunabhängige Schnittstellen: je 3 kalibrierte Kameraframes + Zeitstempel → Marker/Objekterkennung → 6D-Pose im Tassenkoordinatensystem + Unsicherheit → aufgezeichnete Demonstration → DMP/Playback → IK/FR5-Aktionen. Simulation liefert Ground Truth ausschließlich zur Evaluation
+
+**Freie Tools:** ROS 2 / Python / Rerun
+
+**Abhängigkeiten:** RB-01 (später als native Relationen verknüpfen)
+
+**Schwierigkeit:** 2/5
+
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M0,Stufe-1,P0"
+[RB-04] Verfügbarkeit vorhandener Latte-Art-Projekte und Lizenzen prüfen,"**RB-04 | Später/Optional | M0**
+
+**Ziel/Abnahme:** FR5-Simulationsmodelle, SDK/MoveIt2/MuJoCo-Kompatibilität, OpenCV-Pose/Bildgebung, freie DMP-Bibliothek und One-Shot/π0-Referenzen samt Versionen/Lizenzen überprüft
+
+**Freie Tools:** One-Shot Latte Art arXiv:2610.16179 / CatalyzeX / ridxm latte-art-robot
+
+**Abhängigkeiten:** RB-01 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 1/5
 
-**Abhängigkeiten:** RB-01 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Medium,Backlog,"RoboBarista,M0,Später/Optional,P1"
+[RB-05] Latte-Art-Videos für Vergleich und Qualitätsbewertung sammeln,"**RB-05 | Stufe 3 | M1**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Mindestens ein rechtmäßig verwendbares Video mit bekannter Kameraperspektive als visuelle Referenz; Bewegung muss für MVP nicht allein aus Video rekonstruiert werden
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M1,P1"
-[RB-06] Erstes Video und Kamera-Perspektive als Referenz definieren,"**RB-06 · RoboBarista | M1**
+**Freie Tools:** One-Shot-Latte-Art / ridxm latte-pour-demos / ffmpeg
 
-**Abnahme:** Referenzvideo als Zeitreihe zur Darstellung und Qualitätsprüfung aufbereitet, nicht als notwendige Quelle für 6-DOF-Bewegung
-
-**Open-Source-Kandidaten:** OpenCV / ffmpeg
+**Abhängigkeiten:** RB-01 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 1/5
 
-**Abhängigkeiten:** RB-05 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Medium,Backlog,"RoboBarista,M1,Stufe-3,P1"
+[RB-06] Virtuelle Demo und Kameravideos als Referenz mit Zeitstempeln definieren,"**RB-06 | Stufe 3 | M1**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Gleichzeitig drei Kamera-Videos/Framefolgen, Kamera-Posen, Zeitstempel und virtuelle Demonstration im gleichen Testlauf verfügbar
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M1,P1"
-[RB-07] Tasse und Milchkännchen im Video segmentieren und verfolgen,"**RB-07 · RoboBarista | M1**
+**Freie Tools:** OpenCV / ffmpeg
 
-**Abnahme:** Tasse und Kännchen im Video tracken/segmentieren, um Kontrollbilder nachvollziehbar zu annotieren
-
-**Open-Source-Kandidaten:** SAM 2 / OpenCV
-
-**Schwierigkeit:** 2/5
-
-**Abhängigkeiten:** RB-06 (nach Import als echte Relations verknüpfen)
-
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
-
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M1,P1"
-[RB-08] Ausgießerspitze und Tassenrand im Bild verfolgen,"**RB-08 · RoboBarista | M1**
-
-**Abnahme:** Optional Ausgießer und Tassenrand nur anhand von Kamerabildern tracken, falls es für visuelle Qualitätskontrolle erforderlich ist
-
-**Open-Source-Kandidaten:** OpenCV / SAM 2 / Keypoint-Modell
-
-**Schwierigkeit:** 3/5
-
-**Abhängigkeiten:** RB-07 (nach Import als echte Relations verknüpfen)
-
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
-
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Low,Backlog,"RoboBarista,M1,P2"
-[RB-09] Wahrnehmung als Overlay und Zeitleiste darstellen,"**RB-09 · RoboBarista | M1**
-
-**Abnahme:** Gemessene 6D-Pose, Winkel, Trajektorie und Videobild zeitsynchron und nachvollziehbar visualisiert
-
-**Open-Source-Kandidaten:** Rerun
+**Abhängigkeiten:** RB-47 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 1/5
 
-**Abhängigkeiten:** RB-07 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M1,Stufe-3,P0"
+"[RB-07] Kännchen, Tasse und FR5 in allen drei Kameras erkennen und tracken","**RB-07 | Stufe 1 | M1**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Kännchen, Tasse und Greifer/Arm mit klarer ID in drei simulierten Ansichten markiert, kontinuierlich verfolgt und als maschinenlesbare Keypoints/Detektionen gespeichert
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M1,P0"
-[RB-10] Kleinen annotierten Testdatensatz und Auswertung erstellen,"**RB-10 · RoboBarista | M1**
+**Freie Tools:** OpenCV ArUco/AprilTag / bekannte Objektgeometrie / SAM2 optional
 
-**Abnahme:** Kleiner annotierter Datensatz nur bei nachgewiesenem Bedarf an automatischer visueller Qualitätsbewertung
-
-**Open-Source-Kandidaten:** CVAT / Label Studio
+**Abhängigkeiten:** RB-47 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 2/5
 
-**Abhängigkeiten:** RB-07 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M1,Stufe-1,P0"
+"[RB-08] Ausgießerspitze, Tassenrand und Marker-Orientierung bildbasiert erfassen","**RB-08 | Stufe 1 | M1**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Pixelpositionen relevanter Referenzpunkte und Orientierungshinweise pro Ansicht mit Detektionskonfidenz verfügbar; sichtbare Marker sind für Version 1 zulässig
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Low,Backlog,"RoboBarista,M1,P2"
-[RB-11] Milchstrahl und Auftreffpunkt auf der Kaffeeoberfläche erkennen,"**RB-11 · RoboBarista | M1**
+**Freie Tools:** OpenCV ArUco / PnP / Keypoints / bekannte Kännchengeometrie
 
-**Abnahme:** Auftreffpunkt/Strahl aus Kamerabild nur bei Bedarf für spätere Musterkorrektur; kein Muss für erste Reproduktion
-
-**Open-Source-Kandidaten:** OpenCV / SAM 2 / eigenes kleines Segmentierungsmodell
-
-**Schwierigkeit:** 4/5
-
-**Abhängigkeiten:** RB-08; RB-10 (nach Import als echte Relations verknüpfen)
-
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
-
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Low,Backlog,"RoboBarista,M1,P2"
-"[RB-12] Schaumoberfläche, Füllstand und Latte-Art-Konturen analysieren","**RB-12 · RoboBarista | M1**
-
-**Abnahme:** Nach realen Tests Herzmuster fotografieren und Form, Zentrierung und Reproduzierbarkeit vergleichen, zunächst manuell oder mit OpenCV
-
-**Open-Source-Kandidaten:** OpenCV / Bildsegmentierung
-
-**Schwierigkeit:** 4/5
-
-**Abhängigkeiten:** RB-10 (nach Import als echte Relations verknüpfen)
-
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
-
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M1,P1"
-[RB-13] Qualitäts- und Unsicherheitstest der Kamerawahrnehmung,"**RB-13 · RoboBarista | M1**
-
-**Abnahme:** Fehlende Sicht, Verdeckung, Reflexion und Tracking-Fehler werden erkannt statt still geschätzt
-
-**Open-Source-Kandidaten:** OpenCV / eigene Tests
+**Abhängigkeiten:** RB-07 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 3/5
 
-**Abhängigkeiten:** RB-08; RB-11 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M1,Stufe-1,P0"
+[RB-09] Drei Kameras + wahrgenommene und wahre 3D-Pose gemeinsam visualisieren,"**RB-09 | Stufe 1 | M1**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Drei Echtzeit- bzw. aufgezeichnete Bildansichten, Erkennungs-Overlays, rekonstruierte 3D-Objekt-/TCP-Pose, Unsicherheit und unabhängige MuJoCo-Ground-Truth nebeneinander sichtbar
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M1,P1"
-[RB-14] Kamerazahl und Positionierung für räumliche Messung festlegen,"**RB-14 · RoboBarista | M2**
+**Freie Tools:** Rerun / OpenCV / MuJoCo Viewer
 
-**Abnahme:** Zunächst minimale Kamera für Tassenposition und Ergebnisbild; 6-DOF-Demonstration stammt von Trackern, nicht notwendigerweise aus Multikamera-3D
+**Abhängigkeiten:** RB-16; RB-47 (später als native Relationen verknüpfen)
 
-**Open-Source-Kandidaten:** OpenCV / Kamera-Geometrie
+**Schwierigkeit:** 1/5
+
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M1,Stufe-1,P0"
+[RB-10] Kleinen annotierten Testdatensatz und Auswertung erstellen,"**RB-10 | Später/Optional | M1**
+
+**Ziel/Abnahme:** Kleiner gelabelter Datensatz nur falls OpenCV/Marker für die optische Pose unzureichend sind; zunächst keine selbsttrainierte Objekterkennung erforderlich
+
+**Freie Tools:** CVAT / Label Studio
+
+**Abhängigkeiten:** RB-07 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 2/5
 
-**Abhängigkeiten:** RB-08 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Low,Backlog,"RoboBarista,M1,Später/Optional,P2"
+[RB-11] Milchstrahl und Auftreffpunkt auf der Kaffeeoberfläche erkennen,"**RB-11 | Später/Optional | M1**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Auftreffpunkt/Strahl aus Kamerabild nur bei Bedarf für spätere Musterkorrektur; kein Muss für erste Reproduktion
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M2,P1"
-[RB-15] Kameras kalibrieren und Koordinatensysteme verknüpfen,"**RB-15 · RoboBarista | M2**
+**Freie Tools:** OpenCV / SAM 2 / eigenes kleines Segmentierungsmodell
 
-**Abnahme:** Kamera-Tassen-Roboter-Referenz für spätere geometrische Anpassung kalibriert; Bewegung kann zunächst bei fixierter Tasse reproduziert werden
-
-**Open-Source-Kandidaten:** OpenCV ArUco / Kalibr
-
-**Schwierigkeit:** 3/5
-
-**Abhängigkeiten:** RB-14 (nach Import als echte Relations verknüpfen)
-
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
-
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M2,P1"
-[RB-16] 3D-Pose von Tasse und Ausgießer rekonstruieren,"**RB-16 · RoboBarista | M2**
-
-**Abnahme:** 3D-Pose aus normalen Videos nur dann entwickeln, wenn Tracking der 6-DOF-Bewegungsdemonstration unpraktikabel oder zu teuer ist
-
-**Open-Source-Kandidaten:** OpenCV / Triangulation / PnP
+**Abhängigkeiten:** RB-08; RB-10 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 4/5
 
-**Abhängigkeiten:** RB-08; RB-15 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Low,Backlog,"RoboBarista,M1,Später/Optional,P2"
+"[RB-12] Schaumoberfläche, Füllstand und Latte-Art-Konturen analysieren","**RB-12 | Stufe 3 | M1**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Nach realen Tests Herzmuster fotografieren und Form, Zentrierung und Reproduzierbarkeit vergleichen, zunächst manuell oder mit OpenCV
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Low,Backlog,"RoboBarista,M2,P2"
-"[RB-17] Becherwinkel, Oberfläche und Ausgießerabstand erfassen","**RB-17 · RoboBarista | M2**
+**Freie Tools:** OpenCV / Bildsegmentierung
 
-**Abnahme:** Tassenwinkel-Zeitverlauf und relative Ausgießerpose als explizite Signale aus Messdemonstration extrahiert; keine Fluidmessung
-
-**Open-Source-Kandidaten:** OpenCV / Geometrie
-
-**Schwierigkeit:** 3/5
-
-**Abhängigkeiten:** RB-43 (nach Import als echte Relations verknüpfen)
-
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
-
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M2,P0"
-[RB-18] 6-DOF-Kännchen-Trajektorie aus Tracker-Demonstration extrahieren,"**RB-18 · RoboBarista | M3**
-
-**Abnahme:** Mindestens eine synchronisierte, kalibrierte 6D-Trajektorie mit Zeitstempel des real geführten Kännchens im gemeinsamen Tassenkoordinatensystem
-
-**Open-Source-Kandidaten:** HTC Vive / SteamVR / OpenVR / OpenXR / Python
-
-**Schwierigkeit:** 3/5
-
-**Abhängigkeiten:** RB-43 (nach Import als echte Relations verknüpfen)
-
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
-
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M3,P0"
-"[RB-19] Neigung, Geschwindigkeit und Beschleunigung der Kanne lernen","**RB-19 · RoboBarista | M3**
-
-**Abnahme:** Aus Tracker-Zeitreihe Höhe, Position, Orientierung, Kännchenneigung, Geschwindigkeit und Phasen als reproduzierbare Zeitreihen
-
-**Open-Source-Kandidaten:** SciPy / NumPy
-
-**Schwierigkeit:** 3/5
-
-**Abhängigkeiten:** RB-17; RB-18 (nach Import als echte Relations verknüpfen)
-
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
-
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M3,P0"
-[RB-20] One-Shot-Phasen-CDMP aus gemessener 6D-Bewegung lernen,"**RB-20 · RoboBarista | M3**
-
-**Abnahme:** Fünf CDMP-Phasen an einer echten 6D-Demonstration nachvollziehbar angepasst; Bewegungsbahn reproduzierbar und mit Messkurven verglichen
-
-**Open-Source-Kandidaten:** One-Shot Latte Art arXiv:2610.16179 / dfki-ric/movement_primitives
-
-**Schwierigkeit:** 3/5
-
-**Abhängigkeiten:** RB-18; RB-19 (nach Import als echte Relations verknüpfen)
-
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
-
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M3,P0"
-[RB-21] Gelernte Bewegung auf neue Startpositionen und Tempi übertragen,"**RB-21 · RoboBarista | M3**
-
-**Abnahme:** Gemessene Bewegung relativ zur Tasse verschoben und geometrisch angepasst ohne neue Demonstration; keine Live-Flüssigkeitsfeedback-Schleife nötig
-
-**Open-Source-Kandidaten:** Movement Primitives
+**Abhängigkeiten:** RB-10 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 4/5
 
-**Abhängigkeiten:** RB-20 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Medium,Backlog,"RoboBarista,M1,Stufe-3,P1"
+[RB-13] Qualitäts- und Unsicherheitstest der Kamerawahrnehmung,"**RB-13 | Stufe 1 | M1**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Posefehler und Trackingausfälle für Verdeckungen, ungünstige Winkel, Reflexionen und unterschiedliche Kamerapositionen erkannt und visualisiert; keine stillen Schätzungen ohne ausreichende Sicht
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M3,P1"
-[RB-22] Alternativen zu DMPs vergleichbar testen,"**RB-22 · RoboBarista | M3**
+**Freie Tools:** OpenCV / eigene Tests
 
-**Abnahme:** VLA/π0 und reines Videolernen erst vergleichen, wenn phasenweise CDMP-Baseline technisch oder qualitativ unzureichend ist
+**Abhängigkeiten:** RB-48 (später als native Relationen verknüpfen)
 
-**Open-Source-Kandidaten:** LeRobot / Diffusion Policy / ACT
+**Schwierigkeit:** 3/5
 
-**Schwierigkeit:** 4/5
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M1,Stufe-1,P0"
+[RB-14] Drei virtuelle Kamerapositionen mit ausreichender Überlappung planen,"**RB-14 | Stufe 1 | M2**
 
-**Abhängigkeiten:** RB-20 (nach Import als echte Relations verknüpfen)
+**Ziel/Abnahme:** Drei virtuelle RGB-Kameras so platziert, dass Tasse, Kännchen/Ausgießer und Roboterwerkzeug möglichst aus mehreren Ansichten sichtbar sind; Sichtfeld, Überlappung und Verdeckungen dokumentiert
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Freie Tools:** MuJoCo Kameras / OpenCV Kalibrierung / Stereo-Geometrie
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Low,Backlog,"RoboBarista,M3,P2"
-[RB-23] Geeigneten Einarm-Roboter mit Greifer und Arbeitsraum wählen,"**RB-23 · RoboBarista | M4**
-
-**Abnahme:** Robotermodell erfüllt notwendige Reichweite, Kännchenlast und Orientierung
-
-**Open-Source-Kandidaten:** MuJoCo / MoveIt 2 / URDF
+**Abhängigkeiten:** RB-25 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 2/5
 
-**Abhängigkeiten:** RB-01; RB-19 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M2,Stufe-1,P0"
+[RB-15] Drei virtuelle Kameras kalibrieren und Weltkoordinaten verknüpfen,"**RB-15 | Stufe 1 | M2**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Intrinsische/extrinsische Kalibrierung, Kamera-zu-Welt/FR5/Tasse-Transformationen und Messfehler reproduzierbar dokumentiert
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M4,P0"
-"[RB-24] Fest geneigten Becherhalter als erste, überprüfbare Vereinfachung bauen","**RB-24 · RoboBarista | M4**
+**Freie Tools:** OpenCV calibrateCamera / ArUco / solvePnP / Triangulation
 
-**Abnahme:** Fester Halter mit eindeutig kalibriertem Becherwinkel und wiederholbarer Position; Risiko gegenüber zeitabhängiger Tassenneigung ausdrücklich dokumentiert
-
-**Open-Source-Kandidaten:** MuJoCo / CAD optional
-
-**Schwierigkeit:** 2/5
-
-**Abhängigkeiten:** RB-17; RB-23 (nach Import als echte Relations verknüpfen)
-
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
-
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M4,P0"
-"[RB-25] Minimale Simulation: Roboter, Kännchen, Tasse ohne Flüssigkeit","**RB-25 · RoboBarista | M4**
-
-**Abnahme:** Reproduzierbare Szene rendert Kameras und erlaubt physikalische Roboterbewegungen
-
-**Open-Source-Kandidaten:** MuJoCo / robosuite
+**Abhängigkeiten:** RB-47 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 3/5
 
-**Abhängigkeiten:** RB-23; RB-24 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M2,Stufe-1,P0"
+[RB-16] 6D-Position und Orientierung von Kännchen/Ausgießer und Tasse aus Kameras rekonstruieren,"**RB-16 | Stufe 1 | M2**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Posen x,y,z und Orientierung (z. B. Quaternion) aus Kameraansichten berechnet, nicht aus MuJoCo-Ground-Truth übernommen; relative Ausgießer-Tassen-Pose samt Unsicherheit gesondert berechnet
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M4,P0"
-[RB-26] Gelernte Ausgießertrajektorien durch inverse Kinematik ausführen,"**RB-26 · RoboBarista | M4**
+**Freie Tools:** OpenCV triangulation / PnP / bekannte 3D-Objektmodelle / Marker
 
-**Abnahme:** Robotergreifer folgt Position und Orientierung der gelernten Bahn mit gemessenem Fehler
-
-**Open-Source-Kandidaten:** MoveIt 2 / MuJoCo IK
+**Abhängigkeiten:** RB-08; RB-15 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 4/5
 
-**Abhängigkeiten:** RB-20; RB-25 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M2,Stufe-1,P0"
+"[RB-17] Kännchen- und Becherwinkel, relative Höhe und TCP-Lage bestimmen","**RB-17 | Stufe 1 | M2**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Kännchenneigung, feste Tassenneigung, Ausgießerhöhe und relative Orientierung aus drei Kameras sowie kalibriertem Werkzeug-Offset zeitlich verfolgt; echte Tassenkinematik erst später
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M4,P0"
-"[RB-27] Kollisionen, Reichweite, Tassen- und Griffgeometrie prüfen","**RB-27 · RoboBarista | M4**
+**Freie Tools:** OpenCV / Geometrie
 
-**Abnahme:** Sicherer Abstand und erreichbare Orientierungen bei variablen Becherlagen getestet
-
-**Open-Source-Kandidaten:** MoveIt 2 / MuJoCo
+**Abhängigkeiten:** RB-16 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 3/5
 
-**Abhängigkeiten:** RB-26 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M2,Stufe-1,P0"
+[RB-18] Zeitgestempelte 6D-Demonstration aus drei simulierten Kameras rekonstruieren,"**RB-18 | Stufe 2 | M3**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Eine geführte virtuelle Kännchenbewegung als x,y,z/Quaternion über die Zeit ausschließlich aus den drei Kameraaufnahmen abgeleitet und gegen Ground Truth verglichen
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M4,P1"
-[RB-28] Geometrischen Auftreffpunkt ohne Flüssigkeitssimulation prüfen,"**RB-28 · RoboBarista | M5**
+**Freie Tools:** OpenCV PnP/Triangulation / NumPy / Rerun
 
-**Abnahme:** Ohne Simulation von Milch: Ausgießerpose, relative Höhe, Tassenwinkel und geometrisch geschätzter Auftreffpunkt visualisiert
-
-**Open-Source-Kandidaten:** OpenCV / MuJoCo-Geometrie / Rerun
-
-**Schwierigkeit:** 2/5
-
-**Abhängigkeiten:** RB-17; RB-25 (nach Import als echte Relations verknüpfen)
-
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
-
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M5,P1"
-[RB-29] Ersten Versuch mit echter Milch unter konstanten Bedingungen planen,"**RB-29 · RoboBarista | M5**
-
-**Abnahme:** Echte Milchversuche nach sicherem Trockenlauf mit definierter Ausgangsmenge, gleicher Kanne/Tasse und dokumentierter Schaumzubereitung; Erfolgsquote protokolliert
-
-**Open-Source-Kandidaten:** Echte Espressotasse / Milchkännchen / reproduzierbare Milchschaumzubereitung / Video
+**Abhängigkeiten:** RB-49; RB-16 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 3/5
 
-**Abhängigkeiten:** RB-24; RB-26; RB-28 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M3,Stufe-2,P0"
+"[RB-19] Geschwindigkeit, Kännchenneigung und Bewegungsphasen aus Kameraposen extrahieren","**RB-19 | Stufe 2 | M3**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Aus dem 6D-Kameratracking mit Zeitstempeln Bewegungsbahn, Winkel, Geschwindigkeit, Beschleunigung und Phaseneinteilung abgeleitet und geglättet
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M5,P1"
-[RB-30] Optionalen Flusssensor nur bei Bedarf evaluieren – keine eigene Fluidphysik,"**RB-30 · RoboBarista | M5**
+**Freie Tools:** SciPy / NumPy
 
-**Abnahme:** Nur bei ungleichen realen Ergebnissen entscheiden, ob Massenzunahme pro Zeit gemessen werden muss; keine Pflichtsensorik, kein selbstgebauter Simulator
+**Abhängigkeiten:** RB-17; RB-18 (später als native Relationen verknüpfen)
 
-**Open-Source-Kandidaten:** Küchenwaage / Video / einfache Zeitdifferenz
+**Schwierigkeit:** 3/5
+
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M3,Stufe-2,P0"
+[RB-20] Kamerabasierte virtuelle Demonstration phasenweise als DMP lernen,"**RB-20 | Stufe 2 | M3**
+
+**Ziel/Abnahme:** Mit frei verfügbarer CDMP/DMP-Bibliothek eine konkrete virtuelle Demonstration gelernt; daraus werden zeitlich konsistente Ausgießerposen vorhergesagt; keine manuelle Robotergelenk-Trajektorie
+
+**Freie Tools:** One-Shot Latte Art arXiv:2610.16179 / dfki-ric/movement_primitives
+
+**Abhängigkeiten:** RB-18; RB-19 (später als native Relationen verknüpfen)
+
+**Schwierigkeit:** 3/5
+
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M3,Stufe-2,P0"
+[RB-21] Gelernte Bewegung auf neue Startpositionen und Tempi übertragen,"**RB-21 | Stufe 2 | M3**
+
+**Ziel/Abnahme:** Nach erfolgreichem Replay die gelernte Trajektorie relativ zur Tasse verschieben; Veränderung vor Bewegung auswerten, kein Live-Replanning
+
+**Freie Tools:** Movement Primitives
+
+**Abhängigkeiten:** RB-20 (später als native Relationen verknüpfen)
+
+**Schwierigkeit:** 4/5
+
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Medium,Backlog,"RoboBarista,M3,Stufe-2,P1"
+[RB-22] Alternativen zu DMPs vergleichbar testen,"**RB-22 | Später/Optional | M3**
+
+**Ziel/Abnahme:** Externe 6D-Motion-Capture-Tracker, PI0, normales Video-Lernen erst prüfen, wenn das Drei-Kamera-System oder DMP-Replay nicht ausreicht
+
+**Freie Tools:** LeRobot / Diffusion Policy / ACT
+
+**Abhängigkeiten:** RB-20 (später als native Relationen verknüpfen)
+
+**Schwierigkeit:** 4/5
+
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Low,Backlog,"RoboBarista,M3,Später/Optional,P2"
+[RB-23] FAIRINO FR5 als geplanten Roboter wählen und Simulationsmodell prüfen,"**RB-23 | Stufe 1 | M4**
+
+**Ziel/Abnahme:** FR5-Modellquelle, Lizenz, Toolflansch, 6D-Kinematik, Reichweite, Greifer-Montage, Simulator-Anbindung und doppelte (nacheinander genutzte) Werkzeuge geprüft; kein Kauf erforderlich
+
+**Freie Tools:** FAIRINO FR5 URDF/ROS2 MoveIt2 / MuJoCo / Robotik-SDK
+
+**Abhängigkeiten:** RB-01 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 2/5
 
-**Abhängigkeiten:** RB-29 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M4,Stufe-1,P0"
+[RB-24] Virtuelle Tasse mit bekanntem festen Neigungswinkel platzieren,"**RB-24 | Stufe 1 | M4**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Feste, variabel einstellbare Tassenpose im Simulator; Tasse muss nicht gleichzeitig mit dem Kännchen bewegt werden
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Low,Backlog,"RoboBarista,M5,P2"
-"[RB-31] Geschwindigkeitsprofil für KI, Kameras, Rendering und Physik erstellen","**RB-31 · RoboBarista | M6**
+**Freie Tools:** MuJoCo / CAD optional
 
-**Abnahme:** Für erste DMP-Wiedergabe Bewegungsfehler und Timing messen; bei optionaler Bild-Rückkopplung Kameralatenz und Inferenzzeit zusätzlich getrennt ermitteln
-
-**Open-Source-Kandidaten:** Python perf_counter / torch profiler / Rerun
+**Abhängigkeiten:** RB-23 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 2/5
 
-**Abhängigkeiten:** RB-03 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M4,Stufe-1,P0"
+"[RB-25] Leichte MuJoCo-Szene mit FR5, Milchkännchen und geneigter Tasse starten","**RB-25 | Stufe 1 | M4**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Ohne Milch/Schaumsimulation rendert eine reproduzierbare Szene FR5, TCP, Kännchen und Tasse; bekannte Weltposen dienen ausschließlich als Evaluationsreferenz
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M6,P1"
-[RB-32] Adaptive geschlossene Regelung anhand visueller Positionsfehler,"**RB-32 · RoboBarista | M6**
+**Freie Tools:** Offizielles FAIRINO Modell + MuJoCo / gegebenenfalls bestehender Robotersimulator
 
-**Abnahme:** Bei verschobener Tassenposition wird die bereits gelernte Trajektorie geometrisch neu verankert, bevor gegossen wird; Zwischen-Bildkorrektur optional
+**Abhängigkeiten:** RB-23; RB-24 (später als native Relationen verknüpfen)
 
-**Open-Source-Kandidaten:** MoveIt Servo / ROS 2
+**Schwierigkeit:** 3/5
 
-**Schwierigkeit:** 4/5
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M4,Stufe-1,P0"
+[RB-26] DMP-Trajektorie mit FR5-IK und kalibriertem Ausgießer-TCP abfahren,"**RB-26 | Stufe 2 | M4**
 
-**Abhängigkeiten:** RB-26; RB-15 (nach Import als echte Relations verknüpfen)
+**Ziel/Abnahme:** FR5 folgt zeitgestempelten Kamera-abgeleiteten Ausgießerpositionen und -orientierungen; Bahnfehler und Tooloffset überprüft, ohne permanente Bildkorrektur
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Freie Tools:** MoveIt2 / MuJoCo IK / FR5 SDK
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M6,P1"
-[RB-33] Schnelle wiederholte Replanung und Sensorkontrolle,"**RB-33 · RoboBarista | M6**
-
-**Abnahme:** Schnelle Live-Nachregelung nur wenn Offline-Anpassung, Video-Erfolgskontrolle und feste Demonstrationsbahn noch nicht genügen
-
-**Open-Source-Kandidaten:** ROS 2 / asynchrones Policy-Serving
+**Abhängigkeiten:** RB-20; RB-50; RB-25 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 4/5
 
-**Abhängigkeiten:** RB-32 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M4,Stufe-2,P0"
+"[RB-27] Kollisionen, Reichweite, Tassen- und Griffgeometrie prüfen","**RB-27 | Stufe 2 | M4**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Kollisionen, unerreichbare Zielposen, Gelenkgrenzen, Geschwindigkeitsgrenzen und Ausgießer-Tassen-Abstand beim FR5-Dry-Run erkannt; sichere Start-/Stop-Bedingungen
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Low,Backlog,"RoboBarista,M6,P2"
-[RB-34] Visuelle Latte-Art-Rückmeldung zu Bewegungskorrekturen nutzen,"**RB-34 · RoboBarista | M6**
+**Freie Tools:** MoveIt 2 / MuJoCo
 
-**Abnahme:** Visuelle Anpassung während des Eingießens erst beginnen, wenn offene Wiedergabe/Startpositionskorrektur/Qualitätskontrolle nicht ausreichen
+**Abhängigkeiten:** RB-26 (später als native Relationen verknüpfen)
 
-**Open-Source-Kandidaten:** OpenCV / Rerun / MoveIt Servo
+**Schwierigkeit:** 3/5
+
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M4,Stufe-2,P0"
+[RB-28] Geometrischen Auftreffpunkt ohne Flüssigkeitssimulation prüfen,"**RB-28 | Stufe 3 | M5**
+
+**Ziel/Abnahme:** Ausgießerposition, Becherwinkel und theoretischer Auftreffpunkt als Geometrie visualisiert; keine Flüssigkeitsphysik
+
+**Freie Tools:** OpenCV / MuJoCo-Geometrie / Rerun
+
+**Abhängigkeiten:** RB-17; RB-25 (später als native Relationen verknüpfen)
+
+**Schwierigkeit:** 2/5
+
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Medium,Backlog,"RoboBarista,M5,Stufe-3,P1"
+[RB-29] Ersten Versuch mit echter Milch unter konstanten Bedingungen planen,"**RB-29 | Stufe 3 | M5**
+
+**Ziel/Abnahme:** Erst nach sicherem FR5-Dry-Run mit zeitlich reproduzierter demonstrierter Bewegung realen Eingießversuch planen; Milchmenge/Temperatur/Schaum unter Standardbedingungen
+
+**Freie Tools:** Echte Espressotasse / Milchkännchen / reproduzierbare Milchschaumzubereitung / Video
+
+**Abhängigkeiten:** RB-51; RB-28 (später als native Relationen verknüpfen)
+
+**Schwierigkeit:** 3/5
+
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Medium,Backlog,"RoboBarista,M5,Stufe-3,P1"
+[RB-30] Optionalen Flusssensor nur bei Bedarf evaluieren – keine eigene Fluidphysik,"**RB-30 | Später/Optional | M5**
+
+**Ziel/Abnahme:** Nur bei ungleichen realen Ergebnissen entscheiden, ob Massenzunahme pro Zeit gemessen werden muss; keine Pflichtsensorik, kein selbstgebauter Simulator
+
+**Freie Tools:** Küchenwaage / Video / einfache Zeitdifferenz
+
+**Abhängigkeiten:** RB-29 (später als native Relationen verknüpfen)
+
+**Schwierigkeit:** 2/5
+
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Low,Backlog,"RoboBarista,M5,Später/Optional,P2"
+"[RB-31] Geschwindigkeitsprofil für KI, Kameras, Rendering und Physik erstellen","**RB-31 | Stufe 2 | M6**
+
+**Ziel/Abnahme:** Kamera-Rendering, Poseerkennung pro Frame, 3D-Rekonstruktion und FR5-Traj.-Ausführung getrennt messen; für erste Wiedergabe sind keine Live-Bildkorrekturen nötig
+
+**Freie Tools:** Python perf_counter / torch profiler / Rerun
+
+**Abhängigkeiten:** RB-47; RB-03 (später als native Relationen verknüpfen)
+
+**Schwierigkeit:** 2/5
+
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Medium,Backlog,"RoboBarista,M6,Stufe-2,P1"
+[RB-32] Adaptive geschlossene Regelung anhand visueller Positionsfehler,"**RB-32 | Später/Optional | M6**
+
+**Ziel/Abnahme:** Optionale Neuverankerung der bereits gelernten Bahn bei verschobener Tasse *vor* dem Gießen; keine verpflichtende Echtzeit-Nachregelung
+
+**Freie Tools:** MoveIt Servo / ROS 2
+
+**Abhängigkeiten:** RB-26; RB-15 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 4/5
 
-**Abhängigkeiten:** RB-11; RB-12; RB-29; RB-32 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Low,Backlog,"RoboBarista,M6,Später/Optional,P2"
+[RB-33] Schnelle wiederholte Replanung und Sensorkontrolle,"**RB-33 | Später/Optional | M6**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Schnelle Live-Nachregelung nur wenn Offline-Anpassung, Video-Erfolgskontrolle und feste Demonstrationsbahn noch nicht genügen
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Low,Backlog,"RoboBarista,M6,P2"
-[RB-35] Robustheit gegen Startpositions- und Kameraveränderungen testen,"**RB-35 · RoboBarista | M7**
+**Freie Tools:** ROS 2 / asynchrones Policy-Serving
 
-**Abnahme:** Messbare Erfolgsquote über viele Seeds, Positionen und Sichtbedingungen
-
-**Open-Source-Kandidaten:** MuJoCo / pytest / Rerun
+**Abhängigkeiten:** RB-32 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 4/5
 
-**Abhängigkeiten:** RB-32; RB-33 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Low,Backlog,"RoboBarista,M6,Später/Optional,P2"
+[RB-34] Visuelle Latte-Art-Rückmeldung zu Bewegungskorrekturen nutzen,"**RB-34 | Später/Optional | M6**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Visuelle Anpassung während des Eingießens erst beginnen, wenn offene Wiedergabe/Startpositionskorrektur/Qualitätskontrolle nicht ausreichen
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M7,P1"
-[RB-36] Virtueller Roboter-Dry-Run ohne eigene Flüssigkeitssimulation,"**RB-36 · RoboBarista | M7**
+**Freie Tools:** OpenCV / Rerun / MoveIt Servo
 
-**Abnahme:** Kännchenbewegung, Tassenwinkel und Ausgießerposition in realitätsnaher Robotersimulation geprüft; keine eigene Fluidphysik
-
-**Open-Source-Kandidaten:** MuJoCo / Rerun / OpenCV
+**Abhängigkeiten:** RB-11; RB-12; RB-29; RB-32 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 4/5
 
-**Abhängigkeiten:** RB-26; RB-28; RB-32 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Low,Backlog,"RoboBarista,M6,Später/Optional,P2"
+[RB-35] Robustheit gegen Startpositions- und Kameraveränderungen testen,"**RB-35 | Später/Optional | M7**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Robustheit gegen Kameraverschiebung, Markerverdeckung und veränderte Startpositionen testen, zunächst ohne fortlaufende Anpassung
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M7,P1"
-[RB-37] Ersten kontrollierten realen Eingießversuch durchführen,"**RB-37 · RoboBarista | M7**
+**Freie Tools:** MuJoCo / pytest / Rerun
 
-**Abnahme:** Mehrere reale Herz-Versuche nach Trockenlauf und Sicherheitscheck durchgeführt; Fotovergleich und Erfolg dokumentiert
-
-**Open-Source-Kandidaten:** Realer Roboter / Kamera / Sicherheitsprüfung
+**Abhängigkeiten:** RB-48; RB-51 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 4/5
 
-**Abhängigkeiten:** RB-29; RB-35; RB-36 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Low,Backlog,"RoboBarista,M7,Später/Optional,P2"
+[RB-36] Vollständiger FR5-Dry-Run mit 3D-Kamera-Tracking und aufgezeichneter Bewegung,"**RB-36 | Stufe 3 | M7**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Von drei Kameraaufnahmen über 6D-Pose/Bewegungslernen bis zur FR5-Ausführung reproduzierbar ohne Fluid-Simulation und ohne Online-Adaptation
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M7,P1"
-[RB-38] Milch aufschäumen und Schaumqualität bewerten (späterer Teil),"**RB-38 · RoboBarista | M7**
+**Freie Tools:** MuJoCo / Rerun / OpenCV
 
-**Abnahme:** Eigenes Subprojekt mit Dampfposition, Temperatur, Schaumbildung und Reinigung angelegt
+**Abhängigkeiten:** RB-51; RB-27 (später als native Relationen verknüpfen)
 
-**Open-Source-Kandidaten:** Computer Vision / Temperatur- und Drucksensorik
+**Schwierigkeit:** 4/5
+
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M7,Stufe-3,P0"
+[RB-37] Ersten kontrollierten realen Eingießversuch durchführen,"**RB-37 | Stufe 3 | M7**
+
+**Ziel/Abnahme:** Nach sicherem virtuellen FR5-Dry-Run realen Herz-Gießversuch dokumentiert; standardisierte Milch, Bildvergleich, Fehlersuche; Hardware erst nach Go/No-Go-Entscheidung
+
+**Freie Tools:** Realer Roboter / Kamera / Sicherheitsprüfung
+
+**Abhängigkeiten:** RB-36; RB-29 (später als native Relationen verknüpfen)
+
+**Schwierigkeit:** 4/5
+
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Medium,Backlog,"RoboBarista,M7,Stufe-3,P1"
+[RB-38] Milch aufschäumen und Schaumqualität bewerten (späterer Teil),"**RB-38 | Später/Optional | M7**
+
+**Ziel/Abnahme:** Bewusst außerhalb des aktuellen MVP: Milchaufschäumen als späteres eigenes Subprojekt
+
+**Freie Tools:** Computer Vision / Temperatur- und Drucksensorik
+
+**Abhängigkeiten:** RB-36 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 5/5
 
-**Abhängigkeiten:** RB-36 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Low,Backlog,"RoboBarista,M7,Später/Optional,P2"
+[RB-39] Espressomaschine und Mühle bedienen (späterer Teil),"**RB-39 | Später/Optional | M7**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Bewusst außerhalb des aktuellen MVP: Siebträger-/Mühlen-/Maschinenbedienung als spätere separate, nacheinander verwendete Greifwerkzeuge
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Low,Backlog,"RoboBarista,M7,P2"
-[RB-39] Espressomaschine und Mühle bedienen (späterer Teil),"**RB-39 · RoboBarista | M7**
+**Freie Tools:** LeRobot / robosuite / ROS 2
 
-**Abnahme:** Aufgabensequenz und Anforderungen für Mahlgut, Siebträger, Extraktion skizziert
-
-**Open-Source-Kandidaten:** LeRobot / robosuite / ROS 2
+**Abhängigkeiten:** RB-36 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 4/5
 
-**Abhängigkeiten:** RB-36 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Low,Backlog,"RoboBarista,M7,Später/Optional,P2"
+"[RB-40] Dampflanze reinigen, Fehler erkennen und Arbeitsabläufe koordinieren","**RB-40 | Später/Optional | M7**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Bewusst außerhalb des aktuellen MVP: Dampflanzenreinigung und Gesamtworkflow erst nach Latte Art
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Low,Backlog,"RoboBarista,M7,P2"
-"[RB-40] Dampflanze reinigen, Fehler erkennen und Arbeitsabläufe koordinieren","**RB-40 · RoboBarista | M7**
+**Freie Tools:** Zustandsautomat / ROS 2
 
-**Abnahme:** Schrittfolge, Abschlusskriterien, Sicherheits- und Hygieneschritte definiert
-
-**Open-Source-Kandidaten:** Zustandsautomat / ROS 2
+**Abhängigkeiten:** RB-38; RB-39 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 3/5
 
-**Abhängigkeiten:** RB-38; RB-39 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Low,Backlog,"RoboBarista,M7,Später/Optional,P2"
+"[RB-41] Ergebnisse, Modelle, Videos und Tests reproduzierbar archivieren","**RB-41 | Später/Optional | M7**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Dokumentierte Versionen, Posen/Bewegung, Video und reale Versuchsergebnisse; Milchzubereitung standardisiert, keine Pflichtsensoren
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Low,Backlog,"RoboBarista,M7,P2"
-"[RB-41] Ergebnisse, Modelle, Videos und Tests reproduzierbar archivieren","**RB-41 · RoboBarista | M7**
+**Freie Tools:** GitHub / Hugging Face Datasets / DVC
 
-**Abnahme:** Dokumentierte Versionen, Posen/Bewegung, Video und reale Versuchsergebnisse; Milchzubereitung standardisiert, keine Pflichtsensoren
-
-**Open-Source-Kandidaten:** GitHub / Hugging Face Datasets / DVC
+**Abhängigkeiten:** RB-03; RB-10 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 2/5
 
-**Abhängigkeiten:** RB-03; RB-10 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Medium,Backlog,"RoboBarista,M7,Später/Optional,P1"
+"[RB-42] One-Shot-Paper: 6D-Vive-Tracking, 100-Hz-Becherencoder und frei verfügbaren Code verifizieren","**RB-42 | Stufe 3 | M0**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** One-Shot-Arbeit auf Daten, echte Pose/Becherneigung und zugänglichen Code prüfen; öffentlich verfügbare 3-Kamera-Demos können alternativ verwendet werden; keine Hardwarebeschaffung als Voraussetzung
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M7,P1"
-"[RB-42] One-Shot-Paper: 6D-Vive-Tracking, 100-Hz-Becherencoder und frei verfügbaren Code verifizieren","**RB-42 · RoboBarista | M0**
+**Freie Tools:** One-Shot arXiv:2610.16179 / CatalyzeX / dfki-ric/movement_primitives
 
-**Abnahme:** Paper gesichtet: zwei HTC-Vive-Tracker, Kännchen mit 6D bei ~90 Hz, AS5600-Becherneigung ~100 Hz, Resampling auf 50 Hz, fünf CDMP-Phasen, FR5 und MoveIt 2, reale Milch. Code/Datenquelle weiterhin zu klären.
-
-**Open-Source-Kandidaten:** One-Shot arXiv:2610.16179 / CatalyzeX / dfki-ric/movement_primitives
+**Abhängigkeiten:** RB-01 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 2/5
 
-**Abhängigkeiten:** RB-01 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Medium,Backlog,"RoboBarista,M0,Stufe-3,P1"
+[RB-43] OPTIONAL: Externe 6D-Tracker bei unzureichender Kamera-Pose nutzen,"**RB-43 | Später/Optional | M0**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Nur wenn Drei-Kamera-Tracking quantitativ unzureichend: 6D-Tracker als Zusatz oder Ground-Truth für reale Demonstration prüfen
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M0,P0"
-[RB-43] Demonstration kostengünstig als 6-DOF-Kännchenpose + Tassenwinkel erfassen,"**RB-43 · RoboBarista | M0**
+**Freie Tools:** HTC Vive/SteamVR / OpenVR / geeignete Tracker / Winkelencoder
 
-**Abnahme:** Konzept und nach Möglichkeit Beispielmessung: Kännchenposition/-orientierung, Tassenwinkel, Zeitstempel und Kalibrierung; normales Video nicht erforderlich
-
-**Open-Source-Kandidaten:** HTC Vive/SteamVR / OpenVR / geeignete Tracker / Winkelencoder
+**Abhängigkeiten:** RB-48 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 3/5
 
-**Abhängigkeiten:** RB-42 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Low,Backlog,"RoboBarista,M0,Später/Optional,P2"
+[RB-44] Gelernte Kamera-Bewegung ohne Online-Korrektur reproduzieren,"**RB-44 | Stufe 2 | M3**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Zeit- und orientierungstreue virtuelle Kännchen-Trajektorie aus Kamerademonstration reproduzierbar; noch ohne Roboterregelung aus neuen Bildern
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M0,P0"
-[RB-44] Gelernte Bewegung zunächst ohne laufende Bildkorrektur wiederholen,"**RB-44 · RoboBarista | M3**
+**Freie Tools:** dfki-ric/movement_primitives / Rerun / NumPy
 
-**Abnahme:** Einmal gelernte Eingießbewegung wird identisch und zeitlich reproduziert; Pose- und Winkelfehler als Kurven dargestellt
-
-**Open-Source-Kandidaten:** dfki-ric/movement_primitives / Rerun / NumPy
+**Abhängigkeiten:** RB-20 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 2/5
 
-**Abhängigkeiten:** RB-20 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M3,Stufe-2,P0"
+[RB-45] Motorisierten kippbaren Becherhalter nur bei Bedarf ergänzen,"**RB-45 | Stufe 3 | M4**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Nur nach echtem Pour-Versuch prüfen, ob feste Tassenneigung unzureichend ist; motorisierte Becherneigung als Erweiterung statt zweitem Arm
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",High,Backlog,"RoboBarista,M3,P0"
-[RB-45] Motorisierten kippbaren Becherhalter nur bei Bedarf ergänzen,"**RB-45 · RoboBarista | M4**
+**Freie Tools:** NEMA 17 / AS5600 / ESP32 / bestehende Stepper-Libraries
 
-**Abnahme:** A/B-Vergleich feste Tassenneigung vs. zeitabhängige Winkeltrajektorie; Motor/Encoder nur einbauen, wenn Musterqualität unzureichend
-
-**Open-Source-Kandidaten:** NEMA 17 / AS5600 / ESP32 / bestehende Stepper-Libraries
+**Abhängigkeiten:** RB-24; RB-17; RB-44 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 3/5
 
-**Abhängigkeiten:** RB-24; RB-17; RB-44 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Low,Backlog,"RoboBarista,M4,Stufe-3,P2"
+[RB-46] Qualitätsprüfung zwischen Versuchen automatisieren,"**RB-46 | Stufe 3 | M7**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Latte-Art-Qualitätsvergleich nach dem Gießen möglich; kontinuierliche Mustersteuerung bewusst nicht im MVP
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M4,P1"
-[RB-46] Qualitätsprüfung zwischen Versuchen automatisieren,"**RB-46 · RoboBarista | M7**
+**Freie Tools:** OpenCV / Rerun / Bildbewertung
 
-**Abnahme:** Nach jedem realen Versuch Latte-Art-Foto mit Referenz vergleichen; festlegen, ob weitere Sensorik oder Live-Regelung nötig
-
-**Open-Source-Kandidaten:** OpenCV / Rerun / Bildbewertung
+**Abhängigkeiten:** RB-12; RB-37 (später als native Relationen verknüpfen)
 
 **Schwierigkeit:** 2/5
 
-**Abhängigkeiten:** RB-12; RB-37 (nach Import als echte Relations verknüpfen)
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Medium,Backlog,"RoboBarista,M7,Stufe-3,P1"
+[RB-47] Drei kalibrierbare virtuelle Kameras mit synchronen RGB-Frames einrichten,"**RB-47 | Stufe 1 | M1**
 
-**Projektentscheidung:** Zuerst eine gemessene 6D-Kännchenbewegung reproduzieren, Kamera- und Video-Lernen optional.
+**Ziel/Abnahme:** Drei benannte Perspektiven liefern gleichzeitig synchronisierte RGB-Frames mit dokumentierter intrinsischer/extrinsischer Kalibrierung und gemeinsam sichtbarer Ausgießer-/Tassenregion
 
-**Roadmap:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_ROADMAP.md",Medium,Backlog,"RoboBarista,M7,P1"
+**Freie Tools:** MuJoCo Cameras / OpenCV / NumPy
+
+**Abhängigkeiten:** RB-14; RB-25 (später als native Relationen verknüpfen)
+
+**Schwierigkeit:** 2/5
+
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M1,Stufe-1,P0"
+[RB-48] Kamera-3D-Posen gegen die wahre MuJoCo-Pose quantitativ validieren,"**RB-48 | Stufe 1 | M2**
+
+**Ziel/Abnahme:** Separat berechnete Kamera-Pose und MuJoCo-Wahrheit bei mehreren Positionen verglichen; Lage- und Winkelfehler plus Verdeckungsrate sichtbar und Zielgenauigkeit festgelegt
+
+**Freie Tools:** MuJoCo ground truth / OpenCV / Rerun / pytest
+
+**Abhängigkeiten:** RB-16; RB-15 (später als native Relationen verknüpfen)
+
+**Schwierigkeit:** 3/5
+
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M2,Stufe-1,P0"
+[RB-49] Demonstration einer virtuellen Kännchenbewegung aufnehmen,"**RB-49 | Stufe 2 | M3**
+
+**Ziel/Abnahme:** Mindestens eine zeitliche virtuelle Demo mit 3 Kamera-Videostreams, bekannter Referenzpose und festen Tassenwinkel synchron aufgezeichnet; Demo muss nicht bereits perfekte Latte Art sein
+
+**Freie Tools:** MuJoCo Viewer / Teleoperation / vorhandene Demo-Trajektorie / Rerun
+
+**Abhängigkeiten:** RB-47; RB-25 (später als native Relationen verknüpfen)
+
+**Schwierigkeit:** 3/5
+
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M3,Stufe-2,P0"
+[RB-50] Ausgießer-/Kännchen-Pose in FR5-TCP und erreichbare Robotik-Ziele umrechnen,"**RB-50 | Stufe 2 | M4**
+
+**Ziel/Abnahme:** Kalibrierter starrer Ausgießer-zu-Flansch-Transform, Basis-/Tassen-Koordinaten und Pose-Umrechnung verifiziert, damit die Kamera-beschriebene Bewegung mit dem FR5 ausführbar ist
+
+**Freie Tools:** MoveIt2 TF2 / MuJoCo IK / URDF
+
+**Abhängigkeiten:** RB-17; RB-23; RB-18 (später als native Relationen verknüpfen)
+
+**Schwierigkeit:** 3/5
+
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M4,Stufe-2,P0"
+[RB-51] Kamera-gelerntes Bewegungsreplay in der Simulation messen,"**RB-51 | Stufe 2 | M4**
+
+**Ziel/Abnahme:** Gleicher zeitabhängiger Ausgießerpfad bei wiederholten virtuellen FR5-Dry-Runs; Position, Winkel, Geschwindigkeit, Kollisionen und Timing gegen Demonstration geprüft
+
+**Freie Tools:** MuJoCo / Rerun / pytest
+
+**Abhängigkeiten:** RB-26; RB-48 (später als native Relationen verknüpfen)
+
+**Schwierigkeit:** 3/5
+
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M4,Stufe-2,P0"
