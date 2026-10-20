@@ -106,6 +106,8 @@ def run(args):
     mujoco.mj_forward(model,data)
     renderer=mujoco.Renderer(model,height=args.height,width=args.width)
     cameras = side_camera_layout(args.cameras,args.pitcher_tags) if args.pitcher_side_tags else CAMERAS
+    if args.pose_method == 'caliscope':
+        from .caliscope_integration import estimate_object_with_caliscope
     calibrations={name:Calibration.from_mujoco(model,data,name,args.width,args.height)
                   for name in cameras}
     defs=tag_definitions(pitcher_side_tags=args.pitcher_side_tags,
@@ -160,7 +162,12 @@ def run(args):
                 all_observations=[(tid, obs) for tid,(tag_label, _) in defs.items()
                                   if tag_label == label for obs in groups[tid]]
                 gt=get_gt(model,data,label)
-                est=bundle_adjust_object(all_observations,defs,tag_sides) if all_observations else None
+                if not all_observations:
+                    est=None
+                elif args.pose_method == 'caliscope':
+                    est=estimate_object_with_caliscope(all_observations,defs,tag_sides)
+                else:
+                    est=bundle_adjust_object(all_observations,defs,tag_sides)
                 views=len(set(id(obs['calibration']) for _,obs in all_observations))
                 row={'trial':trial,'object':label,
                      'tag_ids':sorted(set(tid for tid,_ in all_observations)),
@@ -257,6 +264,7 @@ def run(args):
     summary={'status':'PASS' if passed else 'FAIL',
         'experiment':'pitcher_side_tags' if args.pitcher_side_tags else 'original_top_tags',
         'detector':args.detector if args.pitcher_side_tags else 'opencv',
+        'pose_method':args.pose_method if args.pitcher_side_tags else 'bundle_adjust',
         'pitcher_tag_count':args.pitcher_tags if args.pitcher_side_tags else 1,
         'configured_camera_count':len(cameras),
         'max_pitcher_rotation_deg':max(
@@ -303,6 +311,9 @@ def main():
                    help='Number of simulated cameras in side-tag experiment')
     p.add_argument('--pitcher-tags',type=int,choices=(1,2),default=2,
                    help='Number of rigid AprilTags on the pitcher (near/far)')
+    p.add_argument('--pose-method',choices=('bundle_adjust','caliscope'),
+                   default='bundle_adjust',
+                   help='Existing 2D bundle adjustment vs Caliscope RGB triangulation + rigid fit')
     p.add_argument('--detector',choices=('opencv','pupil'),default='opencv',
                    help='OpenCV AprilTag vs native AprilTag-3 pupil binding')
     p.add_argument('--pitcher-side-tags',action='store_true',
