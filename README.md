@@ -1,156 +1,59 @@
-<h1 align="center">RoboCasa</h1>
-<!-- ![alt text](https://github.com/UT-Austin-RPL/maple/blob/web/src/overview.png) -->
-<img src="docs/images/readme.webp" width="100%" />
+# RoboBarista Vision · v0.2 (FAIRINO FR5 + drei RGB-D-Kameras)
 
-**RoboCasa** is a large-scale simulation framework for training generally capable robots to perform everyday tasks. It was [originally released](https://robocasa.ai/assets/robocasa_rss24.pdf) in 2024 by UT Austin researchers. The latest iteration, **RoboCasa365**, builds upon the original release with significant new functionalities to support large-scale training and benchmarking in sim. Four pillars underlie RoboCasa365:
-- **Diverse tasks**: 365 tasks created with the guidance of large language models
-- **Diverse assets**: including 2,500+ kitchen scenes and 3,200+ 3D objects
-- **High-quality demonstrations**: including 600+ hours of human demonstrations in addition to 1,600+ hours of robot datasets created with automated trajectory tools
-- **Benchmarking support**: popular policy learning methods including Diffusion Policy, pi, and GR00T, plus user-submitted models on the [leaderboard](https://robocasa.ai/leaderboard.html)
+**Status:** Erster wissenschaftlich überprüfbarer Wahrnehmungsprototyp, **kein fertiger Latte-Art-Roboter**. Der vollständige MuJoCo-Renderdurchlauf muss noch in Colab geprüft werden. Unsere acht reinen Geometrie-/Markertests bestehen lokal; die Übereinstimmung der simulierten Kameras mit MuJoCo-Ground-Truth ist **nicht** bereits belegt.
 
+## In Google Colab starten
 
-This guide contains information about installation and setup. Please refer to the following resources for additional information:
+[**Direkt in Colab öffnen**](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_START.ipynb)
 
-[**[Home page]**](https://robocasa.ai) &ensp; [**[Documentation]**](https://robocasa.ai/docs/introduction/overview.html) &ensp; [**[RoboCasa365 Paper]**](https://robocasa.ai/assets/robocasa365_iclr26.pdf) &ensp; [**[Original RoboCasa Paper]**](https://robocasa.ai/assets/robocasa_rss24.pdf) &ensp; [**[Leaderboard]**](https://robocasa.ai/leaderboard.html)
+1. Notebook öffnen. Für MuJoCo/EGL in Colab am besten **T4 GPU** auswählen (Laufzeit → Laufzeittyp ändern); der erste Versuch lässt sich sonst eventuell mit OSMesa ausführen.
+2. **Laufzeit → Alle ausführen**. Keine ZIP und keine manuelle Dateiübertragung nötig. Der Notebook-Code klont dieses Repository, installiert MuJoCo und OpenCV, lädt die FAIRINO-3D-Assets aus dem **MIT-lizenzierten [ma-weiss/Fairino-Mujoco](https://github.com/ma-weiss/Fairino-Mujoco)**-Projekt (geprüfter Commit `459570714fc68c92e1fb3605cb60b4d8ef84419b`) und rendert die Szene.
+3. Den Testbericht (`runs/first_benchmark/summary.json`) und die Kameramontage (`rgbd_montage.jpg`) ansehen. **FAIL ist ein valides Forschungsergebnis, kein Erfolg.**
 
--------
-## Updates
-* [10/14/2026] Released the [**subtask annotation pipeline**](https://robocasa.ai/docs/build/html/use_cases/subtask_annotations.html), with labelers covering all 300 composite tasks. It generates per-frame subtask labels directly from each demo's simulation state.
-* [7/7/2026] Our target composite task datasets have been updated to include per-frame **subtask annotations**. Every timestep is labeled with a subtask index, atomic-skill name, stage (i.e. pick / place / navigate), and a natural-language instruction, to support hierarchical policy learning.
-* [5/12/2026] **v1.0.1**: Updated horizon lengths (1.5x increase) across all tasks for consistency. Please update to the latest version for running evals.
-* [4/6/2026] [**RoboCasa365 Leaderboard**](https://robocasa.ai/leaderboard.html) published, comparing generalist robot policies on the multi-task learning benchmark and open to community model submissions.
-* [2/18/2026] **v1.0**: RoboCasa365 release, with 365 tasks, 2500+ kitchen scenes, 2200+ hours of robot demonstration data, and benchmarking support.
-* [10/31/2024] **v0.2**: using RoboSuite `v1.5` as the backend, with improved support for custom robot composition, composite controllers, more teleoperation devices, photo-realistic rendering.
+## Was läuft
 
-## Table of Contents
-- [Updates](#updates)
-- [Installation](#installation)
-- [Basic Usage](#basic-usage)
-- [Tasks, datasets, policy learning, and additional use cases](#tasks-datasets-policy-learning-and-additional-use-cases)
-- [Questions](#questions)
-- [License](#license)
-- [Citation](#citation)
+- Ein FR5-Roboter mit vorhandenen Meshes und PGI-140-80-W-Greifer (vom Drittprojekt übernommen), einfache Arbeitsfläche mit vorerst geometrisch vereinfachtem Becher, Kännchen, Behälter und Hindernis; **statische Pose** für reproduzierbaren ersten Wahrnehmungstest.
+- Drei simulierte RGB-D-Kameras (`rgbd_front_left`, `rgbd_front_right`, `rgbd_overhead`) mit bekannter Kalibrierung; Farb- und metrische Tiefenbilder. **Noch keine echten Sensorfehler**, keine reale Kalibrierung.
+- ArUco-ID an **allen testweise greifbaren Objekten** und einem Werkzeug-Referenzpunkt; Erkennung aus RGB, 6D-Pose per OpenCV `solvePnP`, drei Kameras gemeinsam optimiert durch SciPy **Huber-gewichtete Reprojektion**. Tiefenbilder liefern eigenständige metrische Zusatzmessungen.
+- Aus bekanntem Marker-zu-Objekt-Transform wird Objektkörperpose berechnet. Das System vergleicht diese **nur nach der Schätzung** mit der unabhängig aus MuJoCo ausgelesenen Ground-Truth-Pose. Künftige Ausgabe: Ausgießerposition aus bekanntem Starrkörper-Offset, Kollisionsabstände.
+- Messbericht pro Versuch und Objekt: Übersetzung in mm, Winkel in Grad, Zahl sichtbarer Kameras, Pixel-Reprojektion, Ausfälle; `PASS` nur falls der strenge Grenzwert eingehalten ist (anfänglich **5 mm und 5°** bei min. zwei Kameras; diese Werte sind vorläufige Testziele).
 
--------
-## Installation
-RoboCasa works across all major computing platforms. The easiest way to set up is through the [Anaconda](https://www.anaconda.com/) package management system. Follow the instructions below to install:
-1. Set up conda environment:
+## Was nicht behauptet wird
 
-   ```sh
-   conda create -c conda-forge -n robocasa python=3.11
-   ```
-2. Activate conda environment:
-   ```sh
-   conda activate robocasa
-   ```
-3. Clone and setup robosuite dependency (**important: use the master branch!**):
+- **Noch keine nachgewiesene Genauigkeit unter 5 mm/5°** im vollständigen FAIRINO-Rendering. Positionen können durch verkehrte Texture-UV-Orientierung oder unzureichende Kamerasicht verfälscht sein. Die Fehleranzeige ist genau dafür da.
+- **Noch keine Bewegung, Greifhandlung, Milch, Latte Art, SmolVLA oder eigene Fluidphysik.** Diese Dinge beginnen erst nach erfolgreicher und geprüfter 3D-Wahrnehmung.
+- **Noch kein Rerun Live-Dashboard:** Die erste Colab-Version zeigt ihre drei Kameraansichten mit Overlays, Tiefenbilder, einen 3D-Vergleich und Messdateien direkt im Notebook. Ein interaktives Dashboard ist eine nächste Ausbaustufe.
+- Für den FR5-Körper kennen wir die echte Gelenkpose aus der Kinematik; visuell wird zunächst ein ArUco-Tag am Werkzeug statt jeder einzelnen Gelenkachse unabhängig erfasst.
+- Tags auf spiegelnden Objekten sind hier ideal gedruckte Simulationsflächen mit messbarem Montageoffset. In echter Welt können Reflexionen, Kamerakalibrierfehler, Bewegungsunschärfe und fehlende Tiefe die Genauigkeit beeinträchtigen.
 
-   ```sh
-   git clone https://github.com/ARISE-Initiative/robosuite
-   cd robosuite
-   pip install -e .
-   ```
-4. Clone and setup this repo:
+## Technische Architektur
 
-   ```sh
-   cd ..
-   git clone https://github.com/robocasa/robocasa
-   cd robocasa
-   pip install -e .
-   pip install pre-commit; pre-commit install           # Optional: set up code formatter.
-
-   (optional: if running into issues with numba/numpy, run: conda install -c numba numba=0.56.4 -y)
-   ```
-5. Install the package and download assets:
-   ```sh
-   python -m robocasa.scripts.setup_macros              # Set up system variables.
-   python -m robocasa.scripts.download_kitchen_assets   # Caution: Assets to be downloaded are around 10GB.
-   ```
-
--------
-## Basic Usage
-
-### Gym wrapper
-You can create environments using gym wrappers and run rollouts:
-```py
-import gymnasium as gym
-import robocasa
-from robocasa.utils.env_utils import run_random_rollouts
-
-env = gym.make(
-    "robocasa/PickPlaceCounterToCabinet",
-    split="pretrain", # use 'pretrain' or 'target' kitchen scenes and objects
-    seed=0 # seed environment as needed. set seed=None to run unseeded
-)
-
-# run rollouts with random actions and save video
-run_random_rollouts(
-    env, num_rollouts=3, num_steps=100, video_path="/tmp/test.mp4"
-)
+```text
+MuJoCo: FR5 + Szene + 3 virtuelle RGB-D-Kameras
+                  |
+          RGB/Depth pro Kamera --------------------------+
+                  |                                      |
+      OpenCV ArUco, solvePnP                     Ground Truth (privat)
+                  |                                      |
+       SciPy gemeinsames 6D-Pose-Fit                      |
+                  |                                      |
+     bekannte Tag-zu-Objekt-Geometrie                     |
+                  +-------------------- Fehlervergleich --+
+                                       |
+                         JPEG/PNG/JSON/CSV + Colab
 ```
 
-### Play back sample demonstrations of tasks
-**(Mac users: for these scripts, prepend the "python" command with "mj": `mjpython ...`)**
+## Code
 
-Select a task and play back a sample demonstration for the selected task:
-```
-python -m robocasa.demos.demo_tasks
-```
+- `robobarista/scene.py`: Download der upstream-Roboter-Assets und eigene testbare MJCF-Szene / Marker / Kameras.
+- `robobarista/geometry.py`: Kamera-Kalibrierungen, Tag-Erkennung, PnP und Mehrkamera-Optimierung.
+- `robobarista/demo.py`: RGB-D-Aufnahmen, separat ermittelte Ground Truth, Messbericht und Bilder.
+- `tests/`: 8 schnelle Tests ohne MuJoCo, sodass wir Fehler in Geometrie/ArUco schon vor der Visualisierung entdecken.
+- `planning/`: übernommener Projektplan, Recherche und Drei-Stufen-MVP.
+- `COLAB_START.ipynb`: das eigentliche Colab-Einstiegsnotebook.
 
-### Explore kitchen scenes
-Explore 2500+ kitchen scenes:
-```
-python -m robocasa.demos.demo_kitchen_scenes
-```
+Drittprojekte werden **beim Colab-Start geklont**, nicht in dieses Repository kopiert. Die eigene Software ist MIT-lizenziert; FAIRINO-Assets unter eigener MIT-Lizenz der jeweiligen Quelle.
 
-### Explore library of 2500+ objects
-View and interact with both human-designed and AI-generated objects:
-```
-python -m robocasa.demos.demo_objects
-```
-Note: By default, this demo shows objaverse objects. To view AI-generated objects, add the flag `--obj_types aigen`.
+## Technische Grenzen / nächster Schritt
 
-### Teleoperate the robot
-Control the robot directly, either through a keyboard controller or spacemouse. This script renders the robot semi-translucent in order to minimize occlusions and enable better visibility.
-```
-python -m robocasa.demos.demo_teleop
-```
-Note: If using SpaceMouse, you may need to modify the product ID to your appropriate model, setting `SPACEMOUSE_PRODUCT_ID` in `robocasa/macros_private.py`.
-
--------
-## Tasks, datasets, policy learning, and additional use cases
-Please refer to the [documentation page](https://robocasa.ai/docs/introduction/overview.html) for information about tasks, datasets, benchmarking, and more.
-
--------
-## Questions
-If you have any questions about the benchmark or the submission process, reach out at [robocasa@googlegroups.com](mailto:robocasa@googlegroups.com).
-
--------
-## License
-Code: [MIT License](https://opensource.org/license/mit)
-
-Assets and Datasets: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/deed.en)
-
--------
-## Citation
-
-**RoboCasa365:**
-
-```bibtex
-@inproceedings{robocasa365,
-  title={RoboCasa365: A Large-Scale Simulation Framework for Training and Benchmarking Generalist Robots},
-  author={Soroush Nasiriany and Sepehr Nasiriany and Abhiram Maddukuri and Yuke Zhu},
-  booktitle={International Conference on Learning Representations (ICLR)},
-  year={2026}
-}
-```
-
-**RoboCasa (Original Release):**
-
-```bibtex
-@inproceedings{robocasa2024,
-  title={RoboCasa: Large-Scale Simulation of Everyday Tasks for Generalist Robots},
-  author={Soroush Nasiriany and Abhiram Maddukuri and Lance Zhang and Adeet Parikh and Aaron Lo and Abhishek Joshi and Ajay Mandlekar and Yuke Zhu},
-  booktitle={Robotics: Science and Systems (RSS)},
-  year={2024}
-}
+Der Kompilierungs-/Render-Test wurde in dieser Entwicklungsumgebung **nicht** ausgeführt, weil MuJoCo hier nicht installiert ist und externe Paketdownloads nicht funktionieren. Sollte Colab einen Fehler beim Aufruf `MjModel.from_xml_path`, beim Rendern oder bei zu großen Winkelfehlern melden, ist das ein sichtbarer Integrationsbefund; `FAIL` darf nicht in `PASS` umgedeutet werden. Dann überprüfen wir zunächst Mesh-/XML-Kompatibilität, Kamera-UV-Orientierung und Sichtbarkeit der Markertafeln, bevor wir Bewegung trainieren.
