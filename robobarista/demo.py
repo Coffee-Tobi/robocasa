@@ -250,6 +250,7 @@ def run(args):
         passed=(quality_ok
                 and max(T,default=float('inf'))<=args.max_translation_mm
                 and max(R,default=float('inf'))<=args.max_rotation_deg)
+    pitcher_measured=[r for r in reports if r['object']=='pitcher' and not r['failed']]
     tip_errors=[r['spout_tip_error_mm'] for r in reports if 'spout_tip_error_mm' in r]
     rel_errors=[r['spout_to_cup_error_mm'] for r in reports
                 if 'spout_to_cup_error_mm' in r]
@@ -258,6 +259,11 @@ def run(args):
         'detector':args.detector if args.pitcher_side_tags else 'opencv',
         'pitcher_tag_count':args.pitcher_tags if args.pitcher_side_tags else 1,
         'configured_camera_count':len(cameras),
+        'max_pitcher_rotation_deg':max(
+            (r['rotation_deg'] for r in pitcher_measured), default=None),
+        'min_pitcher_cameras_seen':min(
+            (r['cameras_seen'] for r in reports if r['object']=='pitcher'), default=0),
+        'pitcher_valid_trials':len(pitcher_measured),
         'spout_geometry':'simplified known CAD offset; real fixture/calibration not validated',
         'max_spout_tip_error_mm':max(tip_errors) if tip_errors else None,
         'max_relative_tip_to_cup_error_mm':max(rel_errors) if rel_errors else None,
