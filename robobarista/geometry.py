@@ -52,16 +52,22 @@ def marker_corners(side):
     return np.array([[-s,s,0],[s,s,0],[s,-s,0],[-s,-s,0]], float)
 
 
-def detect_tags(rgb):
+def detect_tags(rgb, include_apriltags: bool = False):
     gray = cv2.cvtColor(np.ascontiguousarray(rgb), cv2.COLOR_RGB2GRAY)
     d = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
     options = cv2.aruco.DetectorParameters()
     options.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
-    corners, ids, _ = cv2.aruco.ArucoDetector(d, options).detectMarkers(gray)
-    if ids is None:
-        return []
-    return [(int(i), np.asarray(c).reshape(4, 2).astype(float))
-            for i,c in zip(ids.ravel(), corners)]
+    families=[d]
+    if include_apriltags:
+        families.append(cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_36h11))
+    detections=[]
+    for family in families:
+        corners, ids, _ = cv2.aruco.ArucoDetector(family, options).detectMarkers(gray)
+        if ids is None:
+            continue
+        detections.extend((int(i), np.asarray(c).reshape(4, 2).astype(float))
+                          for i,c in zip(ids.ravel(), corners))
+    return detections
 
 
 def median_depth_at_tag(depth, corners):
