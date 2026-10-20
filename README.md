@@ -25,6 +25,18 @@ Für einen direkten Vergleich im installierten Colab-Projekt:
 MUJOCO_GL=osmesa PYOPENGL_PLATFORM=osmesa python -m robobarista.demo --pitcher-side-tags --output runs/pitcher_side_tags --trials 3 --width 1280 --height 960 --max-spout-mm 0.5 --max-pitcher-rotation-deg 1
 ```
 
+## Vergleichsstudie: 1/2 AprilTags × 3/4 Kameras × zwei Detektoren
+
+[**Vergleich direkt in Google Colab öffnen**](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_COMPARE.ipynb)
+
+Neues separates CPU-Notebook `COLAB_COMPARE.ipynb` startet **acht** kontrollierte MuJoCo-Versuche: 1 oder 2 AprilTag-36h11-Marker auf dem Milchkännchen, 3 oder 4 Kameras, pro Aufbau jeweils OpenCV vs. **AprilTag 3** (`pupil-apriltags`, PyPI 1.0.4.post11; Python 3.13 manylinux verfügbar). Alle Versuche verwenden dieselbe virtuelle Szene, Kameramontage für die gemeinsame jeweilige 3-/4-Kamerakonfiguration, identische drei Posen, Seed und Auflösung (1280×960). 4. Kamera ergänzt eine zusätzliche erhöhte Ansicht der vorderen Markerseite; die ersten zwei Kameras bleiben auf der Vorderseite, die dritte sieht von der Rückseite. Mit nur einem Tag muss die Rückkamera den Tag nicht sehen; zwei sichtbare Vorderkameras sind das Minimum. Falls keine Konfiguration die Qualitätsprüfungen besteht, wird ausdrücklich **kein Gewinner** behauptet.
+
+Einzelberichte `runs/rig_comparison/<variante>/summary.json` und `pose_errors.csv`, Bilder, `runs/rig_comparison/comparison.csv` plus Logs. Das Notebook bietet am Ende einen ZIP-Export an. Strenge Zielwerte: 0,5 mm absolute **Ausgießer**abweichung und 1° für das Kännchen; die relative Ausgießer-zu-Tasse-Abweichung ist ein zusätzliches Diagnosemaß und wegen der bisherigen Tassenkalibrierung **noch nicht in der PASS-Bedingung**. Nur drei **statische** Posen; kein Nachweis für zeitkontinuierliches Motion Capture oder reale Kameras.
+
+Die Studie untersucht insbesondere: Verbessert eine vierte Kamera den sichtbaren Marker? Beseitigt der zweite Markertyp bzw. die zweite starre Fläche Verdeckungsprobleme? Ist der offizielle AprilTag-3-Detektor genauer als OpenCVs AprilTag-Unterstützung? Die Daten entscheiden; wir stellen keine hypothetischen Vorteile als bereits gemessen dar.
+
+**Kalibrierungsframeworks** Caliscope und Multical bleiben für reale Kamera-Linsen/Kameraposen vorgesehen: Im Simulator sind die Werte bereits exakt und eine zusätzliche Kalibrierung wäre für diesen Benchmark kein fairer Genauigkeitsgewinn. TagSLAM/ROS kommt erst infrage, wenn die leichtere direkte Posenoptimierung in der bildbasierten Spur nicht ausreicht.
+
 ## Was läuft
 
 - Ein FR5-Roboter mit vorhandenen Meshes und PGI-140-80-W-Greifer (vom Drittprojekt übernommen), einfache Arbeitsfläche mit vorerst geometrisch vereinfachtem Becher, Kännchen, Behälter und Hindernis; **statische Pose** für reproduzierbaren ersten Wahrnehmungstest.
