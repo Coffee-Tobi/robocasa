@@ -35,7 +35,9 @@ def test_pupil_corner_order_without_pupil_dependency():
     expected=expected[:,:2]/expected[:,2:]
     # The pupil library is allowed to return corners in another order.
     detection=SimpleNamespace(homography=H,corners=expected[[2,0,3,1]])
-    np.testing.assert_allclose(_pupil_corner_order(detection),expected)
+    # Homography-aligned native order is distinct from OpenCV's 4 corners.
+    np.testing.assert_allclose(
+        _pupil_corner_order(detection),expected[[1,0,3,2]])
 
 
 def test_opencv_apriltag_detector_preserves_marker_corner_order():
@@ -63,3 +65,14 @@ def test_native_apriltag3_can_read_rendered_tag_with_correct_corner_order():
     assert 23 in cv_hits
     assert 23 in native_hits, 'Native AprilTag 3 did not detect the same tag'
     assert np.max(np.linalg.norm(cv_hits[23]-native_hits[23],axis=1))<4.0
+
+    # Repeat with the printed marker rotated. This catches an orientation
+    # mistake that could otherwise corrupt 6D pose estimates.
+    for rotated in (cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180,
+                    cv2.ROTATE_90_COUNTERCLOCKWISE):
+        rotated_canvas=cv2.rotate(canvas,rotated)
+        rotated_rgb=cv2.cvtColor(rotated_canvas,cv2.COLOR_GRAY2RGB)
+        cv_hits={i:p for i,p in detect_tags(rotated_rgb,True,detector='opencv')}
+        native_hits={i:p for i,p in detect_tags(rotated_rgb,True,detector='pupil')}
+        assert 23 in cv_hits and 23 in native_hits
+        assert np.max(np.linalg.norm(cv_hits[23]-native_hits[23],axis=1))<4.0
