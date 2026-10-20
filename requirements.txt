@@ -5,3 +5,4 @@ Pillow>=10
 matplotlib>=3.8
 mujoco>=3.2,<4
 pytest>=8
+pupil-apriltags==1.0.4.post11
