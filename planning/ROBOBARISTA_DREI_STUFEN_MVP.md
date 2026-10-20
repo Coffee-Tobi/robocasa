@@ -14,6 +14,12 @@
 
 **Nachweisplan:** Baseline beibehalten und getrennten Side-Tag-Test entwickeln; mehrere Kannenpositionen/-winkel, mindestens zwei Kameraperspektiven, Arm-/Greifer-Verdeckungen, Auflösungs- und Distanzvergleich, reale Kamerastörungen/Kalibrierfehler und wiederholte dynamische Trajektorien im Zeitverlauf. Einen einmaligen 3-Trial-Test nicht als Beleg für submillimetergenaue dynamische Motion-Capture ausgeben.
 
+## Caliscope als separates Vergleichsverfahren (21. Oktober 2026)
+
+Caliscope 0.11.8 ist als echte Python-Triangulation über `caliscope.api.CameraArray`/`ImagePoints.triangulate` eingebaut, nicht bloß als Platzhalter. Die 16 Varianten kombinieren 1/2 Tags, 3/4 Kameras, OpenCV/native AprilTag-3-Erkennung und direkte robuste 2D-Bundle-Optimierung vs. Caliscope-3D-Triangulation + starre 6D-Anpassung. Bei der zweiten Variante wird nur RGB verwendet, bei der ersten zusätzlich die virtuelle Tiefenmessung; die Ergebnisse dokumentieren diesen Unterschied. Die neue Pipeline ist **nicht** dasselbe wie Caliscopes echte Kamera-Kalibrierung mit ChArUco-Aufnahmen. Solche Kalibrierungsversuche sollten erst mit simulierten Fehlern bzw. realen Kamera-Videos getrennt stattfinden.
+
+Die API wird für Colab im Vergleichsnotebook zusätzlich installiert; vollständige MuJoCo-Ergebnisse sind noch nicht verfügbar. Die Messung entscheidet, nicht eine Behauptung submillimetergenauer Genauigkeit.
+
 ## Vergleich vor weiterer Implementierung (20. Oktober 2026)
 
 **Entscheidung steht erst nach Messung fest.** Es werden 8 Varianten desselben idealen Simulators getestet: ein/doppelseitiger AprilTag-36h11 am Kännchen × 3/4 Kameras × OpenCV-/nativer AprilTag-3-Detektor. Das separate Notebook [COLAB_COMPARE.ipynb](../COLAB_COMPARE.ipynb) übernimmt die Ausführung; Messdateien werden aufbewahrt. Die Kamerakonfiguration ist ein **Kandidat**, nicht ein belegtes Optimum.
