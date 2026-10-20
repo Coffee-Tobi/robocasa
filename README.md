@@ -1,94 +1,48 @@
-# RoboBarista Vision · v0.2 (FAIRINO FR5 + drei RGB-D-Kameras)
+# RoboBarista – FAIRINO FR5 / Camera-Based Pitcher Motion Capture
 
-**Status:** Erster wissenschaftlich überprüfbarer Wahrnehmungsprototyp, **kein fertiger Latte-Art-Roboter**. Der vollständige MuJoCo-Renderdurchlauf muss noch in Colab geprüft werden. Unsere acht reinen Geometrie-/Markertests bestehen lokal; die Übereinstimmung der simulierten Kameras mit MuJoCo-Ground-Truth ist **nicht** bereits belegt.
+**Status (21.10.2026):** reproduzierbarer **statischer** MuJoCo-Kamera-Prototyp mit Messdaten aus Google Colab. Noch **kein dynamisches Motion Capture**, kein funktionierendes Greifen/Gießen, keine reale Hardware.
 
-## In Google Colab starten
+## Gewählter MVP-Aufbau
 
-[**Direkt in Colab öffnen**](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_START.ipynb)
+**Drei virtuelle RGB-D-Kameras, ein seitlicher AprilTag 36h11 am Milchkännchen, offizieller AprilTag-3-Detektor (`pupil-apriltags`) und SciPy-Mehrkamera-Optimierung.**
 
-1. Notebook öffnen. Für MuJoCo/EGL in Colab am besten **T4 GPU** auswählen (Laufzeit → Laufzeittyp ändern); der erste Versuch lässt sich sonst eventuell mit OSMesa ausführen.
-2. **Laufzeit → Alle ausführen**. Keine ZIP und keine manuelle Dateiübertragung nötig. Der Notebook-Code klont dieses Repository, installiert MuJoCo und OpenCV, lädt die FAIRINO-3D-Assets aus dem **MIT-lizenzierten [ma-weiss/Fairino-Mujoco](https://github.com/ma-weiss/Fairino-Mujoco)**-Projekt (geprüfter Commit `459570714fc68c92e1fb3605cb60b4d8ef84419b`) und rendert die Szene.
-3. Den Testbericht (`runs/first_benchmark/summary.json`) und die Kameramontage (`rgbd_montage.jpg`) ansehen. **FAIL ist ein valides Forschungsergebnis, kein Erfolg.**
+**Erste Messergebnisse:** Drei statische MuJoCo-Posen mit CPU/OSMesa, maximal **0,137779 mm absolute Ausgießerspitzenabweichung** und **0,045833° Kännchenwinkelabweichung**. Sowohl `pitcher_status` als auch `scene_status` waren **PASS**. Die Kamerakalibrierung ist in der Simulation exakt; diese Werte sind **kein Nachweis realer Genauigkeit oder kontinuierlichen Trackings**.
 
-## Neues Experiment: Direktes Kännchen-Motion-Capture (Opt-in)
+Die bisherigen 16 Vergleichsvarianten, einschließlich Caliscope und vier Kameras, bleiben reproduzierbar:
 
-Die Projektentscheidung ist jetzt **Option 2: 6D-Bewegung des Milchkännchens erfassen**, nicht Handhandschuhe oder den Roboterarm manuell führen. Siehe [Dreistufenplan](planning/ROBOBARISTA_DREI_STUFEN_MVP.md).
+- [Alle gemeldeten 16 Ergebnisse als CSV](results/2026-10-21_rig_comparison_user_report.csv)
+- [Vergleichsergebnis, Fehlersuche und Entscheidung](results/2026-10-21_camera_rig_decision.md)
+- [Aktueller Projektplan / nächste Schritte](planning/ROBOBARISTA_DREI_STUFEN_MVP.md)
 
-**Im Colab-Notebook gibt es Schritt 7:** Zwei echte AprilTag-36h11-Markierungen auf starren, seitlichen, entgegengesetzt ausgerichteten virtuellen Montageflächen am Milchkännchen; zwei nähere Schrägkameras und eine dritte Gegenkamera; gemeinsame 6D-Pose-Schätzung aus den Bildpunkten beider Tags. Die Originalvariante mit oberem ArUco-Marker bleibt als Baseline erhalten.
+## Start in Google Colab
 
-Der Side-Tag-Test prüft drei **statische** Neigungs-/Positionskonfigurationen, nicht kontinuierliches Motion Capture. Pro Test werden der Positionsfehler des Kännchens, der Winkelabweichung, der **Ausgießerspitzenfehler**, die erkannten Kameras und separat der **relative Spitzen-zu-Tasse-Fehler** protokolliert. Die Side-Tag-Abnahme fordert höchstens 0,5 mm **absolute** Spitzenabweichung und 1° Kännchenwinkel sowie mindestens zwei Kameras je Objekt. Der relative Fehler zur Tasse bleibt explizit separat, bis die Tassenreferenz verbessert ist.
+| Notebook | Zweck |
+| --- | --- |
+| **[COLAB_START.ipynb](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_START.ipynb)** | **Standard**: Drei Kameras, ein AprilTag 3, gemeinsame Poseoptimierung |
+| **[COLAB_COMPARE.ipynb](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_COMPARE.ipynb)** | **Forschung/Archiv**: 16 Varianten mit 1/2 Tags, 3/4 Kameras, OpenCV/AprilTag 3, direkter Optimierung/Caliscope |
 
-**Keine Zusicherung einer erreichten Genauigkeit:** Der neue Side-Tag-Modus wurde in dieser Chatumgebung nicht mit vollständigem MuJoCo-Rendering ausgeführt. Er muss in Colab anhand der drei Bildmontagen, Marker-Sichtbarkeit und des Messberichts überprüft werden. Selbst ein PASS unter idealen Simulationsbedingungen garantiert keine 0,5-mm-Präzision im realen Aufbau. Besonders Markerträger-, Objekt-/Spitzen-Kalibrierung, Objektbewegung, Kamerazeitsynchronisierung und reale Kalibrierfehler sind noch zu testen.
+In Colab **Laufzeit → Laufzeittyp ändern → Hardwarebeschleuniger: Keine** und **Laufzeit → Alle ausführen** wählen. Das Notebook lädt den aktuellen Code, installiert die OpenGL-/OSMesa-Abhängigkeiten und zeigt anschließend Kamerabilder und Ergebnisse. Eine GPU ist nicht erforderlich.
 
-Für einen direkten Vergleich im installierten Colab-Projekt:
-```bash
-MUJOCO_GL=osmesa PYOPENGL_PLATFORM=osmesa python -m robobarista.demo --pitcher-side-tags --output runs/pitcher_side_tags --trials 3 --width 1280 --height 960 --max-spout-mm 0.5 --max-pitcher-rotation-deg 1
-```
+Das dritte Parteimodell [ma-weiss/Fairino-Mujoco](https://github.com/ma-weiss/Fairino-Mujoco) wird während des Starts nachgeladen (Commit `459570714fc68c92e1fb3605cb60b4d8ef84419b`); keine Assets im Repository einchecken.
 
-## Erste Messergebnisse und getrennte Abnahmekriterien (21.10.2026)
+## Was das Programm macht
 
-Aus einem Colab-CPU-Lauf über 16 Varianten ergeben sich für die Ausgießerspitze u.a. **0,138 mm / 0,046°** mit **1 Tag, 3 Kameras, nativem AprilTag 3 und direkter Optimierung** (gesamte Szene PASS), und **0,055 mm / 0,035°** mit **2 Tags, 4 Kameras, nativem AprilTag 3 und Caliscope** (ganze Szene FAIL trotz guter Kännchenpose). Zahlen sind jeweils schlechteste gemessene Werte aus nur drei statischen Posen mit ideal bekannter Kamerakalibrierung. Deshalb bitte **nicht** als Präzisionsnachweis für Hardware interpretieren.
+1. `robobarista/scene.py`: Virtuelle Szene mit FR5, Tasse, Kännchen, Marker und Kameras konfigurieren.
+2. `robobarista/geometry.py`: AprilTag 3 aus Kamerabildern erkennen und daraus die 6D-Kännchenpose mit mehreren Blickwinkeln berechnen; vorerst ergänzend idealisierte Tiefenbilder.
+3. `robobarista/demo.py`: Vergleich der berechneten Pose mit der **nur zum Prüfen verwendeten** MuJoCo-Ground-Truth. Ausgabe von Position/Winkel, Abweichung der Ausgießerspitze, Anzahl brauchbarer Kameras, Fehlmessungen, RGB-/Tiefenbildern und CSV/JSON.
+4. `robobarista/benchmark_gates.py`: `pitcher_status` und `scene_status` unterscheiden; andere Objekte können `scene_status=FAIL` verursachen, obwohl das Kännchen korrekt vermessen wird.
+5. `robobarista/compare_rigs.py`: Vergleich der 16 Möglichkeiten und getrennte Diagnose alter Ergebnisse; `caliscope_integration.py` bleibt als Forschungsalternative.
+6. `tests/` und `.github/workflows/python-tests.yml`: automatisierte Tests unter Python 3.13.
 
-Neu: `robobarista/benchmark_gates.py` prüft Kännchen-Zielgenauigkeit unabhängig von der restlichen Szene und nennt alle Fehlergründe. `python -m robobarista.compare_rigs --analyze-only` bewertet vorhandene `runs/rig_comparison/*/measurements.json` ohne neue Kamera-Renderläufe; Ergebnisse stehen in `diagnostics.json/.csv`. Die vollständige Szene bleibt ausdrücklich FAIL, solange Nebenobjekte ihre eigenen Kriterien nicht erfüllen. Mit den Daten ist die vorläufige einfachste komplette PASS-Konfiguration **ein AprilTag und drei Kameras (pupil)**; die verbesserte 2-Tag/4-Kamera-Präzision wird mit den Szenenfehlern, weiteren Neigungen und Verdeckungen weiter untersucht.
+`runs/` ist **temporärer Ausgabeordner und wird nicht automatisch mit GitHub synchronisiert**. Die im Chat übermittelten numerischen Zusammenfassungen sind unter `results/` gespeichert; die ursprünglichen detailreichen Colab-Daten und Renderbilder wurden nicht hochgeladen.
 
-## Vergleichsstudie: 1/2 AprilTags × 3/4 Kameras × zwei Detektoren × zwei 3D-Methoden
+## Nächster Schritt
 
-[**Vergleich direkt in Google Colab öffnen**](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_COMPARE.ipynb)
+**Dynamisches Kännchen-Motion-Capture aus zeitgestempelten drei Kameraansichten**, mehr unterschiedliche Neigungs-/Positionsfälle, Verdeckung durch Griff/Greifer/Roboterarm, Ausgießerposition **relativ zur Tasse**, danach sichere inverse Kinematik und Bewegungswiedergabe mit FAIRINO FR5 **ohne Milch**.
 
-Neues separates CPU-Notebook `COLAB_COMPARE.ipynb` startet **16** kontrollierte MuJoCo-Versuche: 1 oder 2 AprilTag-36h11-Marker auf dem Milchkännchen, 3 oder 4 Kameras, pro Aufbau jeweils OpenCV vs. **AprilTag 3** (`pupil-apriltags`, PyPI 1.0.4.post11; Python 3.13 manylinux verfügbar). Alle Varianten verwenden identische drei Kännchenposen, denselben Seed und dieselbe Auflösung (1280×960); **die Kamerastandorte sind auf die Variante abgestimmt**: bei einem seitlichen Tag alle 3/4 Kameras auf seiner sichtbaren Seite, bei zwei Tags 2+1 bzw. 2+2 Kameras auf den gegenüberliegenden Seiten. **Ein direkter Detektor-Vergleich bleibt exakt kontrolliert**, weil OpenCV und AprilTag 3 jeweils dasselbe Layout nutzen. Der 1-vs-2-Tag-Vergleich ist dagegen bewusst ein *Vergleich vollständiger Systemdesigns* und kein isolierter Test ausschließlich der Tag-Anzahl. Falls keine Konfiguration die Qualitätsprüfungen besteht, wird ausdrücklich **kein Gewinner** behauptet.
+Ein zusätzlicher Tag oder eine vierte Kamera kommt nur dann dazu, wenn Tests über den ganzen Bewegungsbereich zeigen, dass wir sie wirklich benötigen. Der zweite Marker verbessert möglicherweise Sichtbarkeit, verlangt aber genaues Einmessen seines Starrkörperversatzes.
 
-**Caliscope integriert (0.11.8, BSD-2-Clause):** Im selben Notebook vergleichen wir zusätzlich die echte `caliscope.api.ImagePoints.triangulate(CameraArray)`-Funktion. Sie trianguliert die mit OpenCV bzw. AprilTag 3 erkannten Marker-Ecken aus mehreren Kameras. Unsere kleine Kabsch-Starrausrichtung berechnet daraus die 6D-Kännchenpose. Das ist ein realer Rekonstruktionsvergleich, **noch keine Kamerakalibrierung mit Caliscope**: MuJoCo liefert beiden Methoden identisch bekannte ideale Kameramatrizen. Caliscopes separate ChArUco-/ArUco-Kalibrierung benötigt viele unterschiedliche Ansichten einer fest vermessenen Tafel und gehört in einen späteren Versuch mit Kamerakalibrierfehlern. Ein Vergleich der Solver ist hier außerdem nicht vollständig inputidentisch: Unser bisheriger Schätzer nutzt neben RGB-Ecken zusätzlich virtuelle Depth-Werte als Nebenbedingung, Caliscope lediglich 2D-RGB-Ecken. Falls Caliscope eine Tag-Ecke nicht aus mindestens zwei Perspektiven triangulieren kann, gilt das als Messausfall und nicht als Fehler von 0 mm.
+Langfristige Roadmap: [Roadmap](planning/ROBOBARISTA_ROADMAP.md) · [Backlog](planning/ROBOBARISTA_BACKLOG.csv) · [Latte-Art-/Artly-/One-Shot-Recherche](planning/ROBOBARISTA_MARKTRECHERCHE_20261020.md).
 
-Einzelberichte `runs/rig_comparison/<variante>/summary.json` und `pose_errors.csv`, Bilder, `runs/rig_comparison/comparison.csv` plus Logs. Das Notebook bietet am Ende einen ZIP-Export an. Strenge Zielwerte: 0,5 mm absolute **Ausgießer**abweichung und 1° für das Kännchen; die relative Ausgießer-zu-Tasse-Abweichung ist ein zusätzliches Diagnosemaß und wegen der bisherigen Tassenkalibrierung **noch nicht in der PASS-Bedingung**. Nur drei **statische** Posen; kein Nachweis für zeitkontinuierliches Motion Capture oder reale Kameras.
+Projektcode: MIT. Drittmodelle und Bibliotheken unter ihren jeweiligen Lizenzen.
 
-Die Studie untersucht insbesondere: Verbessert eine vierte Kamera den sichtbaren Marker? Beseitigt der zweite Markertyp bzw. die zweite starre Fläche Verdeckungsprobleme? Ist der offizielle AprilTag-3-Detektor genauer als OpenCVs AprilTag-Unterstützung? Die Daten entscheiden; wir stellen keine hypothetischen Vorteile als bereits gemessen dar.
-
-**Kalibrierungsframeworks** Caliscope und Multical bleiben für reale Kamera-Linsen/Kameraposen vorgesehen: Im Simulator sind die Werte bereits exakt und eine zusätzliche Kalibrierung wäre für diesen Benchmark kein fairer Genauigkeitsgewinn. TagSLAM/ROS kommt erst infrage, wenn die leichtere direkte Posenoptimierung in der bildbasierten Spur nicht ausreicht.
-
-## Was läuft
-
-- Ein FR5-Roboter mit vorhandenen Meshes und PGI-140-80-W-Greifer (vom Drittprojekt übernommen), einfache Arbeitsfläche mit vorerst geometrisch vereinfachtem Becher, Kännchen, Behälter und Hindernis; **statische Pose** für reproduzierbaren ersten Wahrnehmungstest.
-- Drei simulierte RGB-D-Kameras (`rgbd_front_left`, `rgbd_front_right`, `rgbd_overhead`) mit bekannter Kalibrierung; Farb- und metrische Tiefenbilder. **Noch keine echten Sensorfehler**, keine reale Kalibrierung.
-- ArUco-ID an **allen testweise greifbaren Objekten** und einem Werkzeug-Referenzpunkt; Erkennung aus RGB, 6D-Pose per OpenCV `solvePnP`, drei Kameras gemeinsam optimiert durch SciPy **Huber-gewichtete Reprojektion**. Tiefenbilder liefern eigenständige metrische Zusatzmessungen.
-- Aus bekanntem Marker-zu-Objekt-Transform wird Objektkörperpose berechnet. Das System vergleicht diese **nur nach der Schätzung** mit der unabhängig aus MuJoCo ausgelesenen Ground-Truth-Pose. Künftige Ausgabe: Ausgießerposition aus bekanntem Starrkörper-Offset, Kollisionsabstände.
-- Messbericht pro Versuch und Objekt: Übersetzung in mm, Winkel in Grad, Zahl sichtbarer Kameras, Pixel-Reprojektion, Ausfälle; `PASS` nur falls der strenge Grenzwert eingehalten ist (anfänglich **5 mm und 5°** bei min. zwei Kameras; diese Werte sind vorläufige Testziele).
-
-## Was nicht behauptet wird
-
-- **Noch keine nachgewiesene Genauigkeit unter 5 mm/5°** im vollständigen FAIRINO-Rendering. Positionen können durch verkehrte Texture-UV-Orientierung oder unzureichende Kamerasicht verfälscht sein. Die Fehleranzeige ist genau dafür da.
-- **Noch keine Bewegung, Greifhandlung, Milch, Latte Art, SmolVLA oder eigene Fluidphysik.** Diese Dinge beginnen erst nach erfolgreicher und geprüfter 3D-Wahrnehmung.
-- **Noch kein Rerun Live-Dashboard:** Die erste Colab-Version zeigt ihre drei Kameraansichten mit Overlays, Tiefenbilder, einen 3D-Vergleich und Messdateien direkt im Notebook. Ein interaktives Dashboard ist eine nächste Ausbaustufe.
-- Für den FR5-Körper kennen wir die echte Gelenkpose aus der Kinematik; visuell wird zunächst ein ArUco-Tag am Werkzeug statt jeder einzelnen Gelenkachse unabhängig erfasst.
-- Tags auf spiegelnden Objekten sind hier ideal gedruckte Simulationsflächen mit messbarem Montageoffset. In echter Welt können Reflexionen, Kamerakalibrierfehler, Bewegungsunschärfe und fehlende Tiefe die Genauigkeit beeinträchtigen.
-
-## Technische Architektur
-
-```text
-MuJoCo: FR5 + Szene + 3 virtuelle RGB-D-Kameras
-                  |
-          RGB/Depth pro Kamera --------------------------+
-                  |                                      |
-      OpenCV ArUco, solvePnP                     Ground Truth (privat)
-                  |                                      |
-       SciPy gemeinsames 6D-Pose-Fit                      |
-                  |                                      |
-     bekannte Tag-zu-Objekt-Geometrie                     |
-                  +-------------------- Fehlervergleich --+
-                                       |
-                         JPEG/PNG/JSON/CSV + Colab
-```
-
-## Code
-
-- `robobarista/scene.py`: Download der upstream-Roboter-Assets und eigene testbare MJCF-Szene / Marker / Kameras.
-- `robobarista/geometry.py`: Kamera-Kalibrierungen, Tag-Erkennung, PnP und Mehrkamera-Optimierung.
-- `robobarista/demo.py`: RGB-D-Aufnahmen, separat ermittelte Ground Truth, Messbericht und Bilder.
-- `tests/`: 8 schnelle Tests ohne MuJoCo, sodass wir Fehler in Geometrie/ArUco schon vor der Visualisierung entdecken.
-- `planning/`: übernommener Projektplan, Recherche und Drei-Stufen-MVP.
-- `COLAB_START.ipynb`: das eigentliche Colab-Einstiegsnotebook.
-
-Drittprojekte werden **beim Colab-Start geklont**, nicht in dieses Repository kopiert. Die eigene Software ist MIT-lizenziert; FAIRINO-Assets unter eigener MIT-Lizenz der jeweiligen Quelle.
-
-## Technische Grenzen / nächster Schritt
-
-Der Kompilierungs-/Render-Test wurde in dieser Entwicklungsumgebung **nicht** ausgeführt, weil MuJoCo hier nicht installiert ist und externe Paketdownloads nicht funktionieren. Sollte Colab einen Fehler beim Aufruf `MjModel.from_xml_path`, beim Rendern oder bei zu großen Winkelfehlern melden, ist das ein sichtbarer Integrationsbefund; `FAIL` darf nicht in `PASS` umgedeutet werden. Dann überprüfen wir zunächst Mesh-/XML-Kompatibilität, Kamera-UV-Orientierung und Sichtbarkeit der Markertafeln, bevor wir Bewegung trainieren.
