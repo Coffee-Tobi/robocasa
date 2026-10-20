@@ -80,8 +80,8 @@ Die Kameras **erzeugen** keine Bewegung. Mindestens einmal muss eine **virtuelle
 ## Zuordnung zum Tracker
 
 - **Stufe 1:** RB-23, RB-24, RB-25, RB-14, RB-47, RB-15, RB-07, RB-08, RB-16, RB-17, RB-48, RB-09, RB-13.
-- **Stufe 2:** RB-49, RB-18, RB-19, RB-20, RB-44, RB-50, RB-26, RB-27, RB-51, RB-31.
-- **Stufe 3:** RB-42, RB-29, RB-28, RB-36, RB-37, RB-12, RB-46.
+- **Stufe 2:** RB-06, RB-49, RB-18, RB-19, RB-20, RB-44, RB-50, RB-26, RB-27, RB-51, RB-31, RB-28, RB-36.
+- **Stufe 3:** RB-42, RB-29, RB-37, RB-12, RB-46.
 - **Optional / später:** RB-43 (Tracker), RB-45 (aktiver Becherhalter), RB-32/33/34 (Feedback), RB-38/39/40 (weitere Barista-Schritte).
 
 **Quelle der Roadmap:** [ROBOBARISTA_ROADMAP.md](./ROBOBARISTA_ROADMAP.md) · [Aufgaben-CSV](./ROBOBARISTA_BACKLOG.csv) · [Linear-Import](./LINEAR_IMPORT.csv). Die CSV-Daten sind als Tracker-Vorlagen vorbereitet, **nicht** bereits als Live-Linear-Issues synchronisiert.
