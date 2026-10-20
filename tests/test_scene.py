@@ -57,7 +57,12 @@ def test_camera_rig_count_and_single_side_tag_option():
     assert len(scene.side_camera_layout(3))==3
     assert len(scene.side_camera_layout(4))==4
     assert set(scene.side_camera_layout(3)).issubset(scene.side_camera_layout(4))
-    assert set(scene.side_camera_layout(4))-set(scene.side_camera_layout(3))=={'rgbd_near_center'}
+    assert set(scene.side_camera_layout(4))-set(scene.side_camera_layout(3))=={'rgbd_far_right'}
+    single3=scene.side_camera_layout(3,1)
+    single4=scene.side_camera_layout(4,1)
+    assert len(single3)==3 and len(single4)==4
+    assert all(eye[1]<0 for eye,_ in single4.values())
+    assert sum(eye[1]>0 for eye,_ in scene.side_camera_layout(4,2).values())==2
     with pytest.raises(ValueError):
         scene.side_camera_layout(5)
     one=scene.tag_definitions(pitcher_side_tags=True,pitcher_tag_count=1)
