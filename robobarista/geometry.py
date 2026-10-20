@@ -52,13 +52,53 @@ def marker_corners(side):
     return np.array([[-s,s,0],[s,s,0],[s,-s,0],[-s,-s,0]], float)
 
 
-def detect_tags(rgb, include_apriltags: bool = False):
+from functools import lru_cache
+from scipy.optimize import linear_sum_assignment
+
+@lru_cache(maxsize=1)
+def _pupil_detector():
+    # AprilTag-3 C implementation through pupil-labs' Python bindings.
+    try:
+        from pupil_apriltags import Detector
+    except ImportError as exc:
+        raise RuntimeError(
+            "Optional detector requires: pip install pupil-apriltags") from exc
+    return Detector(families="tag36h11", nthreads=2,
+                    quad_decimate=1.0, quad_sigma=0.0,
+                    refine_edges=1, decode_sharpening=0.25)
+
+
+def _pupil_corner_order(detection):
+    """Map pupil AprilTag corners into our IPPE tag-local order using its homography.
+
+    The AprilTag homography maps ideal (-1,1),(1,1),(1,-1),(-1,-1)
+    to the image; matching those predicted locations preserves the
+    actual tag orientation even when the tag rotates in the image.
+    """
+    raw = np.asarray(detection.corners, dtype=float).reshape(4, 2)
+    H = np.asarray(detection.homography, dtype=float).reshape(3, 3)
+    ideal = np.array([[-1, 1], [1, 1], [1, -1], [-1, -1]], dtype=float)
+    uvh = (H @ np.c_[ideal, np.ones(4)].T).T
+    expected = uvh[:, :2] / uvh[:, 2:]
+    distance = np.linalg.norm(expected[:, None, :] - raw[None, :, :], axis=2)
+    rows, cols = linear_sum_assignment(distance)
+    if (not np.isfinite(distance[rows, cols]).all()
+            or float(distance[rows, cols].max()) > 8.0):
+        raise ValueError("AprilTag-3 corner order check failed")
+    pixels = np.empty_like(raw)
+    pixels[rows] = raw[cols]
+    return pixels
+
+
+def detect_tags(rgb, include_apriltags: bool = False, detector: str = 'opencv'):
     gray = cv2.cvtColor(np.ascontiguousarray(rgb), cv2.COLOR_RGB2GRAY)
     d = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
     options = cv2.aruco.DetectorParameters()
     options.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
+    if detector not in ('opencv', 'pupil'):
+        raise ValueError("detector must be opencv or pupil")
     families=[d]
-    if include_apriltags:
+    if include_apriltags and detector == 'opencv':
         families.append(cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_36h11))
     detections=[]
     for family in families:
@@ -67,6 +107,16 @@ def detect_tags(rgb, include_apriltags: bool = False):
             continue
         detections.extend((int(i), np.asarray(c).reshape(4, 2).astype(float))
                           for i,c in zip(ids.ravel(), corners))
+    if include_apriltags and detector == 'pupil':
+        for detection in _pupil_detector().detect(np.ascontiguousarray(gray)):
+            # Reject decoded error-corrected tags from the rigorous comparison.
+            if detection.hamming != 0:
+                continue
+            try:
+                pixels = _pupil_corner_order(detection)
+            except (ValueError, FloatingPointError):
+                continue
+            detections.append((int(detection.tag_id), pixels))
     return detections
 
 
