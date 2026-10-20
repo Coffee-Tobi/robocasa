@@ -59,3 +59,50 @@ def test_multicam_bundle_adjustment():
 def test_lookat_vertical():
     q=look_at_quat([0,0,2],[0,0,0]);R=Rotation.from_quat(np.r_[q[1:],q[0]]).as_matrix()
     np.testing.assert_allclose(R@[0,0,-1],[0,0,-1],atol=1e-10)
+
+
+def test_two_sided_apriltag_rig_reconstructs_known_spout_from_multiview():
+    """Ideal pinhole projections: mathematical multi-tag fit, NOT a rendered accuracy test."""
+    from robobarista.scene import (
+        SIDE_PITCHER_TAG_IDS, SIDE_PITCHER_TAGS, SIDE_TAG_SIDE_M,
+        MARKER_TEXTURE_PX, MARKER_QUIET_PX, SPOUT_TIP_LOCAL_M,
+        tag_definitions)
+    from robobarista.geometry import bundle_adjust_object
+    defs=tag_definitions(pitcher_side_tags=True)
+    side=SIDE_TAG_SIDE_M*(MARKER_TEXTURE_PX-2*MARKER_QUIET_PX)/MARKER_TEXTURE_PX
+    sides={tid:side for tid in SIDE_PITCHER_TAG_IDS.values()}
+    pos=np.array([.55,-.12,.63])
+    rot=Rotation.from_euler('xyz',[6,18,-9],degrees=True).as_matrix()
+    eyes=[np.array(v) for v in [[.20,-.65,1.13],[.98,-.61,1.12],[.57,.43,1.14]]]
+    observations=[]
+    for eye in eyes:
+        q=look_at_quat(eye,pos)
+        qxyzw=np.r_[q[1:],q[0]]
+        T=np.eye(4)
+        T[:3,:3]=Rotation.from_quat(qxyzw).as_matrix() @ np.diag([1,-1,-1])
+        T[:3,3]=eye
+        K=np.array([[1300,0,640],[0,1300,480],[0,0,1]],float)
+        cam=Calibration(1280,960,K,T)
+        for tid in SIDE_PITCHER_TAG_IDS.values():
+            Tobjtag=defs[tid][1]
+            tag_pos=pos+rot@Tobjtag[:3,3]
+            tag_rot=rot@Tobjtag[:3,:3]
+            # Ignore the inward-facing plate in each view.
+            normal=tag_rot@np.array([0.,0.,1.])
+            if np.dot(normal,eye-tag_pos)<0.10:
+                continue
+            corners=(tag_rot@marker_corners(side).T).T+tag_pos
+            pixels=np.array([cam.project(pt) for pt in corners])
+            assert np.isfinite(pixels).all()
+            observations.append((tid,dict(
+                position=tag_pos,rotation=tag_rot,corners=pixels,
+                calibration=cam,depth=None)))
+    assert len(observations)>=3
+    est=bundle_adjust_object(observations,defs,sides)
+    assert est is not None
+    mm,deg=pose_errors(est,{'position':pos,'rotation':rot})
+    assert mm<0.01,mm
+    assert deg<0.01,deg
+    true_tip=pos+rot@SPOUT_TIP_LOCAL_M
+    estimated_tip=est['position']+est['rotation']@SPOUT_TIP_LOCAL_M
+    assert np.linalg.norm(true_tip-estimated_tip)*1000<0.01
