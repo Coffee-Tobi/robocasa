@@ -1,12 +1,30 @@
 # RoboBarista – verbindliche Dreistufenstrategie (20. Oktober 2026)
 
-**Festgelegt:** FAIRINO FR5 als Hardware-Ziel und virtueller Arm, **ein Arm**, zwei Werkzeuge/Greifaufsätze gegebenenfalls **nacheinander**. Keine Hardwarebeschaffung für die ersten zwei Stufen. **Drei simulierte Kameras**, die Objektpose nicht bloß anzeigen, sondern **aus den eigenen RGB-Bildern rekonstruieren**. Keine laufende Kamera-Korrektur während des eigentlichen Bewegungs-Replays. Später echter Heart-Latte-Art-Versuch. Vorläufig keine Simulation von Milch/Schaum/Crema, keine Espresso-/Siebträger-/Mühlen-/Dampflanzen-Projekte.
+**Festgelegt:** FAIRINO FR5 als Hardware-Ziel und virtueller Arm, **ein Arm**, zwei Werkzeuge/Greifaufsätze gegebenenfalls **nacheinander**. Keine Hardwarebeschaffung für die ersten zwei Stufen. **Drei simulierte Kameras als Baseline, optional vier**, die Objektpose nicht bloß anzeigen, sondern **aus den eigenen RGB-Bildern rekonstruieren**. Keine laufende Kamera-Korrektur während des eigentlichen Bewegungs-Replays. Später echter Heart-Latte-Art-Versuch. Vorläufig keine Simulation von Milch/Schaum/Crema, keine Espresso-/Siebträger-/Mühlen-/Dampflanzen-Projekte.
+
+## Erste Benchmark-Auswertung – 21. Oktober 2026 (Nutzerlauf in Colab)
+
+**Datenstatus: 16 Varianten × drei statische virtuelle Kännchenposen; CPU/OSMesa.** Das Projektprotokoll des Nutzers zeigt folgende maximale absolute Ausgießerspitzenfehler und Winkelabweichungen; die Daten liegen derzeit in der Colab-Laufzeit und wurden in diesem GitHub-Commit nicht als Messdateien hochgeladen:
+
+| Variante | Max. Spitze | Max. Winkel | Gesamtszene |
+| --- | ---: | ---: | --- |
+| Bundle + AprilTag 3 (pupil), 1 Tag, 3 Kameras | 0,138 mm | 0,046° | PASS |
+| Bundle + AprilTag 3, 1 Tag, 4 Kameras | 0,151 mm | 0,050° | PASS |
+| Bundle + AprilTag 3, 2 Tags, 4 Kameras | 0,085 mm | 0,054° | FAIL |
+| Caliscope + AprilTag 3, 1 Tag, 4 Kameras | 0,177 mm | 0,058° | PASS |
+| **Caliscope + AprilTag 3, 2 Tags, 4 Kameras** | **0,055 mm** | **0,035°** | FAIL |
+
+**Interpretation:** Der AprilTag-3-Detektor war in allen vergleichbaren Nutzerläufen deutlich genauer als OpenCV. Die 2-Tag/4-Kamera-Caliscope-Variante misst das Kännchen hervorragend, erhält aber wegen der **Gesamtszenenprüfung** noch FAIL. Die konkreten Nebenobjekt-Probleme müssen anhand der gespeicherten `measurements.json` geprüft werden; nicht einfach alle anderen Objekte aus dem Abnahmetest entfernen. Dafür ergänzt `robobarista.benchmark_gates` jetzt getrennte **pitcher_status**- und **scene_status**-Kriterien mit expliziten Fehlergründen sowie `compare_rigs --analyze-only` zur Auswertung vorhandener Messdateien ohne Rendern.
+
+**Vorläufige Wahl:** Offizielles AprilTag 3 (**pupil**) + 1 Tag/3 Kameras + gemeinsame 2D-Optimierung ist die einfachste bereits vollständig bestandene Szene. Die 2-Tag/4-Kamera-Variante bleibt eine **wichtige Genauigkeits-/Verdeckungsalternative**, noch kein allgemeiner Gewinner.
+
+**Nächste Validierung:** Viele unabhängige virtuelle Positionen und Kännchenneigungen, dynamische Bewegungen, Roboter-/Griff-Verdeckung, Pixelauflösung, Kameraklappern und -kalibrierfehler, TCP-zu-Tasse-Fehler, reale Taghalter-Toleranzen. Derzeit sind alle Kamerakalibrierungen in MuJoCo ideal bekannt. Drei statische Posen begründen keine realweltliche Submillimeter-Garantie.
 
 ## Verbindliche Entscheidung (20.10.2026): Kännchen-Motion-Capture, nicht Hand-Motion-Capture
 
 **Option 2 ist gewählt:** Demonstrationen werden über die unabhängig aus Kamerabildern gemessene **6D-Pose des Milchkännchens** aufgezeichnet (Position + Orientierung + Zeit); daraus folgen die Sollbewegung der Ausgießerspitze und später die Robotergelenkbewegung. **Keine Handschuhe, keine verpflichtende menschliche Handpose, keine manuelle Führung des Roboters als primäre Lernmethode.** Die FR5-Vorwärtskinematik dient bei der Ausführung zur Zustandsabschätzung; Kameras dienen zusätzlich zur Initialisierung und optionalen Qualitätskontrolle. Die echte MuJoCo-Pose darf weiterhin nur zur Validierung verwendet werden.
 
-**Neue Markerstrategie:** Mindestens zwei seitliche, verschieden ausgerichtete ArUco-/AprilTag-Referenzflächen auf einer **starren, bekannten Halterung am Kännchen**. Kein Tag auf dem Griff, kein Tag im Greifbereich, keine Tags auf der Milchkontaktfläche; Sichtbarkeit während Neigung und Griffbelegung prüfen. Im Simulator zunächst dünne nicht kollidierende Markertafeln, in Hardware allenfalls lebensmitteltaugliche abnehmbare Halterung / lasergravierte Referenz – **den gedruckten Code selbst nicht anschweißen**. Der Marker-zu-Kännchen-zu-Ausgießer-Offset muss kalibriert und validiert werden. ArUco als erster reproduzierbarer Markerstandard; AprilTag als spätere Vergleichsoption, keine unbemerkte Umstellung.
+**Neue Markerstrategie:** Zunächst eine seitliche, starr befestigte AprilTag-Referenzfläche; optional zwei verschieden ausgerichtete AprilTag-Referenzflächen auf einer **starren, bekannten Halterung am Kännchen**. Kein Tag auf dem Griff, kein Tag im Greifbereich, keine Tags auf der Milchkontaktfläche; Sichtbarkeit während Neigung und Griffbelegung prüfen. Im Simulator zunächst dünne nicht kollidierende Markertafeln, in Hardware allenfalls lebensmitteltaugliche abnehmbare Halterung / lasergravierte Referenz – **den gedruckten Code selbst nicht anschweißen**. Der Marker-zu-Kännchen-zu-Ausgießer-Offset muss kalibriert und validiert werden. ArUco als erster reproduzierbarer Markerstandard; AprilTag als spätere Vergleichsoption, keine unbemerkte Umstellung.
 
 **Kameras:** Drei feste, kalibrierte Blickrichtungen mit mindestens zwei brauchbaren Sichtlinien je relevanter Kännchenpose. Gegenüberliegende Seitenmarker sind nicht notwendigerweise gleichzeitig in einer Kamera zu sehen. Prüfen, ob Greifer, Handgelenk, Griff, Ausgießer und Kannenrotation Marker verdecken. Relative Kannenposition zur Tasse inklusive zeitlicher Synchronisation protokollieren.
 
