@@ -1,0 +1,6 @@
+numpy>=1.26,<3
+scipy>=1.11
+opencv-contrib-python-headless>=4.8,<5
+mujoco>=3.2,<4
+Pillow>=10
+matplotlib>=3.8
