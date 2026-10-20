@@ -48,3 +48,18 @@ def test_opencv_apriltag_detector_preserves_marker_corner_order():
     positions=[pts for tid,pts in hits if tid==23]
     assert positions
     assert positions[0].shape==(4,2)
+
+
+def test_native_apriltag3_can_read_rendered_tag_with_correct_corner_order():
+    import pytest
+    pytest.importorskip('pupil_apriltags')
+    d=cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_36h11)
+    marker=cv2.aruco.generateImageMarker(d,23,320)
+    canvas=np.full((600,800),255,np.uint8)
+    canvas[140:460,240:560]=marker
+    rgb=cv2.cvtColor(canvas,cv2.COLOR_GRAY2RGB)
+    cv_hits={id_:pts for id_,pts in detect_tags(rgb,True,detector='opencv')}
+    native_hits={id_:pts for id_,pts in detect_tags(rgb,True,detector='pupil')}
+    assert 23 in cv_hits
+    assert 23 in native_hits, 'Native AprilTag 3 did not detect the same tag'
+    assert np.max(np.linalg.norm(cv_hits[23]-native_hits[23],axis=1))<4.0
