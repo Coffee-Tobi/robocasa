@@ -132,7 +132,7 @@ def run(args):
         for name,calib in calibrations.items():
             rgb,depth=render_pair(renderer,data,name)
             annotated=rgb.copy()
-            detections=detect_tags(rgb)
+            detections=detect_tags(rgb,include_apriltags=args.pitcher_side_tags)
             for tag_id,pixels in detections:
                 if tag_id not in defs: continue
                 cv2.polylines(annotated,[np.round(pixels).astype('int32')],True,(0,255,0),2)
