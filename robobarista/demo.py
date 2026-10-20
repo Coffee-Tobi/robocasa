@@ -16,6 +16,7 @@ from .scene import (generate_scene, CAMERAS, side_camera_layout, TAG_IDS,
                     SPOUT_TIP_LOCAL_M, tag_definitions)
 from .geometry import (Calibration, detect_tags, solve_single, bundle_adjust_tag,
                        bundle_adjust_object, object_from_tag, pose_errors)
+from .benchmark_gates import evaluate_side
 
 
 def to_json(x):
@@ -253,15 +254,27 @@ def run(args):
                 and all(r.get('translation_mm',float('inf'))<=args.max_translation_mm
                         and r.get('rotation_deg',float('inf'))<=args.max_rotation_deg
                         for r in other_rows))
+        # Separate diagnostic gates make a failing cup / obstacle explicit.
+        # Keep legacy scene-status semantics, never relabel a scene FAIL as PASS.
+        gates=evaluate_side(reports,min_cameras=args.min_cameras,
+                           max_spout_mm=args.max_spout_mm,
+                           max_pitcher_deg=args.max_pitcher_rotation_deg,
+                           max_other_mm=args.max_translation_mm,
+                           max_other_deg=args.max_rotation_deg)
+        assert passed == (gates['scene_status']=='PASS'), 'Acceptance gate mismatch'
     else:
         passed=(quality_ok
                 and max(T,default=float('inf'))<=args.max_translation_mm
                 and max(R,default=float('inf'))<=args.max_rotation_deg)
+        gates=None
     pitcher_measured=[r for r in reports if r['object']=='pitcher' and not r['failed']]
     tip_errors=[r['spout_tip_error_mm'] for r in reports if 'spout_tip_error_mm' in r]
     rel_errors=[r['spout_to_cup_error_mm'] for r in reports
                 if 'spout_to_cup_error_mm' in r]
     summary={'status':'PASS' if passed else 'FAIL',
+        'pitcher_status':gates['pitcher_status'] if gates is not None else None,
+        'pitcher_failures':gates['pitcher_failures'] if gates is not None else [],
+        'other_failures':gates['other_failures'] if gates is not None else [],
         'experiment':'pitcher_side_tags' if args.pitcher_side_tags else 'original_top_tags',
         'detector':args.detector if args.pitcher_side_tags else 'opencv',
         'pose_method':args.pose_method if args.pitcher_side_tags else 'bundle_adjust',
@@ -299,6 +312,11 @@ def run(args):
         print('Max relative spout-to-cup error (mm):',
               summary['max_relative_tip_to_cup_error_mm'],
               '| future research goal:',summary['relative_tip_to_cup_goal_mm'])
+    if gates is not None:
+        print('Pitcher-only:',gates['pitcher_status'],
+              '| Entire scene:',gates['scene_status'])
+        for issue in gates['pitcher_failures']+gates['other_failures']:
+            print('Gate issue:',issue)
     print('\nResult:',summary['status'],'| data in',out)
     if not passed:
         print('Accuracy gate NOT passed. Check image visibility, marker orientation/UV and calibration.',file=sys.stderr)
