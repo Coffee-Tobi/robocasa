@@ -23,3 +23,28 @@ def test_synthetic_apriltag_on_pitcher_side():
     rgb=cv2.cvtColor(canvas,cv2.COLOR_GRAY2RGB)
     hits=detect_tags(rgb,include_apriltags=True)
     assert any(tag_id==23 for tag_id,_ in hits)
+
+
+def test_pupil_corner_order_without_pupil_dependency():
+    from types import SimpleNamespace
+    from robobarista.geometry import _pupil_corner_order
+    # Known 2D homography: local tag corners [-1,1], ... to image.
+    H=np.array([[45.,0.,300.],[0.,-45.,200.],[0.,0.,1.]])
+    ideals=np.array([[-1,1],[1,1],[1,-1],[-1,-1]],float)
+    expected=np.c_[ideals,np.ones(4)]@H.T
+    expected=expected[:,:2]/expected[:,2:]
+    # The pupil library is allowed to return corners in another order.
+    detection=SimpleNamespace(homography=H,corners=expected[[2,0,3,1]])
+    np.testing.assert_allclose(_pupil_corner_order(detection),expected)
+
+
+def test_opencv_apriltag_detector_preserves_marker_corner_order():
+    d=cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_36h11)
+    marker=cv2.aruco.generateImageMarker(d,23,220)
+    canvas=np.full((480,640),255,np.uint8)
+    canvas[125:345,205:425]=marker
+    rgb=cv2.cvtColor(canvas,cv2.COLOR_GRAY2RGB)
+    hits=detect_tags(rgb,include_apriltags=True,detector='opencv')
+    positions=[pts for tid,pts in hits if tid==23]
+    assert positions
+    assert positions[0].shape==(4,2)
