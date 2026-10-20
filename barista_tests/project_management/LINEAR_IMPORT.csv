@@ -54,7 +54,7 @@
 **Schwierigkeit:** 1/5
 
 **Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Medium,Backlog,"RoboBarista,M1,Stufe-3,P1"
-[RB-06] Virtuelle Demo und Kameravideos als Referenz mit Zeitstempeln definieren,"**RB-06 | Stufe 3 | M1**
+[RB-06] Virtuelle Demo und Kameravideos als Referenz mit Zeitstempeln definieren,"**RB-06 | Stufe 2 | M1**
 
 **Ziel/Abnahme:** Gleichzeitig drei Kamera-Videos/Framefolgen, Kamera-Posen, Zeitstempel und virtuelle Demonstration im gleichen Testlauf verfügbar
 
@@ -64,7 +64,7 @@
 
 **Schwierigkeit:** 1/5
 
-**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M1,Stufe-3,P0"
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M1,Stufe-2,P0"
 "[RB-07] Kännchen, Tasse und FR5 in allen drei Kameras erkennen und tracken","**RB-07 | Stufe 1 | M1**
 
 **Ziel/Abnahme:** Kännchen, Tasse und Greifer/Arm mit klarer ID in drei simulierten Ansichten markiert, kontinuierlich verfolgt und als maschinenlesbare Keypoints/Detektionen gespeichert
@@ -296,7 +296,7 @@
 **Schwierigkeit:** 3/5
 
 **Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M4,Stufe-2,P0"
-[RB-28] Geometrischen Auftreffpunkt ohne Flüssigkeitssimulation prüfen,"**RB-28 | Stufe 3 | M5**
+[RB-28] Geometrischen Auftreffpunkt ohne Flüssigkeitssimulation prüfen,"**RB-28 | Stufe 2 | M5**
 
 **Ziel/Abnahme:** Ausgießerposition, Becherwinkel und theoretischer Auftreffpunkt als Geometrie visualisiert; keine Flüssigkeitsphysik
 
@@ -306,7 +306,7 @@
 
 **Schwierigkeit:** 2/5
 
-**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Medium,Backlog,"RoboBarista,M5,Stufe-3,P1"
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Medium,Backlog,"RoboBarista,M5,Stufe-2,P1"
 [RB-29] Ersten Versuch mit echter Milch unter konstanten Bedingungen planen,"**RB-29 | Stufe 3 | M5**
 
 **Ziel/Abnahme:** Erst nach sicherem FR5-Dry-Run mit zeitlich reproduzierter demonstrierter Bewegung realen Eingießversuch planen; Milchmenge/Temperatur/Schaum unter Standardbedingungen
@@ -384,7 +384,7 @@
 **Schwierigkeit:** 4/5
 
 **Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Low,Backlog,"RoboBarista,M7,Später/Optional,P2"
-[RB-36] Vollständiger FR5-Dry-Run mit 3D-Kamera-Tracking und aufgezeichneter Bewegung,"**RB-36 | Stufe 3 | M7**
+[RB-36] Vollständiger FR5-Dry-Run mit 3D-Kamera-Tracking und aufgezeichneter Bewegung,"**RB-36 | Stufe 2 | M7**
 
 **Ziel/Abnahme:** Von drei Kameraaufnahmen über 6D-Pose/Bewegungslernen bis zur FR5-Ausführung reproduzierbar ohne Fluid-Simulation und ohne Online-Adaptation
 
@@ -394,7 +394,7 @@
 
 **Schwierigkeit:** 4/5
 
-**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M7,Stufe-3,P0"
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M7,Stufe-2,P0"
 [RB-37] Ersten kontrollierten realen Eingießversuch durchführen,"**RB-37 | Stufe 3 | M7**
 
 **Ziel/Abnahme:** Nach sicherem virtuellen FR5-Dry-Run realen Herz-Gießversuch dokumentiert; standardisierte Milch, Bildvergleich, Fehlersuche; Hardware erst nach Go/No-Go-Entscheidung
@@ -483,7 +483,7 @@
 **Schwierigkeit:** 2/5
 
 **Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",High,Backlog,"RoboBarista,M3,Stufe-2,P0"
-[RB-45] Motorisierten kippbaren Becherhalter nur bei Bedarf ergänzen,"**RB-45 | Stufe 3 | M4**
+[RB-45] Motorisierten kippbaren Becherhalter nur bei Bedarf ergänzen,"**RB-45 | Später/Optional | M4**
 
 **Ziel/Abnahme:** Nur nach echtem Pour-Versuch prüfen, ob feste Tassenneigung unzureichend ist; motorisierte Becherneigung als Erweiterung statt zweitem Arm
 
@@ -493,7 +493,7 @@
 
 **Schwierigkeit:** 3/5
 
-**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Low,Backlog,"RoboBarista,M4,Stufe-3,P2"
+**Aktueller Dreistufenplan:** https://github.com/Coffee-Tobi/robocasa/blob/barista-dev/barista_tests/project_management/ROBOBARISTA_DREI_STUFEN_MVP.md",Low,Backlog,"RoboBarista,M4,Später/Optional,P2"
 [RB-46] Qualitätsprüfung zwischen Versuchen automatisieren,"**RB-46 | Stufe 3 | M7**
 
 **Ziel/Abnahme:** Latte-Art-Qualitätsvergleich nach dem Gießen möglich; kontinuierliche Mustersteuerung bewusst nicht im MVP
