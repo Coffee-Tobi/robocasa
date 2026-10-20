@@ -14,6 +14,14 @@
 
 **Nachweisplan:** Baseline beibehalten und getrennten Side-Tag-Test entwickeln; mehrere Kannenpositionen/-winkel, mindestens zwei Kameraperspektiven, Arm-/Greifer-Verdeckungen, Auflösungs- und Distanzvergleich, reale Kamerastörungen/Kalibrierfehler und wiederholte dynamische Trajektorien im Zeitverlauf. Einen einmaligen 3-Trial-Test nicht als Beleg für submillimetergenaue dynamische Motion-Capture ausgeben.
 
+## Vergleich vor weiterer Implementierung (20. Oktober 2026)
+
+**Entscheidung steht erst nach Messung fest.** Es werden 8 Varianten desselben idealen Simulators getestet: ein/doppelseitiger AprilTag-36h11 am Kännchen × 3/4 Kameras × OpenCV-/nativer AprilTag-3-Detektor. Das separate Notebook [COLAB_COMPARE.ipynb](../COLAB_COMPARE.ipynb) übernimmt die Ausführung; Messdateien werden aufbewahrt. Die Kamerakonfiguration ist ein **Kandidat**, nicht ein belegtes Optimum.
+
+**Geometrie:** Je eine Blicklinie links und rechts von der Vorderseite, eine auf die Kannenrückseite und optional eine vierte, höhere Vorderansicht; möglichst große Markerabbildung im relevanten Bewegungsvolumen, gute perspektivische Trennung, Griff/Arm-Verdeckung und gleichzeitige Sichtbarkeit von mindestens zwei Kameras. Auch mit vier Kameras bleibt eine einzelne Tagseite beim vollständigen Verdecken ein Single Point of Failure. Zweite starre Referenzfläche erhöht Robustheit, verlangt jedoch zusätzliche genaue Transformkalibrierung.
+
+**Wahrnehmung und Kalibrierung trennen:** Offizielles AprilTag 3 über `pupil-apriltags` vs OpenCV bei gleichen Renderbildern vergleichen. Caliscope/Multical für späteren realen Kamera-Rig-Abgleich, nicht als vermeintliche Verbesserung der bereits perfekten MuJoCo-Kameraextrinsik. 0,5 mm Ausgießer, 1° Kännchen und 0,2 mm Stretch-Ziel bleiben Forschungsgrenzen; zusätzlich relativen Fehler Spitze ↔ Tasse ausweisen.
+
 ## Stufe 1 – 3D-Wahrnehmung mit drei simulierten Kameras (jetzt)
 
 ### 1A. Virtuelle Anlage
