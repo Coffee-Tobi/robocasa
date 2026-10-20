@@ -56,13 +56,15 @@ def write_markers(folder: Path):
 
 
 def _tag(parent, name, tag_id, offset, tag_outer_side=TAG_SIDE_M):
-    # MuJoCo box texcoords cover entire upper face. Marker itself is ~84% of
-    # top face because generated image has a white quiet zone.
+    # Use a very thin box, not a plane: MuJoCo forbids plane geoms on moving
+    # robot bodies (e.g. wrist3_link). Keep it non-colliding and massless.
+    # MuJoCo box texcoords cover the upper face. The tag image also contains
+    # a white quiet zone, leaving ~84% active marker width.
     geom = ET.SubElement(parent, 'geom', attrib={
-        'name': f'rb_tagface_{name}', 'type': 'plane', 'pos': _nums(offset),
+        'name': f'rb_tagface_{name}', 'type': 'box', 'pos': _nums(offset),
         'size': _nums([tag_outer_side / 2, tag_outer_side / 2, 0.0001]),
         'material': f'rb_mat_{tag_id}', 'contype': '0', 'conaffinity': '0',
-        'group': '0'})
+        'mass': '0', 'group': '0'})
     return geom
 
 
