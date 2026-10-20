@@ -25,6 +25,12 @@ Für einen direkten Vergleich im installierten Colab-Projekt:
 MUJOCO_GL=osmesa PYOPENGL_PLATFORM=osmesa python -m robobarista.demo --pitcher-side-tags --output runs/pitcher_side_tags --trials 3 --width 1280 --height 960 --max-spout-mm 0.5 --max-pitcher-rotation-deg 1
 ```
 
+## Erste Messergebnisse und getrennte Abnahmekriterien (21.10.2026)
+
+Aus einem Colab-CPU-Lauf über 16 Varianten ergeben sich für die Ausgießerspitze u.a. **0,138 mm / 0,046°** mit **1 Tag, 3 Kameras, nativem AprilTag 3 und direkter Optimierung** (gesamte Szene PASS), und **0,055 mm / 0,035°** mit **2 Tags, 4 Kameras, nativem AprilTag 3 und Caliscope** (ganze Szene FAIL trotz guter Kännchenpose). Zahlen sind jeweils schlechteste gemessene Werte aus nur drei statischen Posen mit ideal bekannter Kamerakalibrierung. Deshalb bitte **nicht** als Präzisionsnachweis für Hardware interpretieren.
+
+Neu: `robobarista/benchmark_gates.py` prüft Kännchen-Zielgenauigkeit unabhängig von der restlichen Szene und nennt alle Fehlergründe. `python -m robobarista.compare_rigs --analyze-only` bewertet vorhandene `runs/rig_comparison/*/measurements.json` ohne neue Kamera-Renderläufe; Ergebnisse stehen in `diagnostics.json/.csv`. Die vollständige Szene bleibt ausdrücklich FAIL, solange Nebenobjekte ihre eigenen Kriterien nicht erfüllen. Mit den Daten ist die vorläufige einfachste komplette PASS-Konfiguration **ein AprilTag und drei Kameras (pupil)**; die verbesserte 2-Tag/4-Kamera-Präzision wird mit den Szenenfehlern, weiteren Neigungen und Verdeckungen weiter untersucht.
+
 ## Vergleichsstudie: 1/2 AprilTags × 3/4 Kameras × zwei Detektoren × zwei 3D-Methoden
 
 [**Vergleich direkt in Google Colab öffnen**](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_COMPARE.ipynb)
