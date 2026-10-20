@@ -85,9 +85,13 @@ def _pupil_corner_order(detection):
     if (not np.isfinite(distance[rows, cols]).all()
             or float(distance[rows, cols].max()) > 8.0):
         raise ValueError("AprilTag-3 corner order check failed")
-    pixels = np.empty_like(raw)
-    pixels[rows] = raw[cols]
-    return pixels
+    native = np.empty_like(raw)
+    native[rows] = raw[cols]
+    # AprilTag 3's canonical homography corner order is right-top,
+    # left-top, left-bottom, right-bottom for OpenCV-generated tag36h11.
+    # OpenCV ArUco returns top-left, top-right, bottom-right, bottom-left.
+    # Convert to OpenCV's printed-texture local frame BEFORE solvePnP.
+    return native[[1, 0, 3, 2]]
 
 
 def detect_tags(rgb, include_apriltags: bool = False, detector: str = 'opencv'):
