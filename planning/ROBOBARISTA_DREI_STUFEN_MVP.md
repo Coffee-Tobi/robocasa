@@ -2,6 +2,18 @@
 
 **Festgelegt:** FAIRINO FR5 als Hardware-Ziel und virtueller Arm, **ein Arm**, zwei Werkzeuge/Greifaufsätze gegebenenfalls **nacheinander**. Keine Hardwarebeschaffung für die ersten zwei Stufen. **Drei simulierte Kameras**, die Objektpose nicht bloß anzeigen, sondern **aus den eigenen RGB-Bildern rekonstruieren**. Keine laufende Kamera-Korrektur während des eigentlichen Bewegungs-Replays. Später echter Heart-Latte-Art-Versuch. Vorläufig keine Simulation von Milch/Schaum/Crema, keine Espresso-/Siebträger-/Mühlen-/Dampflanzen-Projekte.
 
+## Verbindliche Entscheidung (20.10.2026): Kännchen-Motion-Capture, nicht Hand-Motion-Capture
+
+**Option 2 ist gewählt:** Demonstrationen werden über die unabhängig aus Kamerabildern gemessene **6D-Pose des Milchkännchens** aufgezeichnet (Position + Orientierung + Zeit); daraus folgen die Sollbewegung der Ausgießerspitze und später die Robotergelenkbewegung. **Keine Handschuhe, keine verpflichtende menschliche Handpose, keine manuelle Führung des Roboters als primäre Lernmethode.** Die FR5-Vorwärtskinematik dient bei der Ausführung zur Zustandsabschätzung; Kameras dienen zusätzlich zur Initialisierung und optionalen Qualitätskontrolle. Die echte MuJoCo-Pose darf weiterhin nur zur Validierung verwendet werden.
+
+**Neue Markerstrategie:** Mindestens zwei seitliche, verschieden ausgerichtete ArUco-/AprilTag-Referenzflächen auf einer **starren, bekannten Halterung am Kännchen**. Kein Tag auf dem Griff, kein Tag im Greifbereich, keine Tags auf der Milchkontaktfläche; Sichtbarkeit während Neigung und Griffbelegung prüfen. Im Simulator zunächst dünne nicht kollidierende Markertafeln, in Hardware allenfalls lebensmitteltaugliche abnehmbare Halterung / lasergravierte Referenz – **den gedruckten Code selbst nicht anschweißen**. Der Marker-zu-Kännchen-zu-Ausgießer-Offset muss kalibriert und validiert werden. ArUco als erster reproduzierbarer Markerstandard; AprilTag als spätere Vergleichsoption, keine unbemerkte Umstellung.
+
+**Kameras:** Drei feste, kalibrierte Blickrichtungen mit mindestens zwei brauchbaren Sichtlinien je relevanter Kännchenpose. Gegenüberliegende Seitenmarker sind nicht notwendigerweise gleichzeitig in einer Kamera zu sehen. Prüfen, ob Greifer, Handgelenk, Griff, Ausgießer und Kannenrotation Marker verdecken. Relative Kannenposition zur Tasse inklusive zeitlicher Synchronisation protokollieren.
+
+**Präzisionsziele (noch nicht nachgewiesen):** vorläufig maximal **0,5 mm Translationsfehler der Ausgießerspitze** und **1° Winkelabweichung**, mit 0,2 mm als Stretch-Ziel. In Auswertungen auch Kännchenmitte, Spitzenfehler, Fehlerquantile, worst case, Erkennungsrate und Kamerasichtbarkeit getrennt ausweisen; kein PASS bei fehlender Messung. Ein Winkel von 1° kann an 10 cm Hebelarm bereits ~1,75 mm Spitzenversatz bedeuten; langfristig ist daher eine strengere Winkeltoleranz oder direkte TCP-Fehlergrenze entscheidend. Diese Ziele gelten **zunächst als Ideal-Simulationsziel** und nicht als Hardwareversprechen.
+
+**Nachweisplan:** Baseline beibehalten und getrennten Side-Tag-Test entwickeln; mehrere Kannenpositionen/-winkel, mindestens zwei Kameraperspektiven, Arm-/Greifer-Verdeckungen, Auflösungs- und Distanzvergleich, reale Kamerastörungen/Kalibrierfehler und wiederholte dynamische Trajektorien im Zeitverlauf. Einen einmaligen 3-Trial-Test nicht als Beleg für submillimetergenaue dynamische Motion-Capture ausgeben.
+
 ## Stufe 1 – 3D-Wahrnehmung mit drei simulierten Kameras (jetzt)
 
 ### 1A. Virtuelle Anlage
