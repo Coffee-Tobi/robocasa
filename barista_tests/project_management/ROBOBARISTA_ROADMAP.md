@@ -1,9 +1,18 @@
 # RoboBarista – Projekttracker und Roadmap
 
-> **Status:** Startfassung, 20.10.2026. **Quelle:** unsere Projektplanung. Noch keine Erledigungsstände überprüft.  
+> **Status:** aktualisiert am 20.10.2026. **Quelle:** unsere Projektplanung. Noch keine Erledigungsstände überprüft.  
 > **Ziel:** Ein visueller, lernbasierter, anpassungsfähiger Roboter, der Latte Art eingießt; spätere Espresso- und Milchaufschäum-Funktionen separat.  
 > **Wichtig:** Diese Datei ist der *vorläufige* Aufgaben-Tracker, da **Issues im GitHub-Repository deaktiviert** sind. Eine CSV steht für den Import in Linear oder einen anderen Projekttracker bereit.  
 > **Branch:** `barista-dev`. **Das Trainieren eines end-to-end black-box VLA ist ausdrücklich keine Pflicht.**
+
+## Projektentscheidung: Wenig Eigenentwicklung, keine eigene Flüssigkeitsphysik (20.10.2026)
+
+- **Primäre Referenz:** [One-Shot Learning for Double-Shot Latte Art](https://arxiv.org/abs/2610.16179), phasenweise Cartesian Dynamic Movement Primitives; Originalcode ist **noch nicht als öffentlich verfügbar bestätigt**. Rückfrage an Autor*innen läuft. Freie Basiskomponente: [movement_primitives](https://github.com/dfki-ric/movement_primitives).
+- **Alternative mit dokumentierten Videos/Daten:** [π0 Latte Art Robot](https://ridxm.github.io/latte-art-robot/) verwendet drei Kameras, 12D Roboterzustand/-aktion, 40 Demonstrationen bei 20 Hz.
+- **Pflichtdaten:** Kännchenposition und -orientierung inkl. Neigung über die Zeit; Tassenpose und Neigung (zunächst fester Halter); Zeitstempel, Bewegungsbahn, Kamerabilder und Auftreffpunkt soweit beobachtbar.
+- **Keine Pflichtsensorik:** Milchflussrate, Milchtemperatur, Milchschaumqualität, Ausgangsmenge werden **nicht kontinuierlich gemessen**. Wir nehmen reproduzierbare Bedingungen an und prüfen erst bei realen Tests, ob sie ausreichend konsistent sind.
+- **Mögliche spätere Ergänzung:** Flussrate nicht zuverlässig allein aus Standard-RGB ableitbar; Massenzunahme pro Zeit mit einer Waage unter der Tasse ist eine vergleichsweise einfache Option.
+- **Simulation:** Nur Roboter, Kännchen, Tasse, Kollisionen und Bewegungen mit bestehender Physiksoftware. **Keine Eigenentwicklung eines Milch-, Crema- oder Schaumsimulators.** Die echte Flüssigkeit wird erst beim kontrollierten physischen Eingießversuch benötigt.
 
 ## Bedienung und Status
 
@@ -23,13 +32,13 @@
 | M2 | 3D-Erfassung | Position und Winkel mit kalibrierten Kameras geschätzt |
 | M3 | Bewegungslernen | Gelernte, veränderbare Eingießbewegung aus Demonstrationen |
 | M4 | Robotermechanik | Einarm-Roboter reproduziert gelernte Bewegung in MuJoCo |
-| M5 | Flüssigkeit & Muster | Erst Strahlmodell, danach empirisches/physikalisches Musterfeedback |
+| M5 | Geometrie und Realwelt-Testplanung | Geometrischen Treffpunkt prüfen und standardisierte reale Milchtests vorbereiten, ohne eigene Fluid-Simulation |
 | M6 | Adaptive Steuerung | Schnell messbare Korrektur bei Positionsänderungen |
-| M7 | Integration | Bewertbare virtuelle Latte Art; Hardware und Restworkflow später |
+| M7 | Integration | Roboter-Dry-Run und anschließend kontrollierte reale Eingießversuche |
 
 ## Empfohlener Start
 
-**Zuerst RB-01, RB-02 und RB-05.** Danach RB-06 → RB-07 → RB-09 (frühe visuelle Überprüfbarkeit).  
+**Zuerst RB-01, RB-42, RB-02 und RB-05.** Danach RB-06 → RB-07 → RB-09 (frühe visuelle Überprüfbarkeit).  
 **Geschwindigkeit parallel:** RB-31 kann früh starten, sobald die Datenschnittstellen feststehen.  
 **Für Latte Art zuerst:** die Schritte zum **Eingießen** priorisieren; **Milchaufschäumen und Espressomaschine später**.
 
@@ -40,8 +49,8 @@
 | [RB-01](#rb-01) | MVP-Umfang: zunächst Latte Art eingießen, ein Arm, geneigte feste Tasse | M0 | P0 | 1/5 | Backlog | – |
 | [RB-02](#rb-02) | Messbare Erfolgskriterien für Wahrnehmung, Latte Art und Robotik | M0 | P0 | 2/5 | Backlog | RB-01 |
 | [RB-03](#rb-03) | Systemarchitektur und gemeinsame Datenformate planen | M0 | P0 | 2/5 | Backlog | RB-01 |
-| [RB-04](#rb-04) | Open-Source-Auswahl, Datenlizenzen und Reproduzierbarkeit prüfen | M0 | P1 | 1/5 | Backlog | RB-01 |
-| [RB-05](#rb-05) | Geeignete Latte-Art-Demonstrationsvideos zusammentragen | M1 | P0 | 1/5 | Backlog | RB-01 |
+| [RB-04](#rb-04) | Verfügbarkeit vorhandener Latte-Art-Projekte und Lizenzen prüfen | M0 | P1 | 1/5 | Backlog | RB-01 |
+| [RB-05](#rb-05) | Vorhandene Latte-Art-Demos und offene Datensätze vergleichen | M1 | P0 | 1/5 | Backlog | RB-01 |
 | [RB-06](#rb-06) | Erstes Video und Kamera-Perspektive als Referenz definieren | M1 | P0 | 1/5 | Backlog | RB-05 |
 | [RB-07](#rb-07) | Tasse und Milchkännchen im Video segmentieren und verfolgen | M1 | P0 | 2/5 | Backlog | RB-06 |
 | [RB-08](#rb-08) | Ausgießerspitze und Tassenrand im Bild verfolgen | M1 | P0 | 3/5 | Backlog | RB-07 |
@@ -56,7 +65,7 @@
 | [RB-17](#rb-17) | Becherwinkel, Oberfläche und Ausgießerabstand erfassen | M2 | P1 | 3/5 | Backlog | RB-11, RB-16 |
 | [RB-18](#rb-18) | Aus Videos Bewegungsbahnen mit Zeitbezug extrahieren | M3 | P0 | 3/5 | Backlog | RB-16 |
 | [RB-19](#rb-19) | Neigung, Geschwindigkeit und Beschleunigung der Kanne lernen | M3 | P0 | 3/5 | Backlog | RB-17, RB-18 |
-| [RB-20](#rb-20) | DMP-Basismodell einer Latte-Art-Eingießbewegung trainieren | M3 | P0 | 3/5 | Backlog | RB-18, RB-19 |
+| [RB-20](#rb-20) | Phasenweise One-Shot-CDMP-Bewegungen als Baseline nachnutzen | M3 | P0 | 3/5 | Backlog | RB-18, RB-19 |
 | [RB-21](#rb-21) | Gelernte Bewegung auf neue Startpositionen und Tempi übertragen | M3 | P1 | 4/5 | Backlog | RB-20 |
 | [RB-22](#rb-22) | Alternativen zu DMPs vergleichbar testen | M3 | P2 | 4/5 | Backlog | RB-20 |
 | [RB-23](#rb-23) | Geeigneten Einarm-Roboter mit Greifer und Arbeitsraum wählen | M4 | P0 | 2/5 | Backlog | RB-01, RB-19 |
@@ -64,20 +73,21 @@
 | [RB-25](#rb-25) | Minimale Simulation: Roboter, Kännchen, Tasse ohne Flüssigkeit | M4 | P0 | 3/5 | Backlog | RB-23, RB-24 |
 | [RB-26](#rb-26) | Gelernte Ausgießertrajektorien durch inverse Kinematik ausführen | M4 | P0 | 4/5 | Backlog | RB-20, RB-25 |
 | [RB-27](#rb-27) | Kollisionen, Reichweite, Tassen- und Griffgeometrie prüfen | M4 | P1 | 3/5 | Backlog | RB-26 |
-| [RB-28](#rb-28) | Vereinfachtes Modell des Milchstrahls und Auftreffpunkts bauen | M5 | P1 | 3/5 | Backlog | RB-17, RB-25 |
-| [RB-29](#rb-29) | Dynamisches Modell für Musterentwicklung aus Videodaten untersuchen | M5 | P1 | 4/5 | Backlog | RB-11, RB-12, RB-28 |
-| [RB-30](#rb-30) | Physikbasierten Milch-/Schaum-/Crema-Simulator nur bei Bedarf evaluieren | M5 | P2 | 5/5 | Backlog | RB-28, RB-29 |
+| [RB-28](#rb-28) | Geometrischen Auftreffpunkt ohne Flüssigkeitssimulation prüfen | M5 | P1 | 2/5 | Backlog | RB-17, RB-25 |
+| [RB-29](#rb-29) | Ersten Versuch mit echter Milch unter konstanten Bedingungen planen | M5 | P1 | 3/5 | Backlog | RB-24, RB-26, RB-28 |
+| [RB-30](#rb-30) | Optionalen Flusssensor nur bei Bedarf evaluieren – keine eigene Fluidphysik | M5 | P2 | 2/5 | Backlog | RB-29 |
 | [RB-31](#rb-31) | Geschwindigkeitsprofil für KI, Kameras, Rendering und Physik erstellen | M6 | P0 | 2/5 | Backlog | RB-03 |
 | [RB-32](#rb-32) | Adaptive geschlossene Regelung anhand visueller Positionsfehler | M6 | P0 | 4/5 | Backlog | RB-16, RB-26, RB-31 |
 | [RB-33](#rb-33) | Schnelle wiederholte Replanung und Sensorkontrolle | M6 | P1 | 4/5 | Backlog | RB-32 |
-| [RB-34](#rb-34) | Live-Latte-Art-Feedback in Bewegungskorrekturen übersetzen | M6 | P1 | 4/5 | Backlog | RB-11, RB-12, RB-29, RB-32 |
+| [RB-34](#rb-34) | Visuelle Latte-Art-Rückmeldung zu Bewegungskorrekturen nutzen | M6 | P1 | 4/5 | Backlog | RB-11, RB-12, RB-29, RB-32 |
 | [RB-35](#rb-35) | Robustheit gegen Startpositions- und Kameraveränderungen testen | M7 | P1 | 4/5 | Backlog | RB-32, RB-33 |
-| [RB-36](#rb-36) | Gelerntes Gießen mit visueller Rückmeldung integrieren | M7 | P1 | 4/5 | Backlog | RB-26, RB-28, RB-34 |
-| [RB-37](#rb-37) | Übertragung auf reale Kamera und realen Roboter vorbereiten | M7 | P2 | 4/5 | Backlog | RB-35, RB-36 |
+| [RB-36](#rb-36) | Virtueller Roboter-Dry-Run ohne eigene Flüssigkeitssimulation | M7 | P1 | 4/5 | Backlog | RB-26, RB-28, RB-32 |
+| [RB-37](#rb-37) | Ersten kontrollierten realen Eingießversuch durchführen | M7 | P1 | 4/5 | Backlog | RB-29, RB-35, RB-36 |
 | [RB-38](#rb-38) | Milch aufschäumen und Schaumqualität bewerten (späterer Teil) | M7 | P2 | 5/5 | Backlog | RB-36 |
 | [RB-39](#rb-39) | Espressomaschine und Mühle bedienen (späterer Teil) | M7 | P2 | 4/5 | Backlog | RB-36 |
 | [RB-40](#rb-40) | Dampflanze reinigen, Fehler erkennen und Arbeitsabläufe koordinieren | M7 | P2 | 3/5 | Backlog | RB-38, RB-39 |
 | [RB-41](#rb-41) | Ergebnisse, Modelle, Videos und Tests reproduzierbar archivieren | M7 | P1 | 2/5 | Backlog | RB-03, RB-10 |
+| [RB-42](#rb-42) | Originalprojekt One-Shot Latte Art auf Code und Demonstrationsdaten prüfen | M0 | P0 | 2/5 | Backlog | RB-01 |
 
 ## Aufgaben und Abnahmekriterien
 
@@ -89,7 +99,7 @@
 - **Status:** Backlog · **Priorität:** P0 · **Schwierigkeit:** 1/5
 - **Abhängigkeiten:** keine
 - **Open Source / Tools (Kandidaten):** Markdown / GitHub
-- [ ] **Abnahme:** MVP und bewusst ausgeschlossene Funktionen schriftlich festgelegt
+- [ ] **Abnahme:** MVP: vorhandene Latte-Art-Forschung nutzen, keine eigene Fluid-Simulation, ein Arm/Kännchen und anfangs feste geneigte Tasse; reale Tests erst nach virtuellem Trockenlauf
 - [ ] Ergebnis/Video/Code/Validierung verlinken und Status aktualisieren
 
 
@@ -99,7 +109,7 @@
 - **Status:** Backlog · **Priorität:** P0 · **Schwierigkeit:** 2/5
 - **Abhängigkeiten:** [RB-01](#rb-01)
 - **Open Source / Tools (Kandidaten):** OpenCV
-- [ ] **Abnahme:** Messgrößen für Treffpunkt, Musterqualität, Pose, Erfolgsquote und Latenz dokumentiert
+- [ ] **Abnahme:** Metriken: Kännchenpose/-tempo, Tassenpose, Treffpunkt, reale Musterqualität und Latenz; keine verpflichtenden Live-Messungen von Milchschaum, Temperatur oder Flussrate
 - [ ] Ergebnis/Video/Code/Validierung verlinken und Status aktualisieren
 
 
@@ -114,24 +124,34 @@
 
 
 <a id="rb-04"></a>
-#### RB-04 · Open-Source-Auswahl, Datenlizenzen und Reproduzierbarkeit prüfen
+#### RB-04 · Verfügbarkeit vorhandener Latte-Art-Projekte und Lizenzen prüfen
 
 - **Status:** Backlog · **Priorität:** P1 · **Schwierigkeit:** 1/5
 - **Abhängigkeiten:** [RB-01](#rb-01)
-- **Open Source / Tools (Kandidaten):** GitHub / Hugging Face
-- [ ] **Abnahme:** Für jede ausgewählte Bibliothek Version, Lizenz, Grenzen und Quelle vermerkt
+- **Open Source / Tools (Kandidaten):** One-Shot Latte Art arXiv:2610.16179 / CatalyzeX / ridxm latte-art-robot
+- [ ] **Abnahme:** One-Shot-Implementierung/Datenformat/Sensorik geklärt; echte Wiederverwendung vs. nötige Nachimplementierung und freie Alternative dokumentiert
+- [ ] Ergebnis/Video/Code/Validierung verlinken und Status aktualisieren
+
+
+<a id="rb-42"></a>
+#### RB-42 · Originalprojekt One-Shot Latte Art auf Code und Demonstrationsdaten prüfen
+
+- **Status:** Backlog · **Priorität:** P0 · **Schwierigkeit:** 2/5
+- **Abhängigkeiten:** [RB-01](#rb-01)
+- **Open Source / Tools (Kandidaten):** One-Shot arXiv:2610.16179 / CatalyzeX / dfki-ric/movement_primitives
+- [ ] **Abnahme:** Originalcode / Demos / Sensorik und Bewegungsdaten überprüft; Wiederverwendungs- oder Fallbackstrategie bestätigt
 - [ ] Ergebnis/Video/Code/Validierung verlinken und Status aktualisieren
 
 
 ### M1 – Bildgebung, Tracking und Visualisierung
 
 <a id="rb-05"></a>
-#### RB-05 · Geeignete Latte-Art-Demonstrationsvideos zusammentragen
+#### RB-05 · Vorhandene Latte-Art-Demos und offene Datensätze vergleichen
 
 - **Status:** Backlog · **Priorität:** P0 · **Schwierigkeit:** 1/5
 - **Abhängigkeiten:** [RB-01](#rb-01)
-- **Open Source / Tools (Kandidaten):** ffmpeg / yt-dlp nur mit passenden Nutzungsrechten
-- [ ] **Abnahme:** Mindestens drei rechtmäßig nutzbare Aufnahmen mit gut sichtbarem Kännchen und Becher ausgewählt
+- **Open Source / Tools (Kandidaten):** One-Shot-Latte-Art / ridxm latte-pour-demos / ffmpeg
+- [ ] **Abnahme:** Mindestens ein rechtmäßig nutzbares Demonstrationsvideo plus publizierte vorhandene Latte-Art-Bewegungsdaten gefunden
 - [ ] Ergebnis/Video/Code/Validierung verlinken und Status aktualisieren
 
 
@@ -223,7 +243,7 @@
 - **Status:** Backlog · **Priorität:** P0 · **Schwierigkeit:** 2/5
 - **Abhängigkeiten:** [RB-08](#rb-08)
 - **Open Source / Tools (Kandidaten):** OpenCV / Kamera-Geometrie
-- [ ] **Abnahme:** Konkretes Layout (Draufsicht plus Seitenansicht, optional Handkamera) mit Sichtfeldbegründung
+- [ ] **Abnahme:** Minimale Kameraanordnung (z. B. oben + seitlich) für Kännchen, Tasse und Ausgießer festgelegt; Zusatzkameras nur bei nachgewiesenem Bedarf
 - [ ] Ergebnis/Video/Code/Validierung verlinken und Status aktualisieren
 
 
@@ -253,7 +273,7 @@
 - **Status:** Backlog · **Priorität:** P1 · **Schwierigkeit:** 3/5
 - **Abhängigkeiten:** [RB-11](#rb-11), [RB-16](#rb-16)
 - **Open Source / Tools (Kandidaten):** OpenCV / Geometrie
-- [ ] **Abnahme:** Becherneigung, Oberflächenhöhe und Ausgießerabstand werden pro Frame geschätzt
+- [ ] **Abnahme:** Becherneigung, Ausgießerhöhe und Kännchenorientierung relativ zur Tasse (mit Unsicherheit) über die Zeit erfasst
 - [ ] Ergebnis/Video/Code/Validierung verlinken und Status aktualisieren
 
 
@@ -280,12 +300,12 @@
 
 
 <a id="rb-20"></a>
-#### RB-20 · DMP-Basismodell einer Latte-Art-Eingießbewegung trainieren
+#### RB-20 · Phasenweise One-Shot-CDMP-Bewegungen als Baseline nachnutzen
 
 - **Status:** Backlog · **Priorität:** P0 · **Schwierigkeit:** 3/5
 - **Abhängigkeiten:** [RB-18](#rb-18), [RB-19](#rb-19)
-- **Open Source / Tools (Kandidaten):** dfki-ric/movement_primitives
-- [ ] **Abnahme:** Gelernte Bewegung im virtuellen Kännchen ohne manuell programmierte Trajektorie reproduziert
+- **Open Source / Tools (Kandidaten):** One-Shot Latte Art arXiv:2610.16179 / dfki-ric/movement_primitives
+- [ ] **Abnahme:** Wenn verfügbar Originalcode nutzen, ansonsten frei verfügbare DMP-Bibliothek; fünf Bewegungsphasen inkl. Kännchenorientierung zeitlich reproduzieren
 - [ ] Ergebnis/Video/Code/Validierung verlinken und Status aktualisieren
 
 
@@ -361,35 +381,35 @@
 - [ ] Ergebnis/Video/Code/Validierung verlinken und Status aktualisieren
 
 
-### M5 – Milchstrahl, Milchschaum und Flüssigkeitsmodelle
+### M5 – Geometrie und reale Versuchsvorbereitung
 
 <a id="rb-28"></a>
-#### RB-28 · Vereinfachtes Modell des Milchstrahls und Auftreffpunkts bauen
+#### RB-28 · Geometrischen Auftreffpunkt ohne Flüssigkeitssimulation prüfen
 
-- **Status:** Backlog · **Priorität:** P1 · **Schwierigkeit:** 3/5
+- **Status:** Backlog · **Priorität:** P1 · **Schwierigkeit:** 2/5
 - **Abhängigkeiten:** [RB-17](#rb-17), [RB-25](#rb-25)
-- **Open Source / Tools (Kandidaten):** MuJoCo + Geometrie / SciPy
-- [ ] **Abnahme:** Strahlrichtung, Ausgießerhöhe, Treffpunkt und einfache Flussrate nachvollziehbar berechenbar
+- **Open Source / Tools (Kandidaten):** OpenCV / MuJoCo-Geometrie / Rerun
+- [ ] **Abnahme:** Ohne Simulation von Milch: Ausgießerpose, relative Höhe, Tassenwinkel und geometrisch geschätzter Auftreffpunkt visualisiert
 - [ ] Ergebnis/Video/Code/Validierung verlinken und Status aktualisieren
 
 
 <a id="rb-29"></a>
-#### RB-29 · Dynamisches Modell für Musterentwicklung aus Videodaten untersuchen
+#### RB-29 · Ersten Versuch mit echter Milch unter konstanten Bedingungen planen
 
-- **Status:** Backlog · **Priorität:** P1 · **Schwierigkeit:** 4/5
-- **Abhängigkeiten:** [RB-11](#rb-11), [RB-12](#rb-12), [RB-28](#rb-28)
-- **Open Source / Tools (Kandidaten):** PyTorch / OpenCV
-- [ ] **Abnahme:** Vorhersage nächster Musterveränderungen auf zuvor ungesehenen Beispielen evaluiert
+- **Status:** Backlog · **Priorität:** P1 · **Schwierigkeit:** 3/5
+- **Abhängigkeiten:** [RB-24](#rb-24), [RB-26](#rb-26), [RB-28](#rb-28)
+- **Open Source / Tools (Kandidaten):** Echte Espressotasse / Milchkännchen / reproduzierbare Milchschaumzubereitung / Video
+- [ ] **Abnahme:** Konstantes Rezept, Tassenneigung und sichere reale Testfolge nach virtuellem Dry-Run mit Kamera und Erfolgsbewertung definiert
 - [ ] Ergebnis/Video/Code/Validierung verlinken und Status aktualisieren
 
 
 <a id="rb-30"></a>
-#### RB-30 · Physikbasierten Milch-/Schaum-/Crema-Simulator nur bei Bedarf evaluieren
+#### RB-30 · Optionalen Flusssensor nur bei Bedarf evaluieren – keine eigene Fluidphysik
 
-- **Status:** Backlog · **Priorität:** P2 · **Schwierigkeit:** 5/5
-- **Abhängigkeiten:** [RB-28](#rb-28), [RB-29](#rb-29)
-- **Open Source / Tools (Kandidaten):** SPlisHSPlasH / ggf. externe CFD
-- [ ] **Abnahme:** Machbarkeitsvergleich von Physiksimulation und datengetriebenem Ersatzmodell inklusive Rechenzeit
+- **Status:** Backlog · **Priorität:** P2 · **Schwierigkeit:** 2/5
+- **Abhängigkeiten:** [RB-29](#rb-29)
+- **Open Source / Tools (Kandidaten):** Küchenwaage / Video / einfache Zeitdifferenz
+- [ ] **Abnahme:** Nur bei ungleichen realen Ergebnissen entscheiden, ob Massenzunahme pro Zeit gemessen werden muss; keine Pflichtsensorik, kein selbstgebauter Simulator
 - [ ] Ergebnis/Video/Code/Validierung verlinken und Status aktualisieren
 
 
@@ -426,12 +446,12 @@
 
 
 <a id="rb-34"></a>
-#### RB-34 · Live-Latte-Art-Feedback in Bewegungskorrekturen übersetzen
+#### RB-34 · Visuelle Latte-Art-Rückmeldung zu Bewegungskorrekturen nutzen
 
 - **Status:** Backlog · **Priorität:** P1 · **Schwierigkeit:** 4/5
 - **Abhängigkeiten:** [RB-11](#rb-11), [RB-12](#rb-12), [RB-29](#rb-29), [RB-32](#rb-32)
-- **Open Source / Tools (Kandidaten):** Rerun / PyTorch / MoveIt Servo
-- [ ] **Abnahme:** Abweichender Auftreffpunkt oder Muster führt zu nachvollziehbarer Anpassung der Bewegung
+- **Open Source / Tools (Kandidaten):** OpenCV / Rerun / MoveIt Servo
+- [ ] **Abnahme:** Änderung von Auftreffpunkt oder sichtbarer Musterabweichung erzeugt nachvollziehbare Anpassung der Bewegung ohne Fluidmodell
 - [ ] Ergebnis/Video/Code/Validierung verlinken und Status aktualisieren
 
 
@@ -448,22 +468,22 @@
 
 
 <a id="rb-36"></a>
-#### RB-36 · Gelerntes Gießen mit visueller Rückmeldung integrieren
+#### RB-36 · Virtueller Roboter-Dry-Run ohne eigene Flüssigkeitssimulation
 
 - **Status:** Backlog · **Priorität:** P1 · **Schwierigkeit:** 4/5
-- **Abhängigkeiten:** [RB-26](#rb-26), [RB-28](#rb-28), [RB-34](#rb-34)
-- **Open Source / Tools (Kandidaten):** Python / MuJoCo / Rerun
-- [ ] **Abnahme:** Kompletter virtueller Eingießdurchgang inkl. Wahrnehmung, Korrektur und Resultatbewertung
+- **Abhängigkeiten:** [RB-26](#rb-26), [RB-28](#rb-28), [RB-32](#rb-32)
+- **Open Source / Tools (Kandidaten):** MuJoCo / Rerun / OpenCV
+- [ ] **Abnahme:** Kännchenbewegung, Tassenwinkel und Ausgießerposition in realitätsnaher Robotersimulation geprüft; keine eigene Fluidphysik
 - [ ] Ergebnis/Video/Code/Validierung verlinken und Status aktualisieren
 
 
 <a id="rb-37"></a>
-#### RB-37 · Übertragung auf reale Kamera und realen Roboter vorbereiten
+#### RB-37 · Ersten kontrollierten realen Eingießversuch durchführen
 
-- **Status:** Backlog · **Priorität:** P2 · **Schwierigkeit:** 4/5
-- **Abhängigkeiten:** [RB-35](#rb-35), [RB-36](#rb-36)
-- **Open Source / Tools (Kandidaten):** ROS 2 / MoveIt 2 / OpenCV
-- [ ] **Abnahme:** Sicherheitskonzept, reale Kalibrierung und Sim-to-Real-Risiken dokumentiert
+- **Status:** Backlog · **Priorität:** P1 · **Schwierigkeit:** 4/5
+- **Abhängigkeiten:** [RB-29](#rb-29), [RB-35](#rb-35), [RB-36](#rb-36)
+- **Open Source / Tools (Kandidaten):** Realer Roboter / Kamera / Sicherheitsprüfung
+- [ ] **Abnahme:** Realen Versuch nach erfolgreichem virtuellem Dry-Run gefilmt und Qualität/Fehler mit Referenz verglichen
 - [ ] Ergebnis/Video/Code/Validierung verlinken und Status aktualisieren
 
 
@@ -503,7 +523,7 @@
 - **Status:** Backlog · **Priorität:** P1 · **Schwierigkeit:** 2/5
 - **Abhängigkeiten:** [RB-03](#rb-03), [RB-10](#rb-10)
 - **Open Source / Tools (Kandidaten):** GitHub / Hugging Face Datasets / DVC
-- [ ] **Abnahme:** Jeder Test verlinkt Codeversion, Datenversion, Seed, Video und Metriken
+- [ ] **Abnahme:** Dokumentierte Versionen, Posen/Bewegung, Video und reale Versuchsergebnisse; Milchzubereitung standardisiert, keine Pflichtsensoren
 - [ ] Ergebnis/Video/Code/Validierung verlinken und Status aktualisieren
 
 
@@ -514,8 +534,8 @@
 | Anfangsumfang | Nur Latte Art eingießen, nicht Aufschäumen oder Espresso |
 | Armkonzept | Ein Arm am Kännchen; Tasse zunächst im festen, geneigten Halter |
 | Perzeption | Explizit interpretierbare Messwerte und Overlay statt ausschließlich impliziter VLA-Merkmale |
-| Lernansatz | DMP als kleine überprüfbare Basis, weitere Policies erst zum Vergleich |
-| Flüssigkeiten | Keine Latte-Art-Funktion aus RoboCasa/MuJoCo ableiten; eigenes Modell erforderlich |
+| Lernansatz | One-Shot-CDMP-Verfahren als erste Vorlage; Originalcode nicht bestätigt, freie DMP-Bibliothek als Fallback |
+| Flüssigkeiten | Keine eigene Fluid-Simulation, stattdessen kontrollierte echte Milchversuche nach Dry-Run. Temperatur, Milchschaumqualität und Ausgangsmenge zunächst durch reproduzierbare Vorbereitung konstant halten. |
 | Echtzeit | Gemessene Colab-T4-RoboCasa-Rollouts waren langsam; erst Physik vs. Rendering einzeln benchmarken |
 | Quellcode | Frei verfügbare Tools priorisieren; Eignung, Versionen und Lizenzen einzeln prüfen |
 | Offene Frage | Kann ein echtes Video mit genügend kalibrierten Perspektiven aufgenommen werden? |
