@@ -13,6 +13,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from .benchmark_gates import summarize_existing_run
+
 
 def analyze(args):
     root=Path(args.output).resolve()
@@ -46,10 +48,18 @@ def analyze(args):
                     (root/f'{label}.stderr.log').write_text(result.stderr)
                     summary_path=folder/'summary.json'
                     summary=json.loads(summary_path.read_text()) if summary_path.exists() else {}
+                    if summary and (folder/'measurements.json').exists():
+                        _,gate=summarize_existing_run(folder)
+                    else:
+                        gate={'pitcher_status':'ERROR','pitcher_failures':[],
+                              'other_failures':[]}
                     row={
                         'variant':label,'detector':method,'pose_method':pose_method,
                         'pitcher_tags':tag_count,'cameras':camera_count,
                         'status':summary.get('status','ERROR'),
+                        'pitcher_status':gate['pitcher_status'],
+                        'pitcher_failures':gate['pitcher_failures'],
+                        'other_failures':gate['other_failures'],
                         'exit_code':result.returncode,
                         'pitcher_valid_trials':summary.get('pitcher_valid_trials',0),
                         'trials':args.trials,
@@ -62,7 +72,7 @@ def analyze(args):
                         'error_excerpt':result.stderr[-1500:] if not summary else ''
                     }
                     rows.append(row)
-                    print('  status:',row['status'],'| measured',
+                    print('  scene:',row['status'],'| pitcher:',row['pitcher_status'],'| measured',
                           row['pitcher_valid_trials'],'/',args.trials,
                           '| max spout mm:',row['max_spout_tip_mm'],
                           '| max pitcher angle:',row['max_pitcher_angle_deg'],
@@ -75,29 +85,77 @@ def analyze(args):
         writer=csv.DictWriter(f,fieldnames=fields)
         writer.writeheader()
         writer.writerows(rows)
-    candidates=[r for r in rows if r['status']=='PASS'
-                and r['pitcher_valid_trials']==args.trials
-                and r['min_pitcher_cameras_seen']>=2]
-    if candidates:
-        # Strict pass first; only rank candidates meeting the full acceptance gate.
-        winner=min(candidates,key=lambda r:(
-            r['max_spout_tip_mm'],r['max_pitcher_angle_deg'],
-            r['cameras'],r['pitcher_tags']))
-        print('\nBest currently PASSING configuration by worst-case spout error:',
-              winner['variant'])
-        print('This is a small idealized simulation; not a real-world accuracy guarantee.')
-    else:
-        print('\nNo configuration passed all acceptance requirements.')
-        print('Review side-tag image overlays, visibility, rotations and stderr logs.')
+    pitcher_candidates=[r for r in rows if r['pitcher_status']=='PASS'
+                        and r['pitcher_valid_trials']==args.trials]
+    scene_candidates=[r for r in pitcher_candidates if r['status']=='PASS']
+    for label,candidates in [('Pitcher-only precision',pitcher_candidates),
+                             ('Entire scene including other objects',scene_candidates)]:
+        if candidates:
+            winner=min(candidates,key=lambda r:(
+                r['max_spout_tip_mm'],r['max_pitcher_angle_deg'],
+                r['cameras'],r['pitcher_tags']))
+            print('\nBest for',label+':',winner['variant'],
+                  '| spout mm',winner['max_spout_tip_mm'])
+        else:
+            print('\nNo passing configuration for',label)
+    print('Remember: only three static ideal-camera poses, not real-sensor validation.')
     print('Comparison and logs saved in',root)
+    return rows
+
+
+def analyze_existing(args):
+    """Re-evaluate existing output without costly repeat MuJoCo rendering."""
+    root=Path(args.output).resolve()
+    rows=[]
+    for summary_path in sorted(root.glob('*/summary.json')):
+        folder=summary_path.parent
+        try:
+            summary,gate=summarize_existing_run(folder)
+        except (ValueError,OSError,KeyError,TypeError) as exc:
+            print('Skipping',folder.name,':',exc)
+            continue
+        row=dict(variant=folder.name,scene_status=gate['scene_status'],
+                 pitcher_status=gate['pitcher_status'],
+                 pitcher_valid_trials=summary.get('pitcher_valid_trials'),
+                 max_spout_tip_mm=summary.get('max_spout_tip_error_mm'),
+                 max_pitcher_angle_deg=summary.get('max_pitcher_rotation_deg'),
+                 max_relative_spout_to_cup_mm=summary.get('max_relative_tip_to_cup_error_mm'),
+                 pitcher_failures=gate['pitcher_failures'],
+                 other_failures=gate['other_failures'])
+        rows.append(row)
+        print('\n',folder.name,
+              '| pitcher:',gate['pitcher_status'],'| scene:',gate['scene_status'],
+              '| spout:',row['max_spout_tip_mm'],'mm')
+        for issue in gate['pitcher_failures']+gate['other_failures']:
+            print('  Failure:',issue)
+    if not rows:
+        print('No cached runs with summary.json + measurements.json in',root)
+        return []
+    (root/'diagnostics.json').write_text(json.dumps(rows,indent=2))
+    with (root/'diagnostics.csv').open('w',newline='') as handle:
+        writer=csv.DictWriter(handle,fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
+    passing=[r for r in rows if r['pitcher_status']=='PASS'
+             and r['max_spout_tip_mm'] is not None]
+    if passing:
+        best=min(passing,key=lambda r:r['max_spout_tip_mm'])
+        print('\nBest pitcher measurement (not full-scene ranking):',
+              best['variant'],best['max_spout_tip_mm'],'mm')
+    print('Saved:',root/'diagnostics.csv')
     return rows
 
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser()
+    parser.add_argument('--analyze-only',action='store_true',help='Use existing saved runs, no rendering')
     parser.add_argument('--output',default='runs/rig_comparison')
     parser.add_argument('--trials',type=int,default=3)
     parser.add_argument('--seed',type=int,default=42)
     parser.add_argument('--width',type=int,default=1280)
     parser.add_argument('--height',type=int,default=960)
-    analyze(parser.parse_args())
+    options=parser.parse_args()
+    if options.analyze_only:
+        analyze_existing(options)
+    else:
+        analyze(options)
