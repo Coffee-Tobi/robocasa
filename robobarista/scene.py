@@ -8,10 +8,20 @@ import numpy as np
 from PIL import Image
 import cv2
 from .geometry import look_at_quat
+from scipy.spatial.transform import Rotation
 
 FR5_URL = 'https://github.com/ma-weiss/Fairino-Mujoco.git'
 FR5_COMMIT = '459570714fc68c92e1fb3605cb60b4d8ef84419b'
 TAG_IDS = {'pitcher': 3, 'cup': 7, 'canister': 11, 'obstacle': 15, 'robot_tool': 19}
+# Research-only alternate layout. The original top-marker benchmark remains untouched.
+SIDE_PITCHER_TAG_IDS = {'pitcher_near': 23, 'pitcher_far': 24}
+SIDE_TAG_SIDE_M = 0.055  # side bracket size, designed not to overlap the handle
+SPOUT_TIP_LOCAL_M = np.array([-0.069, 0.0, 0.136])  # simplified scene geometry, calibrate on real pitcher
+SIDE_PITCHER_TAGS = {
+    # (offset in pitcher-body coordinates, rotation of marker-local frame, degrees about X)
+    'pitcher_near': ([0.0, -0.053, 0.085], +90.0),
+    'pitcher_far':  ([0.0, +0.053, 0.085], -90.0),
+}
 TAG_SIDE_M = 0.066   # visual geom / known square marker width
 MARKER_TEXTURE_PX = 512
 MARKER_QUIET_PX = 36
@@ -21,6 +31,20 @@ CAMERAS = {
     'rgbd_front_right': ([1.10, -0.52, 1.27], [0.54, 0.04, 0.66]),
     'rgbd_overhead': ([0.58, 0.36, 1.60], [0.55, 0.03, 0.63]),
 }
+
+
+CAMERAS_SIDE = {
+    # Two oblique views on the near side; the third sees the opposite side.
+    # Precise visibility still needs to be confirmed from the rendered overlays.
+    'rgbd_front_left': ([0.27, -0.57, 0.94], [0.64, -0.11, 0.55]),
+    'rgbd_front_right': ([1.02, -0.48, 0.91], [0.64, -0.11, 0.55]),
+    'rgbd_overhead': ([0.61, 0.48, 1.02], [0.64, -0.11, 0.55]),
+}
+
+
+def _quat_from_x_angle(deg):
+    xyzw = Rotation.from_euler('x', deg, degrees=True).as_quat()
+    return [xyzw[3], *xyzw[:3]]
 
 
 def _nums(seq):
@@ -42,11 +66,14 @@ def ensure_fr5(directory: Path) -> Path:
     return dst
 
 
-def write_markers(folder: Path):
+def write_markers(folder: Path, pitcher_side_tags: bool = False):
     target = folder / 'rb_tags'
     target.mkdir(exist_ok=True)
     dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
-    for tag_id in TAG_IDS.values():
+    tag_ids = set(TAG_IDS.values())
+    if pitcher_side_tags:
+        tag_ids.update(SIDE_PITCHER_TAG_IDS.values())
+    for tag_id in tag_ids:
         # A white quiet zone around the marker improves detection at a distance.
         side, margin = MARKER_TEXTURE_PX, MARKER_QUIET_PX
         pattern = cv2.aruco.generateImageMarker(dictionary, tag_id, side - 2*margin, borderBits=1)
@@ -79,7 +106,7 @@ def _static_box(worldbody, name, xyz, dims, rgba):
     return b
 
 
-def generate_scene(root_dir: Path) -> Path:
+def generate_scene(root_dir: Path, pitcher_side_tags: bool = False) -> Path:
     """Creates two new XML files inside a cloned FAIRINO asset folder.
 
     The originals stay untouched. ROS robot and meshes are sourced upstream.
@@ -87,7 +114,7 @@ def generate_scene(root_dir: Path) -> Path:
     pose tests; a subsequent learning phase can add a physical gripper.
     """
     fr = ensure_fr5(root_dir)
-    write_markers(fr)
+    write_markers(fr, pitcher_side_tags=pitcher_side_tags)
     robot = ET.parse(fr / 'fr5_robot.xml')
     robot_root = robot.getroot()
     asset = robot_root.find('asset')
@@ -106,7 +133,10 @@ def generate_scene(root_dir: Path) -> Path:
     _tag(tool_tag, 'robot_tool', TAG_IDS['robot_tool'], [0, 0, 0])
     # Textures/materials are defined in the same included robot MJCF model, so
     # assets are visible both to the tool marker and the world objects.
-    for label, tid in TAG_IDS.items():
+    all_tag_ids = list(TAG_IDS.values())
+    if pitcher_side_tags:
+        all_tag_ids += list(SIDE_PITCHER_TAG_IDS.values())
+    for tid in all_tag_ids:
         ET.SubElement(asset, 'texture', {'name': f'rb_tex_{tid}', 'type': '2d',
             'file': f'rb_tags/tag_{tid}.png'})
         ET.SubElement(asset, 'material', {'name': f'rb_mat_{tid}',
@@ -122,7 +152,7 @@ def generate_scene(root_dir: Path) -> Path:
     root = ET.Element('mujoco', {'model':'RoboBarista RGBD three cameras'})
     ET.SubElement(root, 'include', {'file':'rb_fr5_robot.xml'})
     visual = ET.SubElement(root, 'visual')
-    ET.SubElement(visual, 'global', {'offwidth':'1280','offheight':'960'})
+    ET.SubElement(visual, 'global', {'offwidth':'2048','offheight':'1536'})
     world = ET.SubElement(root, 'worldbody')
     ET.SubElement(world, 'light', {'pos':'0.50 0 1.75','dir':'0 0 -1',
                                  'directional':'true','diffuse':'1 1 1'})
@@ -148,24 +178,36 @@ def generate_scene(root_dir: Path) -> Path:
         'pos':'-0.051 0 0.136', 'size':'0.018 0.016 0.005','rgba':'0.66 0.74 0.79 1'})
     ET.SubElement(p, 'geom', {'name':'rb_pitcher_handle', 'type':'capsule',
         'fromto':'0.049 0 0.112 0.11 0 0.112','size':'0.012','rgba':'0.65 0.73 0.78 1'})
-    # Tag not inside the cup/pitcher. Face above the pitcher for optics.
-    _tag(p, 'pitcher', TAG_IDS['pitcher'], [0, 0, 0.155])
+    if pitcher_side_tags:
+        # Idealized, calibrated flat tabs attached rigidly to the pitcher.
+        # These are not literal welded printed codes or a physical gripper model.
+        # ±Y faces are orthogonal to the spout axis (-X) and handle (+X).
+        for label, (offset, x_angle) in SIDE_PITCHER_TAGS.items():
+            tag_body = ET.SubElement(p, 'body', {
+                'name': f'rb_{label}_mount', 'pos': _nums(offset),
+                'quat': _nums(_quat_from_x_angle(x_angle))})
+            _tag(tag_body, label, SIDE_PITCHER_TAG_IDS[label],
+                 [0, 0, 0], tag_outer_side=SIDE_TAG_SIDE_M)
+    else:
+        # Original baseline: tag above the pitcher.
+        _tag(p, 'pitcher', TAG_IDS['pitcher'], [0, 0, 0.155])
 
     canister = _static_box(world,'canister',[.35,-.20,.502],[.10,.085,.10],'.48 .62 .74 1')
     _tag(canister, 'canister', TAG_IDS['canister'], [0,0,.053])
     obstacle = _static_box(world,'obstacle',[.38,.20,.517],[.08,.10,.13],'.65 .43 .29 1')
     _tag(obstacle, 'obstacle', TAG_IDS['obstacle'], [0,0,.068])
 
-    for name,(eye,target) in CAMERAS.items():
+    cameras = CAMERAS_SIDE if pitcher_side_tags else CAMERAS
+    for name,(eye,target) in cameras.items():
         q = look_at_quat(eye, target)
         ET.SubElement(world, 'camera', {'name':name, 'pos': _nums(eye),
-            'quat':_nums(q), 'fovy':'46'})
+            'quat':_nums(q), 'fovy':'40' if pitcher_side_tags else '46'})
     xmlfile = fr / 'rb_scene.xml'
     ET.ElementTree(root).write(xmlfile, encoding='unicode')
     return xmlfile
 
 
-def tag_definitions():
+def tag_definitions(pitcher_side_tags: bool = False):
     """Return tag ID -> (body label, marker-to-object known rigid transform).
 
     Tag coordinate axes must correspond to printed texture axes; renderer UV
@@ -180,7 +222,15 @@ def tag_definitions():
     }
     output = {}
     for name, tag_id in TAG_IDS.items():
+        if name == 'pitcher' and pitcher_side_tags:
+            continue
         T = np.eye(4)
         T[:3,3] = positions[name]
         output[tag_id] = (name, T)
+    if pitcher_side_tags:
+        for name, (offset, x_angle) in SIDE_PITCHER_TAGS.items():
+            T = np.eye(4)
+            T[:3,3] = offset
+            T[:3,:3] = Rotation.from_euler('x', x_angle, degrees=True).as_matrix()
+            output[SIDE_PITCHER_TAG_IDS[name]] = ('pitcher', T)
     return output
