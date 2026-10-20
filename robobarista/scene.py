@@ -74,9 +74,14 @@ def write_markers(folder: Path, pitcher_side_tags: bool = False):
     if pitcher_side_tags:
         tag_ids.update(SIDE_PITCHER_TAG_IDS.values())
     for tag_id in tag_ids:
+        # The new pitcher side tabs use true AprilTag 36h11 markers; original
+        # station markers retain the existing ArUco 4x4 family.
+        tag_dict = (cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_36h11)
+                    if pitcher_side_tags and tag_id in SIDE_PITCHER_TAG_IDS.values()
+                    else dictionary)
         # A white quiet zone around the marker improves detection at a distance.
         side, margin = MARKER_TEXTURE_PX, MARKER_QUIET_PX
-        pattern = cv2.aruco.generateImageMarker(dictionary, tag_id, side - 2*margin, borderBits=1)
+        pattern = cv2.aruco.generateImageMarker(tag_dict, tag_id, side - 2*margin, borderBits=1)
         white = np.full((side, side), 255, dtype=np.uint8)
         white[margin:-margin, margin:-margin] = pattern
         Image.fromarray(white).convert('RGB').save(target / f'tag_{tag_id}.png')
