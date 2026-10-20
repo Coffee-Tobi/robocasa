@@ -28,6 +28,14 @@
 - **Lernen aus Demonstrationen:** [movement_primitives](https://github.com/dfki-ric/movement_primitives) für zeitabhängige DMP/CDMP; [One-Shot Learning for Double-Shot Latte Art](https://arxiv.org/abs/2610.16179) als fachliche Vergleichsreferenz, Originalcode noch nicht als frei verfügbar bestätigt.
 - **Sicherer späterer Echtbetrieb:** FR5-Herstellersteuerung, unabhängig von unserem eigenen Datenformat; ROS-Schnittstellen oder Hersteller-SDK; Robotersicherheitskonzept vor echten Versuchen.
 
+## Präzisierung Motion Capture und Testziele (20.10.2026)
+
+- **Festgelegt: Option 2.** Ein menschlicher Barista bewegt das Milchkännchen; optische Marker **starr am Kännchen**, nicht bloß daneben, dienen als 6D-Bewegungsreferenz. Kein Handschuh-Tracking als Hauptmethode und kein Handführen des FR5 erforderlich. Im Simulations-MVP zunächst reproduzierbare virtuelle Kannenbewegungen.
+- **Versuchsaufbau:** zwei seitliche, entgegengesetzt ausgerichtete Markerplatten an einem kalibrierten Kannenhalter, nicht auf Griff, Ausgießer, Greifflächen oder Milchkontaktbereichen. Drei Kameras werden nach Sichtlinie, Baseline, Markergröße in Pixeln, Schrägblick und Verdeckung positioniert; rechnerisch bekannte Extrinsik im Simulator, in realer Anlage separat zu kalibrieren.
+- **Entscheidungsgrößen:** 0,5 mm maximaler Ausgießer-TCP-Positionsfehler und 1° maximaler Winkel als ambitioniertes **Forschungsziel**, 0,2 mm Stretch; Messrate und dynamische Robustheit gesondert. Für ~10 cm Abstand führt 1° zu etwa 1,75 mm Querabweichung am Ausgießer, daher beide Grenzen nicht als voneinander unabhängig interpretieren.
+- **A/B-Test:** bisherigen Overhead-Marker-Prototyp unverändert als Baseline behalten; separater Side-Tag-Renderbenchmark mit eigener Ausgabedatei. Simulationsergebnis darf keinesfalls mit belegter Genauigkeit echter RGB-D-Kameras verwechselt werden. Die Handgelenk-Pose wird für Ausführung per FR5-Kinematik bestimmt, nicht als Pflichtmarkertest.
+- **Vor Hardware:** Unterschiede zwischen reinen ArUco-Tafeln und AprilTags testen; feste Halterung bevorzugen, QR-Muster selbst nicht schweißen; Reflexion, Vibration, Temperatur, Griffkontakt, Kamerasync und Montageoffset prüfen.
+
 ## Abnahmekriterien (ohne erfundene Genauigkeitsversprechen)
 
 **Stufe 1:** Bei mehreren Testposen werden Positions- und Winkelfehler pro Objekt und Kamera, Detektionsausfälle sowie erfolgreiche Multiview-Fusion gemessen. **Zielwerte erst nach Baseline-Messung** festlegen; Latte Art braucht möglicherweise höhere Genauigkeit als die erste Szene.
