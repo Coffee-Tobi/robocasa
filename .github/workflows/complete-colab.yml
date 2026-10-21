@@ -4,6 +4,7 @@ on:
     paths:
       - 'COLAB_ROBOBARISTA.ipynb'
       - 'robobarista/motor_follow.py'
+      - 'robobarista/continuous_motion.py'
       - 'robobarista/camera_joint_replay.py'
       - 'robobarista/safe_staging.py'
       - 'robobarista/safe_station_staging_demo.py'
@@ -44,14 +45,20 @@ jobs:
           MUJOCO_GL: osmesa
           PYOPENGL_PLATFORM: osmesa
         run: |
-          python -u -m robobarista.camera_joint_replay --seed 14 --frames 13 --fps 5 --width 960 --height 720 --output runs/full/camera
+          python -u -m robobarista.camera_joint_replay --seed 14 --frames 31 --fps 15 --width 960 --height 720 --output runs/full/camera
+      - name: NEW - Camera 6D continuous splines and local Ruckig no-stop joint planner
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.continuous_motion --input runs/full/camera --output runs/full/continuous --spline-fps 100 --knot-stride 3 --dt .02
       - name: 4 - Genuine torque motor mj_step tracking
         env:
           MUJOCO_GL: osmesa
           PYOPENGL_PLATFORM: osmesa
         run: |
           python -u -m robobarista.motor_follow --input runs/full/camera --output runs/full/motor --width 960 --height 720 --fps 7 --time-scale 2.5
-      - name: Check all four modules' real outputs
+      - name: Check all five modules' real outputs
         run: |
           python - <<'PY'
           import json
@@ -61,6 +68,7 @@ jobs:
           b=json.loads((root/'staging/safe_staging_report.json').read_text())
           c=json.loads((root/'camera/summary.json').read_text())
           d=json.loads((root/'motor/summary.json').read_text())
+          e=json.loads((root/'continuous/summary.json').read_text())
           assert a['tamper_integrated_in_grinder']
           assert not a['separate_tamper_station']
           assert len(a['docking_targets'])==7
@@ -68,7 +76,13 @@ jobs:
           assert b['pre_dock_allowed_count']==7
           assert not b['actual_contact_docking_approved']
           assert c['status']=='PASS'
-          assert c['camera_valid_frames']==c['replayed_frames']==13
+          assert c['camera_valid_frames']==c['replayed_frames']==31
+          assert abs(e['input_camera_fps']-15)<.05
+          assert e['spline_samples']==201
+          assert e['ruckig_segments']==10
+          assert e['nonzero_interior_waypoint_velocity']
+          assert e['checked_joint_and_full_pitcher_states']>100
+          assert e['mp4_created']
           assert c['fixed_station_tags_recognized_in_initial_render']==8
           assert c['side_by_side_video_created']
           assert d['status']=='PASS'
@@ -76,9 +90,11 @@ jobs:
           assert d['six_fr5_real_torque_actuators_used']
           assert d['first_safety_violation'] is None
           for video in ['workcell/workcell_demo.mp4','staging/safe_staging.mp4',
-                        'camera/camera_vs_fr5_side_by_side.mp4','motor/motor_tracking.mp4']:
+                        'camera/camera_vs_fr5_side_by_side.mp4',
+                        'continuous/continuous_ruckig.mp4',
+                        'motor/motor_tracking.mp4']:
               assert (root/video).stat().st_size>10000,video
-          print('PASS: complete 4-in-1 Colab experiment')
+          print('PASS: complete 5-stage Colab including 15fps camera+continuous Ruckig')
           print('Motor lag max (mm):',d['max_motor_tracking_position_lag_mm'])
           print('Camera independent max error (mm):',c['max_camera_vs_truth_mm'])
           PY
@@ -102,6 +118,11 @@ jobs:
             runs/full/camera/ground_truth_evaluation_only.json
             runs/full/camera/robot_replay.json
             runs/full/camera/summary.json
+            runs/full/continuous/continuous_ruckig.mp4
+            runs/full/continuous/continuous_6d_ruckig.png
+            runs/full/continuous/camera_continuous_6d.json
+            runs/full/continuous/ruckig_joint_trajectory.json
+            runs/full/continuous/summary.json
             runs/full/motor/motor_tracking.mp4
             runs/full/motor/motor_tracking.json
             runs/full/motor/summary.json
