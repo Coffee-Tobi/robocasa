@@ -26,6 +26,14 @@ Einarmiger Ansatz. Zuerst einfache, visuell prüfbare Bewegungen **ohne simulier
 
 **Unbedingt beachten:** Dieses Ergebnis gilt nur für drei idealisierte **statische** Posen (0°, 12°, 25°). MuJoCo kennt die Kameraparameter exakt und verwendet vereinfachte Kännchen-/Ausgießergeometrie. Kein Nachweis einer 0,2–0,5-mm-Genauigkeit im realen Betrieb oder über vollständige Bewegungsbahnen.
 
+## Nächster Schritt fertig: kinematisches FR5-Gelenk-Replay (21.10.2026)
+
+**Direkt in [COLAB_ROBOT.ipynb](../COLAB_ROBOT.ipynb)** demonstriert das virtuelle FAIRINO-FR5-Modell nun die vorherige synthetische Gießbewegung mithilfe seiner **sechs echten Arm-Gelenke**. Der Fügepunkt `rb_pitcher` ist im MJCF **fest an `wrist3_link` montiert**; keine Teleportation eines frei bewegten Kännchens. Über `scipy.optimize.least_squares` wird die 6D-Wunschpose pro Frame per IK aus den richtigen MuJoCo-Gelenkgrenzen errechnet; anschließend liefert `mj_forward` die tatsächlich erreichte 6D-Pose, die mit dem Ziel verglichen wird. Mehrere IK-Lösungen werden über alle 25 Bilder auch auf Roboter- und Greiferkontakte überprüft, um eine ungeeignete Armhaltung auszusortieren.
+
+**Automatischer Volltest in GitHub Actions:** 25/25 IK-Bewegungen reproduzierbar, keine Gelenkgrenzen verletzt, keine registrierten Eigen-/Umgebungskontakte im ausgewählten kinematischen Lauf (die bewusst nicht kollidierende **virtuelle Kännchengeometrie** ausgenommen). MP4/GIF mit orangefarbigem Ziel-Ausgießer und grünem tatsächlichen Ausgießer, IK-Kurven, CSV und JSON stehen über das Notebook und die [Workflow-Artefakte](https://github.com/Coffee-Tobi/robocasa/actions/workflows/fr5-replay.yml) zur Verfügung. **Keine Motorregelung, kein dynamischer Schutzabstand, keine Greifphysik, keine erlernte menschliche Latte-Art-Trajektorie und noch keine kameragespeisten IK-Sollwerte.**
+
+**Nächste Teilaufgaben:** Sollbewegung aus `COLAB_MOTION` übernehmen (gemessene 6D-Pose relativ zur Tasse), dann Konfiguration realistisch montierter Greifer und Kännchengeometrie, vollständige Kollisionsprüfung einschließlich Kännchen sowie zeitabhängige Gelenkgeschwindigkeit/-beschleunigung und Trajektorienglättung.
+
 ## Schritt nach der ersten Kameraentscheidung – bewegter Kännchen-Test (21.10.2026)
 
 **Aktuell implementiert:** [COLAB_MOTION.ipynb](../COLAB_MOTION.ipynb) und [robobarista/record_motion.py](../robobarista/record_motion.py) geben eine deterministische **synthetische Gießgeste** in MuJoCo vor. In jedem Frame erzeugen die drei Kameras RGB- und Tiefenmessungen; AprilTag-3-Erkennung + Mehrkamera-Optimierung rekonstruiert aus den Kamerabildern die 6D-Kännchenpose. Aus der geschätzten Pose wird die Ausgießerspitze berechnet. Soweit die Tasse ausreichend erfasst wird, wird ihre Relativposition ergänzt.
