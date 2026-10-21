@@ -1,0 +1,44 @@
+name: Motion Capture Smoke Test
+on:
+  push:
+    paths:
+      - 'robobarista/motion.py'
+      - 'robobarista/record_motion.py'
+      - 'robobarista/scene.py'
+      - 'robobarista/geometry.py'
+      - 'COLAB_MOTION.ipynb'
+      - '.github/workflows/motion-smoke.yml'
+  workflow_dispatch:
+jobs:
+  full-render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - name: Install OSMesa and Python dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 libglx-mesa0 libgl1-mesa-dri
+          python -m pip install -r requirements.txt
+      - name: Render moving pitcher through three cameras
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.record_motion --frames 5 --fps 8 --width 640 --height 480 --output runs/ci_motion
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('runs/ci_motion')
+          s=json.loads((p/'summary.json').read_text())
+          print('Motion capture smoke test:',s)
+          assert s['frames']==5
+          assert (p/'preview.gif').stat().st_size>1000
+          assert (p/'trajectory.csv').stat().st_size>100
+          assert (p/'evaluation.json').stat().st_size>100
+          assert len(list((p/'frames').glob('*/*.jpg')))==15
+          PY
