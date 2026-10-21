@@ -4,6 +4,7 @@ on:
     paths:
       - 'robobarista/barista_cell.py'
       - 'robobarista/cell_demo.py'
+      - 'robobarista/workcell_constraints.py'
       - 'tests/test_barista_cell.py'
       - 'COLAB_WORKCELL.ipynb'
       - '.github/workflows/workcell.yml'
@@ -37,7 +38,10 @@ jobs:
           p=Path('runs/workcell_ci')
           s=json.loads((p/'summary.json').read_text())
           print('Workcell validation:',s)
-          assert len(s['stations'])==8
+          assert len(s['stations'])==7
+          assert 'tamper' not in s['stations']
+          assert s['tamper_integrated_in_grinder']
+          assert not s['separate_tamper_station']
           assert len(s['cameras'])==3
           assert s['plastic_cup_instead_of_ceramic']
           assert s['tamper_actuator_exists']
@@ -45,14 +49,18 @@ jobs:
           assert (p/'workcell_preview.png').stat().st_size>10000
           assert (p/'workcell_demo.mp4').stat().st_size>10000
           assert (p/'workcell_demo.gif').stat().st_size>10000
-          assert len(s['reachability'])==8
+          assert len(s['reachability'])==7
+          assert len(s['docking_targets'])==7
+          assert s['no_contact_policy_test']['forbidden_pass_through_blocked']
+          assert all(v['site_position_error_m']<1e-6 for v in s['docking_targets'].values())
+          assert (p/'dock_targets.json').stat().st_size>100
+          assert (p/'workspace_constraints.json').stat().st_size>100
           assert s['pitcher_tag_visible_frames']==8
           assert s['tamper_motor_diagnostics']['down_success']
           assert s['tamper_motor_diagnostics']['return_success']
-          # All fixed station references (61..69), the mobile cup (70),
-          # and the mobile top pitcher tag (71) must be visible in every
-          # tested pose with at least one of the three cameras.
-          for tag in range(61,72):
+          # Retire #62 with the separate tamper; all remaining fixed
+          # references plus moving cup #70 and pitcher-top #71 in all frames.
+          for tag in [61,63,64,65,66,67,68,69,70,71]:
               assert s['tag_visibility_by_frame'][str(tag)]==8, (tag,s['tag_visibility_by_frame'])
           PY
       - name: Save video and reports
@@ -69,4 +77,6 @@ jobs:
             runs/workcell_ci/summary.json
             runs/workcell_ci/visibility.json
             runs/workcell_ci/reachability.json
+            runs/workcell_ci/dock_targets.json
+            runs/workcell_ci/workspace_constraints.json
           if-no-files-found: warn
