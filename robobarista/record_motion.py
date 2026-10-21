@@ -275,6 +275,8 @@ def run(args):
          if r['spout_tip_error_mm'] is not None]
     rot=[r['pitcher_rotation_error_deg'] for r in evaluations
          if r['pitcher_rotation_error_deg'] is not None]
+    rel_errors=[r['relative_spout_to_cup_error_mm'] for r in evaluations
+                if r['relative_spout_to_cup_error_mm'] is not None]
     max_gap=0;gap=0
     for r in samples:
         gap=0 if r['pitcher_valid'] else gap+1
@@ -295,6 +297,8 @@ def run(args):
         'longest_missing_pitcher_run_frames':max_gap,
         'max_spout_tip_error_mm':max(err) if err else None,
         'max_pitcher_rotation_error_deg':max(rot) if rot else None,
+        'max_relative_spout_to_cup_error_mm':max(rel_errors) if rel_errors else None,
+        'relative_spout_goal_in_pass_gate':False,  # Cup calibration warrants a separate gate
         'allowed_spout_mm':args.max_spout_mm,
         'allowed_rotation_deg':args.max_rotation_deg,
         'runtime_s':round(time.monotonic()-t0,2),
