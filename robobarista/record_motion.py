@@ -144,6 +144,12 @@ def run(args):
     start_position=first['position'].copy()
     start_rotation=first['rotation'].copy()
     samples=[];evaluations=[];previews=[]
+    # The cup is fixed in this experimental scene. Calibrate it from camera
+    # images once and retain that OBSERVED pose as the world reference, so
+    # temporary visual occlusion during pouring doesn't invalidate the trajectory.
+    # This is never initialized from MuJoCo ground truth.
+    cup_reference=None
+    cup_reference_frame=None
     t0=time.monotonic()
     frame_root=out/'frames'
     try:
@@ -192,9 +198,13 @@ def run(args):
                 poses[label]=estimate if valid_pose(estimate,views[label]) else None
 
             pitcher=poses['pitcher']
-            cup=poses['cup']
+            cup_now=poses['cup']
+            if cup_reference is None and cup_now is not None:
+                cup_reference=cup_now
+                cup_reference_frame=frame
             tip=world_spout(pitcher['position'],pitcher['rotation'],SPOUT_TIP_LOCAL_M) if pitcher else None
-            relative=tip - cup['position'] if tip is not None and cup else None
+            relative=(tip-cup_reference['position']
+                      if tip is not None and cup_reference is not None else None)
             gt_pitcher=get_gt(model,data,'pitcher')
             gt_cup=get_gt(model,data,'cup')
             true_spout=world_spout(gt_pitcher['position'],gt_pitcher['rotation'],
@@ -208,10 +218,12 @@ def run(args):
             row=dict(frame=frame,time_s=float(time_s),phase=desired.phase,
                      pitcher_cameras=views['pitcher'],cup_cameras=views['cup'],
                      pitcher_valid=pitcher is not None,
-                     cup_valid=cup is not None,
+                     cup_observed_this_frame=cup_now is not None,
+                     cup_reference_available=cup_reference is not None,
+                     cup_reference_frame=cup_reference_frame,
                      relative_valid=relative is not None,
                      **_pose_fields(pitcher,'pitcher'),
-                     **_pose_fields(cup,'cup'),
+                     **_pose_fields(cup_reference,'cup_reference'),
                      **_spout_fields(tip,'spout'),
                      **_spout_fields(relative,'spout_relative_to_cup'))
             samples.append(row)
@@ -275,7 +287,10 @@ def run(args):
         'interpretation':'Kinematically scripted moving pitcher vision test; no human latte-art skill or FR5 replay yet',
         'camera_setup':'3 camera, one side AprilTag 36h11, pupil detector, bundle_adjust',
         'frames':args.frames,'fps':args.fps,'virtual_duration_s':(args.frames-1)/args.fps,
-        'pitcher_valid_frames':pitcher_good,'cup_valid_frames':sum(r['cup_valid'] for r in samples),
+        'pitcher_valid_frames':pitcher_good,
+        'cup_observed_frames':sum(r['cup_observed_this_frame'] for r in samples),
+        'cup_reference_frame':cup_reference_frame,
+        'cup_reference_type':'first valid multiview camera observation; held fixed because simulated cup is stationary',
         'relative_valid_frames':rel_good,
         'longest_missing_pitcher_run_frames':max_gap,
         'max_spout_tip_error_mm':max(err) if err else None,
