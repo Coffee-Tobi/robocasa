@@ -61,9 +61,25 @@ def _story_scene(vendor_dir):
                 'contype':'0','conaffinity':'0','mass':'0',
                 **({'euler':'1.5708 0 0'}
                    if part=='handle' else {})})
+    # Coloured geometry is VISUAL ONLY, not simulated actual fluids.
+    ET.SubElement(tcp,'geom',{'name':'rb_story_foam_in_pitcher',
+        'type':'cylinder','pos':'0 0 .112','size':'.045 .003',
+        'rgba':'.99 .99 .94 0','mass':'0','contype':'0','conaffinity':'0'})
     root.write(fr/'rb_fr5_story_robot.xml',encoding='unicode')
     env=ET.parse(built)
     env.getroot().find('include').set('file','rb_fr5_story_robot.xml')
+    world=env.getroot().find('worldbody')
+    cup=world.find(".//body[@name='rb_plastic_cup']")
+    if cup is None:raise RuntimeError('Cannot find plastic cup')
+    ET.SubElement(cup,'geom',{'name':'rb_story_espresso_disc',
+       'type':'cylinder','pos':'0 0 .067','size':'.038 .003',
+       'rgba':'.3 .13 .05 0','mass':'0','contype':'0','conaffinity':'0'})
+    ET.SubElement(cup,'geom',{'name':'rb_story_latte_pattern',
+       'type':'ellipsoid','pos':'0 0 .071','size':'.019 .010 .002',
+       'rgba':'1 1 .92 0','mass':'0','contype':'0','conaffinity':'0'})
+    ET.SubElement(world,'geom',{'name':'rb_story_steam_visual',
+       'type':'sphere','pos':'.645 .23 1.12','size':'.042',
+       'rgba':'.99 .99 .99 0','mass':'0','contype':'0','conaffinity':'0'})
     out=fr/'rb_fr5_coffee_process.xml'
     env.write(out,encoding='unicode')
     return out
@@ -99,7 +115,7 @@ def _interp(qa,qb,n):
 
 def _frame(rgb,label,action,phase,idx,n,total_clear,notes):
     im=Image.fromarray(rgb).resize((960,720),Image.Resampling.BILINEAR)
-    pic=Image.new('RGB',(960,805),(20,31,39))
+    pic=Image.new('RGB',(960,806),(20,31,39))
     pic.paste(im,(0,59))
     d=ImageDraw.Draw(pic)
     d.text((12,8),label,fill=(235,247,250))
@@ -199,6 +215,14 @@ def run(args):
                 cup_at_espresso=False
             if action=='steam':
                 pitcher_foam=True
+            # Render status proxies only; these never affect physics/contact.
+            model.geom('rb_story_espresso_disc').rgba[3]=.9 if espresso_visual else 0.
+            model.geom('rb_story_latte_pattern').rgba[3]=(
+                1.0 if action in ('pour','rinse') else 0.0)
+            model.geom('rb_story_foam_in_pitcher').rgba[3]=(
+                .92 if pitcher_foam and tool=='pitcher' else 0.0)
+            model.geom('rb_story_steam_visual').rgba[3]=(
+                .25 if action=='steam' else 0.0)
             # Travel home->safe predock->home. All prechecked.
             leg=list(_interp(home,step['q'],args.frames_leg))
             leg+=list(_interp(step['q'],home,args.frames_leg))[1:]
