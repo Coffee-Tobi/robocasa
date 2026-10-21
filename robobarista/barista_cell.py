@@ -5,8 +5,8 @@ Artly's precise hardware measurements are not publicly specified; placements
 are our own engineering concept, not a traced copy of its workcell.
 
 Frames: table center = (0,0), all positions m, table top z = 0.82.
-Tamper has a real prismatic joint + position actuator; pitcher and practice
-plastic cup have free joints and inertial/collision proxies. No coffee/liquid
+Tamper is built INTO the grinder with a prismatic joint and position motor;
+pitcher and practice plastic cup have free joints/collision proxies. No coffee/liquid
 or motorized espresso extraction is implemented.
 """
 from __future__ import annotations
@@ -18,12 +18,12 @@ import numpy as np
 from PIL import Image
 from .scene import generate_scene, _nums, _tag, SIDE_PITCHER_TAG_IDS
 from .geometry import look_at_quat
+from .workcell_constraints import DOCKS,KEEP_OUTS,TRAVEL_CLEARANCE_M
 
 TABLE_TOP=0.82
 ROBOT_BASE=(0.0,0.0,0.91)
 STATIONS={
     'grinder': (-0.56, 0.25,1.02),
-    'tamper': (-0.38,0.49,1.03),
     'portafilter': (-0.58,-0.18,0.91),
     'espresso': (0.49,0.43,1.12),
     'milk_dispenser': (0.60,-0.36,1.06),
@@ -34,7 +34,7 @@ STATIONS={
 # Static mounts: raised top-oriented marker on exposed station edge, away from
 # the machine enclosure. Include redundant markers for two dynamic props.
 TAG_ID={
-    'grinder':61,'tamper':62,'portafilter':63,'espresso':64,
+    'grinder':61,'portafilter':63,'espresso':64,
     'milk_dispenser':65,'pitcher_stand':66,'pour':67,'rinser':68,
     'robot_base':69,'plastic_cup':70,'pitcher_top':71,
 }
@@ -150,12 +150,15 @@ def build_cell_scene(vendor_dir: Path) -> Path:
     _box(espresso,'rb_espresso_front',[0,-.118,.23],
          [.19,.012,.18],'.19 .22 .25 1')
     _box(espresso,'rb_espresso_drip_tray',[0,-.155,.044],
-         [.18,.095,.016],'.33 .35 .36 1')
+         [.18,.095,.016],'.33 .35 .36 1',collide=True)
+    # Exact visual locator for disposable practice cup on the drip tray.
+    _geom(espresso,'rb_espresso_cup_locating_pad','cylinder',
+          [-.050,-.280,.061],[.043,.0015],'.1 .75 .75 1')
     _geom(espresso,'rb_brew_head','cylinder',[-.05,-.18,.27],
           [.033,.028],'.18 .19 .2 1')
     _geom(espresso,'rb_steam_wand','capsule',[.15,-.172,.143],
           [.009,.075],'.8 .8 .82 1',extra={'euler':'0 1.2 0'})
-    # Grinder and automatic tamper, separated so both are reachable.
+    # Grinder includes the automatic tamper; ONE portafilter docking interface.
     grinder=_body(world,'rb_grinder',[-.56,.25,TABLE_TOP])
     _box(grinder,'rb_grinder_housing',[0,0,.14],[.092,.09,.14],
          '.19 .21 .24 1',collide=True)
@@ -163,22 +166,21 @@ def build_cell_scene(vendor_dir: Path) -> Path:
           [.074,.085],'.35 .26 .19 .74')
     _geom(grinder,'rb_grinder_dispense','cylinder',[0,-.092,.108],
           [.03,.018],'.10 .1 .1 1')
-    tamper=_body(world,'rb_tamper',[-.38,.49,TABLE_TOP])
-    _box(tamper,'rb_tamper_frame',[0,.04,.162],[.090,.078,.160],
-         '.24 .28 .31 1',collide=True)
-    _geom(tamper,'rb_tamper_puck','cylinder',[0,-.035,.080],
-          [.033,.012],'.43 .28 .15 1')
-    shaft=_body(tamper,'rb_tamper_press',[0,-.035,.255])
-    ET.SubElement(shaft,'joint',{'name':'rb_tamper_slide','type':'slide',
+    # The tamper is part of the grinder housing/portafilter cradle. It has
+    # no separate countertop footprint or independent docking station.
+    _box(grinder,'rb_grinder_inbuilt_tamper_shroud',
+         [0,-.128,.184],[.079,.055,.070],'.23 .26 .28 1')
+    shaft=_body(grinder,'rb_grinder_tamper_press',[0,-.132,.255])
+    ET.SubElement(shaft,'joint',{'name':'rb_grinder_tamper_slide','type':'slide',
         'axis':'0 0 -1','range':'0 .055','limited':'true',
         'damping':'4','armature':'.001'})
-    _geom(shaft,'rb_tamper_shaft','cylinder',[0,0,.008],
+    _geom(shaft,'rb_grinder_tamper_shaft','cylinder',[0,0,.008],
           [.016,.09],'.80 .83 .84 1',mass=.18,collide=False)
-    _geom(shaft,'rb_tamper_foot','cylinder',[0,0,-.081],
+    _geom(shaft,'rb_grinder_tamper_foot','cylinder',[0,0,-.081],
           [.032,.009],'.62 .66 .68 1',mass=.14,collide=False)
     actuators=ET.SubElement(root,'actuator')
-    ET.SubElement(actuators,'position',{'name':'rb_tamper_motor',
-       'joint':'rb_tamper_slide','kp':'300','ctrlrange':'0 .055',
+    ET.SubElement(actuators,'position',{'name':'rb_grinder_tamper_motor',
+       'joint':'rb_grinder_tamper_slide','kp':'300','ctrlrange':'0 .055',
        'ctrllimited':'true'})
     # Portafilter resting in a simple parked cradle near grinder.
     pf=_body(world,'rb_portafilter_stand',[-.58,-.18,TABLE_TOP])
@@ -192,7 +194,7 @@ def build_cell_scene(vendor_dir: Path) -> Path:
     # Chilled milk dosing station. No simulated flow yet.
     milk=_body(world,'rb_milk_dispenser',[.6,-.36,TABLE_TOP])
     _box(milk,'rb_milk_body',[0,.02,.16],[.105,.11,.16],
-         '.82 .83 .83 1')
+         '.82 .83 .83 1',collide=True)
     _geom(milk,'rb_milk_nozzle','cylinder',[-.03,-.116,.196],
           [.012,.06],'.42 .43 .45 1')
     # Pitcher on a parking pad: an actual movable MJCF free body.
@@ -233,7 +235,7 @@ def build_cell_scene(vendor_dir: Path) -> Path:
          tag_outer_side=.090)
     rinser=_body(world,'rb_rinser',[.07,.59,TABLE_TOP])
     _box(rinser,'rb_rinser_tray',[0,0,.025],
-         [.135,.095,.02],'.35 .36 .37 1')
+         [.135,.095,.02],'.35 .36 .37 1',collide=True)
     _geom(rinser,'rb_rinser_bowl','cylinder',[0,0,.046],
           [.067,.011],'.12 .19 .21 1')
     _geom(rinser,'rb_rinser_jet','cylinder',[0,0,.059],
@@ -246,7 +248,7 @@ def build_cell_scene(vendor_dir: Path) -> Path:
           [.045,.002],'.92 .96 1 .65')
     # Dedicated elevated fiducials in open corners, outside working stroke.
     marker_xy={
-        'grinder':(-.73,.24),'tamper':(-.36,.65),
+        'grinder':(-.73,.24),
         'portafilter':(-.75,-.18),'espresso':(.75,.17),
         'milk_dispenser':(.76,-.36),
         'pitcher_stand':(-.27,-.64),'pour':(.30,-.58),
@@ -255,12 +257,20 @@ def build_cell_scene(vendor_dir: Path) -> Path:
     for name,(x,y) in marker_xy.items():
         # Markers stand ABOVE machine/cup rims and have enough pixel area
         # for AprilTag 36h11 decoding in our current 920x660 RGB views.
-        heights={'espresso':1.48,'grinder':1.43,'tamper':1.33,
+        heights={'espresso':1.48,'grinder':1.43,
                  'portafilter':1.23,'milk_dispenser':1.40,
                  'pitcher_stand':1.28,'pour':1.25,'rinser':1.23,
                  'robot_base':1.22}
         height=heights[name]
         _marker(world,name,(x,y),height,TAG_ID[name],face_size=.105)
+    # Explicit task-dependent docking frames: small coloured reference sites
+    # are visualization targets only. No port opening/contact safety is
+    # implied without the constraint checks in workcell_constraints.py.
+    for key,dock in DOCKS.items():
+        ET.SubElement(world,'site',{'name':'rb_dock_'+key,
+            'pos':_nums(dock.position_m),
+            'euler':_nums(dock.euler_xyz_deg),
+            'size':'.009','rgba':'0.1 0.95 0.9 0.9'})
     for name,(eye,target) in CAMERAS.items():
         q=look_at_quat(eye,target)
         ET.SubElement(world,'camera',{'name':name,'pos':_nums(eye),
