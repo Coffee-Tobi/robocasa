@@ -22,7 +22,7 @@ jobs:
       - name: Install headless MuJoCo
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq libosmesa6-dev libgl1 libglx-mesa0 libgl1-mesa-dri
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 libglx-mesa0 libgl1-mesa-dri ffmpeg
           python -m pip install -r requirements.txt
       - name: Generate real FR5 joint-driven replay
         env:
@@ -41,6 +41,8 @@ jobs:
           assert s['frames']==25
           assert s['successful_ik_frames']==25
           assert s['joint_limit_failures']==0
+          assert s['mp4_created'] is True
+          assert (p/'fr5_replay.mp4').stat().st_size>5000
           assert s['status']=='PASS'
           assert (p/'fr5_replay.gif').stat().st_size>1000
           assert (p/'trajectory.json').stat().st_size>100
