@@ -43,6 +43,12 @@ Die Gerätehüllen sind derzeit **achsenparallele Bounding-Boxes** mit groben ge
 - `COLAB_WORKCELL.ipynb`: Film, Grundriss, mm-Koordinaten und QA-Bericht.
 - `tests/test_barista_cell.py`: blockierter Maschinen-Durchflug einschließlich Kannenvolumen, Werkzeug-Port-Zuordnung, Zielabweichung, Referenzen und Einzelkonfigurations-Stop.
 
+## Ergebnisse der neuen Routensuche
+
+Die reine IK-Erreichbarkeit aller Stationen reichte bislang nicht: Vier von sieben vorher getesteten direkten *Stationsmitte*-Armlagen erzeugten MuJoCo-Kontakte. Der neue konservative Planer `safe_staging.py` sucht deshalb für **alle sieben benannten Geräteschnittstellen** alternative **Vorpositionen außerhalb der Gerätehüllen** und prüft **den gesamten Weg hin und zurück** in Gelenkschritten ≤0,018 rad. Das hat für alle sieben einen überprüften, kinematisch kollisionsfreien Weg zu einer Vorposition ergeben. **Ein mechanischer Dockvorgang bis in das Geräteinnere ist weiterhin nicht freigegeben**.
+
+Das separate Kameratestprogramm `camera_joint_replay.py` verwendet aus einer zufälligen, vorgeprüften Bewegung gerenderte AprilTag-Bilddaten für eine rekonstruierte 6D-Bahn und führt diese nur über die Kamera-Messwerte dem FR5 zu; Resultat: **13/13** Kameraframes und **13/13** FR5-Posen, maximal **0,924 mm** kamerabasierte Positionsabweichung gegenüber separater virtueller Wahrheit. Die **acht festen Referenzmarker** wurden optisch erfasst, Fehler zum bekannten Szenenbezug maximal **2,784 mm**. Mehr dazu in [SAFE_CAMERA_REPLAY_EXPLAINED.md](SAFE_CAMERA_REPLAY_EXPLAINED.md).
+
 ## Bevor eine echte Bewegung überhaupt freigegeben wird
 
 1. **TCP und Werkzeuge vermessen:** Flansch → Greifer → Siebträgergriff/Kännchenkörper/Ausgießer; wiederholbare Greiflage und Werkzeugwechsel.
