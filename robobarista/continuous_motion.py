@@ -206,6 +206,53 @@ def _metrics(records,model,data,rows,source_times,source_poses,source_quats,
     return dict(max_frame_relative_path_error_mm=max(errors,default=None))
 
 
+def _render_planned_fr5(model,data,qids,rows,out,fps=8):
+    """Visualize the jerk-limited *planned* joint path, not motor physics."""
+    import shutil,subprocess
+    from PIL import Image,ImageDraw
+    from .demo import render_pair
+    from .camera_joint_replay import _wrist_pitcher_geoms,_set_replay_paint
+    geom_ids=_wrist_pitcher_geoms(model)
+    _set_replay_paint(model,geom_ids,True)
+    renderer=mujoco.Renderer(model,width=960,height=720)
+    images=[]
+    try:
+        end=rows[-1]['time_s']
+        for j,now in enumerate(np.linspace(0,end,
+                               max(2,min(80,int(end*fps)+1)))):
+            i=int(np.argmin(np.abs(
+                np.asarray([r['time_s'] for r in rows])-now)))
+            data.qpos[qids]=rows[i]['q_rad']
+            mujoco.mj_forward(model,data)
+            rgb,_=render_pair(renderer,data,'cell_overview')
+            image=Image.new('RGB',(960,770),(20,31,41))
+            image.paste(Image.fromarray(rgb),(0,40))
+            d=ImageDraw.Draw(image)
+            d.text((12,11),
+                   f'Ruckig jerk-begrenzte Gelenkbewegung | t={now:.2f}s',
+                   fill='white')
+            images.append(image)
+    finally:
+        renderer.close()
+    if not images:return False
+    frames=out/'video_frames'
+    frames.mkdir(exist_ok=True)
+    for j,im in enumerate(images):
+        im.save(frames/f'ruckig_{j:04d}.png')
+    gif=[im.convert('P',palette=Image.Palette.ADAPTIVE,colors=80)
+         for im in images]
+    gif[0].save(out/'continuous_ruckig.gif',save_all=True,
+            append_images=gif[1:],duration=int(1000/fps),
+            loop=0,optimize=False)
+    if not shutil.which('ffmpeg'):
+        return False
+    subprocess.run(['ffmpeg','-y','-loglevel','error',
+        '-framerate',str(fps),'-i',str(frames/'ruckig_%04d.png'),
+        '-c:v','libx264','-pix_fmt','yuv420p',
+        str(out/'continuous_ruckig.mp4')],check=True)
+    return (out/'continuous_ruckig.mp4').stat().st_size>1000
+
+
 def run(args):
     path=Path(args.input)/'camera_measurements.json'
     if not path.is_file():
@@ -300,9 +347,11 @@ def run(args):
     # sample section boundaries: report, never pretend sampled derivative is
     # the analytical certificate. The Ruckig solver guarantees bound inside
     # each section; section joints preserve velocity and acceleration.
+    mp4_created=_render_planned_fr5(model,data,qids,trajectory,out)
     report=dict(status='PASS',input_camera_fps=1/np.median(np.diff(t)),
        camera_frames=len(t),spline_sample_fps=args.spline_fps,
        spline_samples=len(dense_times),spline_translation_smoothing_mm=args.smooth_mm,
+       mp4_created=mp4_created,
        continuous_so3_rotation_spline=True,
        camera_keyframe_count=len(idx),ruckig_segments=len(sections),
        ruckig_local_per_segment_no_cloud=True,
