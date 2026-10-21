@@ -1,0 +1,78 @@
+name: High FPS Camera Spline Ruckig
+on:
+  push:
+    paths:
+      - 'robobarista/continuous_motion.py'
+      - 'robobarista/camera_joint_replay.py'
+      - 'requirements.txt'
+      - 'tests/test_continuous_motion.py'
+      - '.github/workflows/continuous-motion.yml'
+  workflow_dispatch:
+jobs:
+  continuous-vision:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - name: Install MuJoCo and local Ruckig wheel
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 libglx-mesa0 libgl1-mesa-dri ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Unit tests for true C2 camera curve and local Ruckig segments
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: pytest tests/test_continuous_motion.py -q
+      - name: Capture AprilTags at 15 FPS (31 camera frames)
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.camera_joint_replay --frames 31 --fps 15 --width 960 --height 720 --seed 14 --output runs/fps15_camera
+      - name: Fit continuous SE3 and local jerk-limited Ruckig joint motion
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.continuous_motion --input runs/fps15_camera --output runs/fps15_continuous --spline-fps 100 --knot-stride 3 --dt .02 --initial-slowdown 3
+      - name: Verify FPS and all joint limits
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          cam=json.loads(Path('runs/fps15_camera/summary.json').read_text())
+          d=Path('runs/fps15_continuous')
+          res=json.loads((d/'summary.json').read_text())
+          print(cam)
+          print({k:v for k,v in res.items() if k!='segments'})
+          assert cam['status']=='PASS'
+          assert cam['camera_valid_frames']==cam['replayed_frames']==31
+          assert res['status']=='PASS'
+          assert abs(res['input_camera_fps']-15)<.05
+          assert res['camera_frames']==31
+          assert res['nonzero_interior_waypoint_velocity']
+          assert res['continuous_so3_rotation_spline']
+          assert res['ruckig_local_per_segment_no_cloud']
+          assert res['checked_joint_and_full_pitcher_states']>100
+          assert (d/'continuous_6d_ruckig.png').stat().st_size>10000
+          assert (d/'ruckig_joint_trajectory.json').stat().st_size>10000
+          PY
+      - name: Upload vision sample / high FPS video / planned motion
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: robobarista-15fps-se3-ruckig
+          path: |
+            runs/fps15_camera/camera_vs_fr5_side_by_side.mp4
+            runs/fps15_camera/camera_measurements.json
+            runs/fps15_camera/summary.json
+            runs/fps15_continuous/camera_continuous_6d.json
+            runs/fps15_continuous/ruckig_joint_trajectory.json
+            runs/fps15_continuous/continuous_6d_ruckig.png
+            runs/fps15_continuous/summary.json
+          if-no-files-found: warn
