@@ -313,6 +313,66 @@ def _encode_video(frames,out,fps):
     return (out/'demo_and_replay.mp4').stat().st_size>2000
 
 
+def _paired_comparison_video(frames,frame_count,out,fps):
+    """Show image-based capture and physical-joint FK replay side-by-side.
+
+    The panels are separate *rendered* phases of the same nominal experiment;
+    this comparison does not use simulation GT to reconstruct the arm motion.
+    """
+    if len(frames)!=2*frame_count:return False
+    pairs=[]
+    for i in range(frame_count):
+        canvas=Image.new('RGB',(1800,700),(229,233,238))
+        left=frames[i].resize((885,620),Image.Resampling.BILINEAR)
+        right=frames[frame_count+i].resize((885,620),Image.Resampling.BILINEAR)
+        canvas.paste(left,(10,57))
+        canvas.paste(right,(905,57))
+        draw=ImageDraw.Draw(canvas)
+        draw.rectangle((0,0,1800,52),fill=(22,34,42))
+        draw.text((18,13),'LINKS: Kameras messen die virtuelle Demonstration',
+                  fill='white')
+        draw.text((915,13),'RECHTS: FR5 fuehrt NUR gemessene Bahn aus',
+                  fill='white')
+        pairs.append(canvas)
+    folder=out/'paired_frames';folder.mkdir(exist_ok=True)
+    for i,im in enumerate(pairs):
+        im.save(folder/f'pair_{i:04d}.png')
+    if not shutil.which('ffmpeg'):return False
+    subprocess.run(['ffmpeg','-y','-loglevel','error',
+      '-framerate',str(fps),'-i',str(folder/'pair_%04d.png'),
+      '-c:v','libx264','-pix_fmt','yuv420p',
+      str(out/'camera_vs_fr5_side_by_side.mp4')],check=True)
+    return (out/'camera_vs_fr5_side_by_side.mp4').stat().st_size>2000
+
+
+def _comparison_chart(truth,records,replay,out):
+    """Plot 3 sources of position on one chart (GT only for evaluation)."""
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    t=np.arange(len(truth),dtype=float)
+    fig,axes=plt.subplots(3,1,figsize=(9,8),sharex=True)
+    actual=np.array([item['position'] for item in truth])
+    camera=np.array([rec['position_m'] if rec['valid']
+                     else [np.nan]*3 for rec in records],float)
+    executed=np.full_like(camera,np.nan)
+    for rec in replay:
+        executed[rec['frame']]=rec['executed_position_m']
+    for idx,axis in enumerate('XYZ'):
+        ax=axes[idx]
+        ax.plot(t,actual[:,idx]*1000,'-',label='MuJoCo Wahrheit (nur Bewertung)')
+        ax.plot(t,camera[:,idx]*1000,'--',label='Kamera AprilTag Schätzung')
+        ax.plot(t,executed[:,idx]*1000,':',label='FR5 FK tatsächliche Pose')
+        ax.set_ylabel(axis+' [mm]')
+        ax.grid(alpha=.25)
+    axes[0].legend()
+    axes[-1].set_xlabel('Simuliertes Frame')
+    fig.suptitle('Drei unabhängige Quellen: Quelle / Kameramessung / Roboterausführung')
+    fig.tight_layout()
+    fig.savefig(out/'camera_fr5_trajectory_comparison.png',dpi=150)
+    plt.close(fig)
+
+
 def run(args):
     import mujoco
     rng_seed=int(args.seed)
@@ -482,6 +542,8 @@ def run(args):
     finally:
         renderer.close()
     mp4=_encode_video(frames,out,args.fps)
+    paired_video=_paired_comparison_video(frames,args.frames,out,args.fps)
+    _comparison_chart(truth,camera_records,replay,out)
     report={
         'status':'PASS' if len(replay)==args.frames and no_pose==0 else 'INCOMPLETE',
         'robot_arm_moves_through_6_real_hinge_qpos':len(replay)==args.frames,
@@ -501,6 +563,7 @@ def run(args):
         'arm_link_and_payload_swept_preflight_on_every_generated_motion':True,
         'max_interpolated_joint_step_rad':.018,
         'mp4_created':mp4,
+        'side_by_side_video_created':paired_video,
         'note':'6D camera poses inferred from rendered AprilTag RGB-D ONLY. Kinematic joint replay with conservative collision-envelope checks, not motor physics, physical grip or demonstrated real-world performance.'
     }
     (out/'summary.json').write_text(json.dumps(to_json(report),indent=2))
