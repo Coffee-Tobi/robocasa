@@ -1,5 +1,15 @@
 # RoboBarista – FAIRINO FR5 / Camera-Based Pitcher Motion Capture
 
+## ▶️ Neues Haupt-Notebook: die gesamte RoboBarista-Simulation in **einem Colab** (21.10.2026)
+
+**[☕ COLAB_ROBOBARISTA.ipynb – alle vier Experimente ausführen](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_ROBOBARISTA.ipynb)**
+
+Dieses Notebook ersetzt die bisherige Kette einzelner Einstiegspunkte für unsere neue Artly-inspirierte Entwicklungszelle (die alten Notebooks bleiben für Einzeltests erhalten): **1. Kaffeeinsel und drei Kameras samt integriertem Mühlen-Tamper, 2. sieben komplette kinematisch kontaktgeprüfte Vorpositionsfahrten, 3. echte pixelbasierte AprilTag-3-Schätzung der virtuellen Zufallsbewegung und deren Nachfahren mit sechs FR5-Gelenken, 4. zusätzlich dynamische Sechs-Drehmoment-Motorsteuerung mit `mujoco.mj_step`**, Grundriss, Soll-Ist-Kurven und einem gemeinsamen ZIP-Export. Für Google Colab genügt **Laufzeit → Alle ausführen**, GPU nicht erforderlich.
+
+**Getrennt verifizierte Ergebnisse:** 7/7 sichere **freie Vorpositionen** (kein Geräte-Andocken); 13/13 Kamera-Posen mindestens aus zwei virtuellen Ansichten erkannt und vom FR5 rein kinematisch nachgestellt (maximal 0,924 mm optischer Fehler gegen Simulatorwahrheit); alle 8 festen Referenz-AprilTags aus Bildern gemessen. Ein ergänzender Motorversuch mit um Faktor 2,5 gestreckter Trajektorie ist erfolgreich mit **12,36 mm maximalem und 4,46 mm mittlerem dynamischem Folgefehler**, ohne gemeldete Arm- oder Werkzeugkollision. **Die End-to-End-Workflow-Prüfung** für genau diese vier Schritte befindet sich unter [RoboBarista Complete Colab E2E](https://github.com/Coffee-Tobi/robocasa/actions/workflows/complete-colab.yml); bei erfolgreichem Lauf werden alle vier MP4-Videos als ein Actions-Artefakt bereitgestellt.
+
+**Grenzen:** Die Kamera-Simulation besitzt idealisierte und bekannte Extrinsik, die Demonstration ist virtuell/zufällig (kein Mensch), der FR5-Greifer hält Kanne/Siebträger noch nicht physikalisch, die endgültigen Geräte-Andockkontakte sind nicht freigegeben. Torque-Regler und Objekt-Hüllmodelle sind Forschungscode **keine reale Roboter-Sicherheitssteuerung** oder Latte-Art-Fähigkeit.
+
 **Status (21.10.2026):** Virtuelles Kamera-Motion-Capture und erstes **kinematisches FR5-Sechs-Gelenk-Replay** erfolgreich in MuJoCo getestet. Das Kännchen ist dabei als **starre visuelle Attrappe** ans FR5-Handgelenk montiert. **Kein physikalisches Greifen, keine Motorregelung, keine echten Flüssigkeiten und keine reale Hardware.**
 
 ## NEU (21.10.2026): Sieben sichere Vorpositionen und optisches Kamera→FR5-Replay
