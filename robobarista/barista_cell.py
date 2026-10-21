@@ -37,6 +37,7 @@ TAG_ID={
     'grinder':61,'portafilter':63,'espresso':64,
     'milk_dispenser':65,'pitcher_stand':66,'pour':67,'rinser':68,
     'robot_base':69,'plastic_cup':70,'pitcher_top':71,
+    'pitcher_top_secondary':72,
 }
 CAMERAS={
     'cell_left':((-1.12,-1.0,2.30),(0,0,1.02)),
@@ -219,6 +220,13 @@ def build_cell_scene(vendor_dir: Path) -> Path:
     # Pitcher top tab + one side tag, redundant view angles while moving.
     top=_body(pitcher,'rb_pitcher_top_marker',[-.065,0,.135])
     _tag(top,'cell_pitcher_top',TAG_ID['pitcher_top'],[0,0,0],tag_outer_side=.090)
+    # Second raised marker on a separate bracket, tilted toward the front
+    # low camera; provides another independent camera-visible fixture when
+    # the original upward marker is foreshortened/occluded.
+    secondary=_body(pitcher,'rb_pitcher_top_secondary_marker',[.085,0,.145])
+    secondary.set('euler','0.436332 0 0')
+    _tag(secondary,'cell_pitcher_top_secondary',
+         TAG_ID['pitcher_top_secondary'],[0,0,0],tag_outer_side=.090)
     # Apriltag side with marker-local Z normal toward camera left/front.
     side=_body(pitcher,'rb_pitcher_side_marker',[0,-.058,.083])
     side.set('euler','1.570796 0 0')
