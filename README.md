@@ -14,11 +14,18 @@ Die bisherigen 16 Vergleichsvarianten, einschließlich Caliscope und vier Kamera
 - [Vergleichsergebnis, Fehlersuche und Entscheidung](results/2026-10-21_camera_rig_decision.md)
 - [Aktueller Projektplan / nächste Schritte](planning/ROBOBARISTA_DREI_STUFEN_MVP.md)
 
+## Neuer Entwicklungsstand (21.10.2026): Bewegtes Kännchen
+
+**Nächster Meilenstein implementiert:** Das Script `python -m robobarista.record_motion` bewegt das virtuelle Kännchen in einer vorprogrammierten sanften Gießgeste (annähern, neigen, angedeutet gießen, aufrichten, zurückfahren). Drei echte MuJoCo RGB-D-Kameras erzeugen pro Zeitpunkt eigene Aufnahmen. AprilTag 3 + die festgelegte gemeinsame Optimierung schätzen **ohne Zugriff auf die MuJoCo-Körperpose** Kännchen und Ausgießerspitze sowie – wenn ausreichend sichtbar – die Position der Spitze relativ zur Tasse. Die Ground Truth wird **in eigenen Evaluationsdateien** gespeichert.
+
+**[Hier direkt das neue Animations-/Motion-Capture-Notebook starten](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_MOTION.ipynb)**. Es zeigt `preview.gif`, `trajectory.png`, `validation.png` und den zeitgestempelten Verlauf als Tabelle; `trajectory.csv`, `evaluation.csv` und RGB-Einzelbilder werden separat gesichert. Die Animation ist eine **synthetische kinematische Probe** ohne Flüssigkeit, echte menschliche Demonstration, Roboterbewegung oder kollisionsgeprüfte Ausführung. Fehlende Kameraposen werden als fehlend berichtet, nicht mit der Simulator-Wahrheit ausgefüllt.
+
 ## Start in Google Colab
 
 | Notebook | Zweck |
 | --- | --- |
 | **[COLAB_START.ipynb](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_START.ipynb)** | **Standard**: Drei Kameras, ein AprilTag 3, gemeinsame Poseoptimierung |
+| **[COLAB_MOTION.ipynb](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_MOTION.ipynb)** | **Jetzt ausprobieren**: animierte Bewegungssequenz + drei Kameraperspektiven + zeitgestempelte geschätzte 6D-Bahn |
 | **[COLAB_COMPARE.ipynb](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_COMPARE.ipynb)** | **Forschung/Archiv**: 16 Varianten mit 1/2 Tags, 3/4 Kameras, OpenCV/AprilTag 3, direkter Optimierung/Caliscope |
 
 In Colab **Laufzeit → Laufzeittyp ändern → Hardwarebeschleuniger: Keine** und **Laufzeit → Alle ausführen** wählen. Das Notebook lädt den aktuellen Code, installiert die OpenGL-/OSMesa-Abhängigkeiten und zeigt anschließend Kamerabilder und Ergebnisse. Eine GPU ist nicht erforderlich.
@@ -38,7 +45,7 @@ Das dritte Parteimodell [ma-weiss/Fairino-Mujoco](https://github.com/ma-weiss/Fa
 
 ## Nächster Schritt
 
-**Dynamisches Kännchen-Motion-Capture aus zeitgestempelten drei Kameraansichten**, mehr unterschiedliche Neigungs-/Positionsfälle, Verdeckung durch Griff/Greifer/Roboterarm, Ausgießerposition **relativ zur Tasse**, danach sichere inverse Kinematik und Bewegungswiedergabe mit FAIRINO FR5 **ohne Milch**.
+**Die neu implementierte bewegte Funktionsprobe validieren** und daraus anschließend eine echte, reproduzierbare Demonstration samt mehr unterschiedliche Neigungs-/Positionsfälle, Verdeckung durch Griff/Greifer/Roboterarm, Ausgießerposition **relativ zur Tasse**, danach sichere inverse Kinematik und Bewegungswiedergabe mit FAIRINO FR5 **ohne Milch**.
 
 Ein zusätzlicher Tag oder eine vierte Kamera kommt nur dann dazu, wenn Tests über den ganzen Bewegungsbereich zeigen, dass wir sie wirklich benötigen. Der zweite Marker verbessert möglicherweise Sichtbarkeit, verlangt aber genaues Einmessen seines Starrkörperversatzes.
 
