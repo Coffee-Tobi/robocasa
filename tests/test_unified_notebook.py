@@ -18,7 +18,9 @@ def test_one_colab_includes_all_four_verified_experiments():
                 'robobarista.safe_station_staging_demo',
                 'robobarista.camera_joint_replay',
                 'robobarista.motor_follow',
-                'robobarista.continuous_motion'):
+                'robobarista.continuous_motion',
+                'robobarista.room_reconstruction',
+                'robobarista.coffee_workflow'):
         assert job in all_code
     assert 'camera_vs_fr5_side_by_side' in all_code
     assert "'--fps','15'" in all_code
