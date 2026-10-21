@@ -317,8 +317,8 @@ def run(args):
                            ik['position_error_mm'],ik['rotation_error_deg'],
                            len(outside))
             previews.append(image)
-            if i==0:
-                print("First frame robot contacts:",outside,inside,flush=True)
+            if i==0 or outside or inside:
+                print("Frame contacts:",i,outside,inside,flush=True)
             r=dict(frame=i,time_s=t,phase=desired.phase,
                    desired_pitcher_xyz_m=desired.position_m,
                    measured_pitcher_xyz_m=actual_pos,
