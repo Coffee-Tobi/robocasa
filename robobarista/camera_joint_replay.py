@@ -29,10 +29,10 @@ import numpy as np
 from PIL import Image,ImageDraw
 from scipy.spatial.transform import Rotation
 
-from .barista_cell import build_cell_scene,CAMERAS,ROBOT_BASE,STATIONS
+from .barista_cell import build_cell_scene,CAMERAS,ROBOT_BASE,STATIONS,TAG_ID
 from .cell_demo import _set_free_pose,_image_with_detections
 from .geometry import (
-    Calibration,detect_tags,solve_single,bundle_adjust_object,pose_errors,
+    Calibration,detect_tags,solve_single,bundle_adjust_object,bundle_adjust_tag,pose_errors,
 )
 from .robot_replay import (
     compute_ik,robot_qpos_addresses,rotation_error,HOME_HINT,_contacts
@@ -264,7 +264,9 @@ def _camera_pose_estimate(images,depths,cals):
     for name,im in images.items():
         found=detect_tags(im,include_apriltags=True,detector='pupil')
         target=[(tid,uv) for tid,uv in found if tid in MARKERS]
-        detections_by_camera[name]=target
+        # Keep static station detections in the raw optical record, too.
+        # Only recognized moving pitcher tags enter its pose estimator.
+        detections_by_camera[name]=found
         for tid,corners in target:
             one=solve_single(corners,depths[name],cals[name],SIDE_LENGTHS[tid])
             if one is not None:
@@ -276,6 +278,45 @@ def _camera_pose_estimate(images,depths,cals):
     if not est or not est['converged'] or est['reprojection_rmse_px']>3:
         return None,detections_by_camera,n_views
     return est,detections_by_camera,n_views
+
+
+def _fixed_reference_vision_check(model,data,detections,depths,cals):
+    """Vision-estimate fixed station fiducials; compare with model only as QA.
+
+    The camera extrinsics in this experiment are still known a priori from
+    MuJoCo. This DOES NOT independently calibrate unknown real cameras.
+    Never feed the model's tag true coordinates into the camera fit.
+    """
+    report={}
+    active_side=.105*440/512
+    for station,tag_id in TAG_ID.items():
+        if station in ('plastic_cup','pitcher_top','pitcher_top_secondary'):
+            continue
+        if station=='robot_base' or station in (
+            'grinder','portafilter','espresso','milk_dispenser',
+            'pitcher_stand','pour','rinser'):
+            observations=[]
+            for camera_name,detected in detections.items():
+                for tid,uv in detected:
+                    if tid!=tag_id:
+                        continue
+                    solve=solve_single(uv,depths[camera_name],
+                                       cals[camera_name],active_side)
+                    if solve is not None:
+                        observations.append(solve)
+            if not observations:
+                report[station]={'detected':False,'tag_id':tag_id,
+                                  'camera_count':0}
+                continue
+            estimate=bundle_adjust_tag(observations,active_side)
+            true_center=data.xpos[model.body(
+                'rb_tag_mount_'+station).id].copy()
+            err=float(np.linalg.norm(
+                np.asarray(estimate['position'])-true_center)*1000)
+            report[station]={'detected':True,'tag_id':tag_id,
+                'camera_count':len(observations),'error_vs_model_mm':err,
+                'reprojection_rmse_px':estimate['reprojection_rmse_px']}
+    return report
 
 
 def _panel(images,caption,calibration=None,target=None,observed=None):
@@ -413,6 +454,7 @@ def run(args):
           for name in names}
     camera_records=[]
     frames=[]
+    fixed_references={}
     try:
         for i,gt in enumerate(truth):
             _set_free_pose(model,data,'rb_pitcher_free',gt['position'],
@@ -432,6 +474,12 @@ def run(args):
                 views[name]=rgb
                 depths[name]=depth
             est,dets,n_seen=_camera_pose_estimate(views,depths,cals)
+            if i==0:
+                fixed_references=_fixed_reference_vision_check(
+                    model,data,dets,depths,cals)
+                (out/'fixed_reference_vision_check.json').write_text(
+                    json.dumps(to_json(fixed_references),indent=2),
+                    encoding='utf-8')
             rgb_o,_=render_pair(renderer,data,'cell_overview')
             for name in names:
                 views[name]=_image_with_detections(views[name],dets[name])
@@ -553,6 +601,12 @@ def run(args):
         'frames':args.frames,'fps':args.fps,'seed':rng_seed,
         'camera_valid_frames':sum(x['valid'] for x in camera_records),
         'camera_two_view_frames':sum(x['visible_views']>=2 for x in camera_records),
+        'fixed_station_tags_recognized_in_initial_render':
+            sum(bool(v.get('detected')) for v in fixed_references.values()),
+        'fixed_station_reference_count':len(fixed_references),
+        'max_fixed_station_tag_vision_error_mm':max(
+            [v['error_vs_model_mm'] for v in fixed_references.values()
+             if v.get('detected')],default=None),
         'replayed_frames':len(replay),
         'max_camera_vs_truth_mm':max(
             [x['camera_vs_truth_mm'] for x in camera_errors],default=None),
