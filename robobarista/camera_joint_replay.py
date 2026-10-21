@@ -56,6 +56,8 @@ def _transform(position,rotation):
 # dimensions, NOT any hidden observation of body position while moving.
 MARKERS={
     71:(_transform([-.065,0,.135],np.eye(3)),.090*440/512),
+    72:(_transform([.085,0,.145],
+        Rotation.from_euler('x',25,degrees=True).as_matrix()),.090*440/512),
     SIDE_PITCHER_TAG_IDS['pitcher_near']:(
         _transform([0,-.058,.083],
                    Rotation.from_euler('x',90,degrees=True).as_matrix()),
@@ -393,7 +395,10 @@ def run(args):
                   f' | {"VALID CAMERA POSE" if est is not None else "NO CAMERA POSE"}'))
             print('Camera frame',i+1,'/',args.frames,
                   'views=',n_seen,'valid=',record['valid'],
-                  'tags=',record['tags_seen'],flush=True)
+                  'tags=',record['tags_seen'],
+                  'cameras=',[name for name,items in dets.items()
+                               if any(tid in MARKERS for tid,_ in items)],
+                  flush=True)
 
         (out/'camera_measurements.json').write_text(
             json.dumps(camera_records,indent=2),encoding='utf-8')
