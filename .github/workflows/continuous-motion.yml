@@ -59,6 +59,8 @@ jobs:
           assert res['continuous_so3_rotation_spline']
           assert res['ruckig_local_per_segment_no_cloud']
           assert res['checked_joint_and_full_pitcher_states']>100
+          assert res['mp4_created']
+          assert (d/'continuous_ruckig.mp4').stat().st_size>10000
           assert (d/'continuous_6d_ruckig.png').stat().st_size>10000
           assert (d/'ruckig_joint_trajectory.json').stat().st_size>10000
           PY
@@ -74,5 +76,7 @@ jobs:
             runs/fps15_continuous/camera_continuous_6d.json
             runs/fps15_continuous/ruckig_joint_trajectory.json
             runs/fps15_continuous/continuous_6d_ruckig.png
+            runs/fps15_continuous/continuous_ruckig.mp4
+            runs/fps15_continuous/continuous_ruckig.gif
             runs/fps15_continuous/summary.json
           if-no-files-found: warn
