@@ -22,7 +22,11 @@ from .barista_cell import (build_cell_scene,STATIONS,CAMERAS,TAG_ID,
                             TABLE_TOP,ROBOT_BASE)
 from .geometry import Calibration,detect_tags
 from .demo import to_json,render_pair
-from .robot_replay import robot_qpos_addresses,compute_ik,HOME_HINT
+from .robot_replay import robot_qpos_addresses,compute_ik,HOME_HINT,_contacts
+from .workcell_constraints import (
+    DOCKS, KEEP_OUTS, TRAVEL_CLEARANCE_M, DOCK_CLEARANCE_M,
+    rotation_matrix,docking_pose_check,payload_check,
+    validate_segment,export_workspace)
 
 
 def _set_free_pose(model,data,joint,xyz,angle_y_deg):
@@ -51,7 +55,7 @@ def _overview(rgb,calib):
     im=Image.fromarray(rgb)
     d=ImageDraw.Draw(im)
     pretty={
-      'grinder':'Muehle','tamper':'Tamper',
+      'grinder':'Muehle inkl. Tamper',
       'portafilter':'Siebtraeger','espresso':'Espresso',
       'milk_dispenser':'Milchspender','pitcher':'Milchkanne',
       'pour':'Kunststoffbecher','rinser':'Rinser'}
@@ -80,7 +84,7 @@ def _side_panel(images,progress,depth_m):
     d.rectangle((0,0,1500,54),fill=(21,33,42))
     d.text((22,12),'RoboBarista | Artly-inspirierte kompakte Arbeitsinsel',
            fill=(244,247,250),stroke_width=0)
-    d.text((22,35),f'Tamperhub: {depth_m*1000:.0f} mm  |  Animation: {progress:.0%}',
+    d.text((22,35),f'Muehlen-Tamper: {depth_m*1000:.0f} mm  |  Animation: {progress:.0%}',
            fill=(167,222,225))
     for i,name in enumerate(other):
         d.rectangle((1010,65+i*233,1490,86+i*233),fill=(14,24,30))
@@ -95,7 +99,7 @@ def _top_down(out):
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     names={
-      'grinder':'Muehle','tamper':'Tamper',
+      'grinder':'Muehle inkl. Tamper',
       'portafilter':'Siebtraeger','espresso':'Espressomaschine',
       'milk_dispenser':'Milchspender','pitcher':'Milchkanne',
       'pour':'Plastikbecher','rinser':'Rinser'}
@@ -109,6 +113,17 @@ def _top_down(out):
         ax.scatter([x],[y],s=100,zorder=3)
         ax.annotate(names[key],(x,y),xytext=(6,6),
                     textcoords='offset points',fontsize=9)
+    # Exact named tool docking poses overlay the coarse station centres.
+    for name,station in DOCKS.items():
+        x,y,_=station.position_m
+        ax.plot([x],[y],marker='+',markersize=9,color='black')
+        ax.annotate(name.replace('_',' '),(x,y),fontsize=7,
+                    xytext=(3,-11),textcoords='offset points')
+    for key,box in KEEP_OUTS.items():
+        cx,cy,_=box.center_m
+        hx,hy,_=box.half_extents_m
+        ax.add_patch(plt.Rectangle((cx-hx,cy-hy),2*hx,2*hy,
+                                   fill=False,lw=1,ls=':',color='gray'))
     for key,(pos,target) in CAMERAS.items():
         ax.scatter([pos[0]],[pos[1]],s=90,marker='^')
     ax.set_xlim(-1.3,1.3);ax.set_ylim(-1.2,1.25)
@@ -184,9 +199,9 @@ def _check_tamper_motor(model):
     """
     import mujoco
     data=mujoco.MjData(model)
-    jid=model.joint('rb_tamper_slide').id
+    jid=model.joint('rb_grinder_tamper_slide').id
     qadr=int(model.jnt_qposadr[jid])
-    actuator=int(model.actuator('rb_tamper_motor').id)
+    actuator=int(model.actuator('rb_grinder_tamper_motor').id)
     gravity=model.opt.gravity.copy()
     try:
         model.opt.gravity[:]=0
@@ -227,7 +242,7 @@ def run(args):
     calibration={n:Calibration.from_mujoco(model,data,n,args.width,args.height)
                  for n in names}
     _top_down(out)
-    tamper_id=model.joint('rb_tamper_slide').id
+    tamper_id=model.joint('rb_grinder_tamper_slide').id
     tamper_adr=int(model.jnt_qposadr[tamper_id])
     pitcher_start=model.body('rb_milk_pitcher').pos.copy()
     frames=[]
@@ -304,6 +319,37 @@ def run(args):
             print('MP4 optional conversion failed:',exc,flush=True)
     # Check IK after visual frames: does not change already captured images.
     reach=_reachcheck(model,data) if args.reach else {}
+    # Export single-source-of-truth nominal target frames & geometric no-go
+    # envelopes. Validate site poses against the generated MuJoCo scene.
+    workspace=export_workspace()
+    docking={}
+    for name,target in DOCKS.items():
+        actual_site=model.site('rb_dock_'+name)
+        stated=np.asarray(target.position_m,float)
+        site=np.asarray(data.site_xpos[actual_site.id],float)
+        diff=float(np.linalg.norm(stated-site))
+        desired=rotation_matrix(target.euler_xyz_deg)
+        alignment=docking_pose_check(name,target.tool,stated,desired)
+        housing=payload_check(stated,desired,
+                       tool=target.tool,dock=name,clearance_m=DOCK_CLEARANCE_M)
+        docking[name]=dict(
+            tool=target.tool,station=target.station,
+            nominal_target_position_m=list(target.position_m),
+            site_position_error_m=diff,exact_pose_spec_valid=alignment['within_goal'],
+            carried_tool_at_dock_clearance_ok=(len(housing)==0),
+            carried_tool_warnings=housing)
+    # Demonstrate that the policy blocks moving a pitcher straight through
+    # the coffee machine rather than silently passing such a command through.
+    from_p=np.array([.49,-.55,1.10])
+    to_p=np.array([.49,.62,1.10])
+    forbidden=validate_segment(from_p,to_p,np.eye(3),np.eye(3),'pitcher')
+    safety_demo={'forbidden_pass_through_blocked':not forbidden['safe'],
+                 'blocked_samples':len(forbidden['violations']),
+                 'checks_are_geometric_not_complete_robot_planning':True}
+    (out/'dock_targets.json').write_text(
+        json.dumps(to_json(docking),indent=2),encoding='utf-8')
+    (out/'workspace_constraints.json').write_text(
+        json.dumps(to_json(workspace),indent=2),encoding='utf-8')
     (out/'reachability.json').write_text(
         json.dumps(to_json(reach),indent=2),encoding='utf-8')
     counts={str(tid):sum(str(tid) in f['visible_tags'] for f in visibility)
@@ -314,11 +360,13 @@ def run(args):
         'status':'RENDERED',
         'stations':{k:list(v) for k,v in STATIONS.items()},
         'cameras':list(CAMERAS),
-        'assets':['FR5','espresso','grinder','actuated_tamper',
+        'assets':['FR5','espresso','grinder_with_integrated_tamper',
                   'portafilter','milk_dispenser','freejoint_pitcher',
                   'freejoint_plastic_cup','rinser'],
         'plastic_cup_instead_of_ceramic':True,
         'tamper_actuator_exists':True,
+        'tamper_integrated_in_grinder':True,
+        'separate_tamper_station':False,
         'tamper_motor_physics_tested':bool(motor_report['motor_tested']),
         'tamper_motor_diagnostics':motor_report,
         'scripted_preview_no_real_grasp':True,
@@ -326,8 +374,12 @@ def run(args):
         'pitcher_tag_visible_frames':sum(
             bool({'23','71'} & set(f['visible_tags'])) for f in visibility),
         'reachability':reach,
+        'docking_targets':docking,
+        'no_contact_policy_test':safety_demo,
+        'travel_clearance_m':TRAVEL_CLEARANCE_M,
+        'dock_clearance_m':DOCK_CLEARANCE_M,
         'mp4_created':mp4,
-        'limitations':'Markers and targets need dynamic occlusion tests. Vision not guaranteed 100%. Reachability checks represent sample tool poses, not complete collision-free paths. No fluids or automated coffee making.'}
+        'limitations':'Nominal target coordinates, approximate AABB machine keepouts and spherical carried-tool envelopes only; detailed FR5 link swept collision checking, port CAD, grasp calibration, and real hardware safety controls are NOT implemented. Marker visibility not guaranteed in all motions.'}
     (out/'summary.json').write_text(
         json.dumps(to_json(report),indent=2),encoding='utf-8')
     (out/'visibility.json').write_text(
