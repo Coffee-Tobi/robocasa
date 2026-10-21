@@ -5,6 +5,8 @@ on:
       - 'COLAB_ROBOBARISTA.ipynb'
       - 'robobarista/motor_follow.py'
       - 'robobarista/continuous_motion.py'
+      - 'robobarista/coffee_workflow.py'
+      - 'robobarista/room_reconstruction.py'
       - 'robobarista/camera_joint_replay.py'
       - 'robobarista/safe_staging.py'
       - 'robobarista/safe_station_staging_demo.py'
@@ -34,12 +36,24 @@ jobs:
           PYOPENGL_PLATFORM: osmesa
         run: |
           python -u -m robobarista.cell_demo --frames 8 --fps 5 --width 920 --height 660 --reach --output runs/full/workcell
+      - name: NEW - RGBD room reconstruction from three depth cameras
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.room_reconstruction --width 960 --height 720 --stride 6 --output runs/full/room
       - name: 2 - Seven verified collision-checked FR5 staging routes
         env:
           MUJOCO_GL: osmesa
           PYOPENGL_PLATFORM: osmesa
         run: |
           python -u -m robobarista.safe_station_staging_demo --seed 14 --frames-per-station 12 --fps 6 --width 960 --height 720 --output runs/full/staging
+      - name: NEW - Espresso grinder integrated tamper, milk, steam and symbolic latte pour
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.coffee_workflow --width 760 --height 570 --frames-leg 4 --seed 14 --output runs/full/coffee
       - name: 3 - AprilTag camera reconstruction and FR5 joint replay
         env:
           MUJOCO_GL: osmesa
@@ -58,7 +72,7 @@ jobs:
           PYOPENGL_PLATFORM: osmesa
         run: |
           python -u -m robobarista.motor_follow --input runs/full/camera --output runs/full/motor --width 960 --height 720 --fps 7 --time-scale 2.5
-      - name: Check all five modules' real outputs
+      - name: Check full single Colab, 7 modules and visuals
         run: |
           python - <<'PY'
           import json
@@ -69,6 +83,16 @@ jobs:
           c=json.loads((root/'camera/summary.json').read_text())
           d=json.loads((root/'motor/summary.json').read_text())
           e=json.loads((root/'continuous/summary.json').read_text())
+          f=json.loads((root/'coffee/summary.json').read_text())
+          g=json.loads((root/'room/summary.json').read_text())
+          assert f['status']=='PASS'
+          assert f['safe_predock_stages']==11
+          assert not f['true_machine_docking_completed']
+          assert not f['true_milk_frothing_or_espresso_flow']
+          assert g['status']=='PASS'
+          assert g['tag_count_observed']==8
+          assert g['max_fixed_tag_position_error_mm']<8
+          assert g['rgbd_points']>8000
           assert a['tamper_integrated_in_grinder']
           assert not a['separate_tamper_station']
           assert len(a['docking_targets'])==7
@@ -92,9 +116,10 @@ jobs:
           for video in ['workcell/workcell_demo.mp4','staging/safe_staging.mp4',
                         'camera/camera_vs_fr5_side_by_side.mp4',
                         'continuous/continuous_ruckig.mp4',
-                        'motor/motor_tracking.mp4']:
+                        'motor/motor_tracking.mp4',
+                        'coffee/coffee_workflow.mp4']:
               assert (root/video).stat().st_size>10000,video
-          print('PASS: complete 5-stage Colab including 15fps camera+continuous Ruckig')
+          print('PASS: 7 modules – coffee storyboard, vision-built room, 15fps+Ruckig+motor')
           print('Motor lag max (mm):',d['max_motor_tracking_position_lag_mm'])
           print('Camera independent max error (mm):',c['max_camera_vs_truth_mm'])
           PY
@@ -104,6 +129,12 @@ jobs:
         with:
           name: RoboBarista-Full-Colab-Results
           path: |
+            runs/full/room/rgbd_room_vs_truth.png
+            runs/full/room/reconstructed_xyz_cloud.npz
+            runs/full/room/summary.json
+            runs/full/coffee/coffee_workflow.mp4
+            runs/full/coffee/recipe.json
+            runs/full/coffee/summary.json
             runs/full/workcell/workcell_demo.mp4
             runs/full/workcell/layout_topdown.png
             runs/full/workcell/summary.json
