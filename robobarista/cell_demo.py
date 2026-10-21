@@ -168,21 +168,37 @@ def _reachcheck(model,data):
                 except (ValueError,RuntimeError) as exc:
                     attempts.append(dict(solved=False,error=str(exc)))
                     continue
+                # MuJoCo actual link contact diagnostics at this candidate
+                # configuration. Finding IK is not sufficient to approve it.
+                external,internal=_contacts(model,data)
+                is_clear=not external and not internal
                 attempts.append(dict(solved=sol['solved'],
+                    pose_contact_free=is_clear,
+                    external_contacts=external,
+                    self_contacts=internal,
                     position_error_mm=sol['position_error_mm'],
                     rotation_error_deg=sol['rotation_error_deg']))
-                if sol['solved']:break
-            if any(x.get('solved') for x in attempts):break
+                if sol['solved'] and is_clear:break
+            if any(x.get('solved') and x.get('pose_contact_free')
+                   for x in attempts):break
         achieved=[x for x in attempts if x.get('solved')]
+        collision_free=[x for x in achieved if x.get('pose_contact_free')]
         result[name]={
            'sample_target_world_m':p.tolist(),
            'distance_robot_base_m':float(np.linalg.norm(p-base)),
            'tested_pose_ik':bool(achieved),
+           'sample_pose_robot_contact_free':bool(collision_free),
+           'contact_free_ik_candidates':len(collision_free),
+           'physical_collision_warning_pairs':(
+                [] if collision_free else
+                [dict(external=x.get('external_contacts',[]),
+                      self=x.get('self_contacts',[]))
+                 for x in achieved]),
            'best_position_error_mm':min(
                [x['position_error_mm'] for x in attempts
                 if 'position_error_mm' in x],default=None),
            'attempts':len(attempts),
-           'note':'Sample TCP target only; not collision-free approach or actual tool interaction'
+           'note':'Sample TCP target with joint-limit IK and robot-body contact screen, NOT a continuously collision-checked route or attached-tool dock configuration'
         }
         print('Reachability:',name,
               'sample IK' if achieved else 'NOT YET CONFIRMED',
