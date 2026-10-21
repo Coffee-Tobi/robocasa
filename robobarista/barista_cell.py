@@ -66,6 +66,12 @@ def _marker(root,label,xy,z,tag_id,face_size=0.075):
     # This marker is a fixed frame, not a moving-object measurement.
     x,y=xy
     mount=_body(root,'rb_tag_mount_'+label,[x,y,z])
+    stem_height=z-TABLE_TOP
+    if stem_height>.04:
+        # Thin physical support so a fiducial is never a floating plate.
+        _geom(mount,'rb_tag_stem_'+label,'cylinder',
+              [0,0,-stem_height/2],[.007,stem_height/2],
+              '.25 .29 .32 1')
     _box(mount,'rb_tag_plate_'+label,[0,0,-.007],
          [face_size/2+.008,face_size/2+.008,.006],'.94 .94 .92 1')
     _tag(mount,label,tag_id,[0,0,0],tag_outer_side=face_size)
@@ -202,12 +208,12 @@ def build_cell_scene(vendor_dir: Path) -> Path:
           [.012,.043],'.28 .30 .31 1',extra={'euler':'0 1.5708 0'})
     # Pitcher top tab + one side tag, redundant view angles while moving.
     top=_body(pitcher,'rb_pitcher_top_marker',[-.065,0,.135])
-    _tag(top,'cell_pitcher_top',TAG_ID['pitcher_top'],[0,0,0],tag_outer_side=.065)
+    _tag(top,'cell_pitcher_top',TAG_ID['pitcher_top'],[0,0,0],tag_outer_side=.090)
     # Apriltag side with marker-local Z normal toward camera left/front.
-    side=_body(pitcher,'rb_pitcher_side_marker',[0,-.051,.083])
+    side=_body(pitcher,'rb_pitcher_side_marker',[0,-.058,.083])
     side.set('euler','1.570796 0 0')
     _tag(side,'cell_pitcher_side',SIDE_PITCHER_TAG_IDS['pitcher_near'],
-         [0,0,0],tag_outer_side=.055)
+         [0,0,0],tag_outer_side=.082)
     # Clear/lightweight practice cup, not a ceramic mug. Moving free body.
     pour=_body(world,'rb_plastic_cup',[.35,-.37,TABLE_TOP+.003])
     ET.SubElement(pour,'freejoint',{'name':'rb_plastic_cup_free'})
@@ -221,9 +227,9 @@ def build_cell_scene(vendor_dir: Path) -> Path:
     _geom(pour,'rb_plastic_rim','cylinder',[0,0,.107],
           [.045,.003],'.9 .95 .98 .68')
     # Corner tab at cup rim, with explicit marker; cup is movable.
-    cup_tag=_body(pour,'rb_cup_marker',[.065,-.013,.113])
+    cup_tag=_body(pour,'rb_cup_marker',[.083,-.013,.118])
     _tag(cup_tag,'cell_plastic_cup',TAG_ID['plastic_cup'],[0,0,0],
-         tag_outer_side=.055)
+         tag_outer_side=.090)
     rinser=_body(world,'rb_rinser',[.07,.59,TABLE_TOP])
     _box(rinser,'rb_rinser_tray',[0,0,.025],
          [.135,.095,.02],'.35 .36 .37 1')
@@ -246,8 +252,14 @@ def build_cell_scene(vendor_dir: Path) -> Path:
         'rinser':(.08,.74),'robot_base':(.18,.055),
     }
     for name,(x,y) in marker_xy.items():
-        height=TABLE_TOP+.03 if name!='robot_base' else .98
-        _marker(world,name,(x,y),height,TAG_ID[name],face_size=.075)
+        # Markers stand ABOVE machine/cup rims and have enough pixel area
+        # for AprilTag 36h11 decoding in our current 920x660 RGB views.
+        heights={'espresso':1.48,'grinder':1.43,'tamper':1.33,
+                 'portafilter':1.23,'milk_dispenser':1.40,
+                 'pitcher_stand':1.28,'pour':1.25,'rinser':1.23,
+                 'robot_base':1.22}
+        height=heights[name]
+        _marker(world,name,(x,y),height,TAG_ID[name],face_size=.105)
     for name,(eye,target) in CAMERAS.items():
         q=look_at_quat(eye,target)
         ET.SubElement(world,'camera',{'name':name,'pos':_nums(eye),
