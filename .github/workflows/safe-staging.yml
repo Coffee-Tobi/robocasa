@@ -1,0 +1,54 @@
+name: FR5 Safe Station Staging
+on:
+  push:
+    paths:
+      - 'robobarista/safe_staging.py'
+      - 'robobarista/safe_station_staging_demo.py'
+      - 'robobarista/workcell_constraints.py'
+      - 'robobarista/barista_cell.py'
+      - '.github/workflows/safe-staging.yml'
+  workflow_dispatch:
+jobs:
+  predock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - name: Install headless MuJoCo and ffmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 libglx-mesa0 libgl1-mesa-dri ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Search and animate collision-free FR5 approach stages
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.safe_station_staging_demo --seed 14 --frames-per-station 12 --width 960 --height 720 --output runs/ci_safe_staging
+      - name: Validate no false docking approvals
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('runs/ci_safe_staging')
+          report=json.loads((p/'safe_staging_report.json').read_text())
+          print(report)
+          assert report['robot_both_direction_joint_sweeps_checked']
+          assert report['payload_collision_volume_applied']
+          assert not report['actual_contact_docking_approved']
+          assert report['pre_dock_allowed_count']+report['blocked_count']==7
+          assert (p/'safe_staging.mp4').stat().st_size>10000
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: robobarista-safe-station-staging
+          path: |
+            runs/ci_safe_staging/safe_staging.mp4
+            runs/ci_safe_staging/safe_staging.gif
+            runs/ci_safe_staging/safe_staging_report.json
+          if-no-files-found: warn
