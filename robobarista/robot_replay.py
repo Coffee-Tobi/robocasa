@@ -181,22 +181,43 @@ def first_configuration(model,data,body_id,qids,limits):
         results.append(x)
     successes=[x for x in results if x["solved"]]
     if successes:
-        # Choose configuration with the most margin to *all* joint limits.
-        # The first exact solution can be at a hard stop, where any follow-up
-        # pouring gesture will fail despite the first pose fitting perfectly.
+        # Multiple 6D IK solutions can reach the SAME pitcher pose, yet fold
+        # the elbow/wrist into radically different configurations. Check a
+        # coarse full-path rehearsal before choosing the start configuration.
+        # We evaluate all 25 kinematic frames WITHOUT rendering or changing
+        # the desired target to force a superficially successful result.
         half_width=(limits[:,1]-limits[:,0])/2
         mid=(limits[:,1]+limits[:,0])/2
         def clearance(x):
             normalized_margin=1-np.abs((x['q']-mid)/half_width)
             return float(np.min(normalized_margin))
-        # Favor zero external contacts at the initial pose. The robot's
-        # supporting contact with its own pedestal is ignored by _contacts.
-        def score(x):
-            data.qpos[qids]=x['q']
-            mujoco.mj_forward(model,data)
-            external,internal=_contacts(model,data)
-            return (-len(external)-len(internal),clearance(x))
-        best=max(successes,key=score)
+        ranked=[]
+        for idx,candidate in enumerate(successes):
+            q=candidate['q'].copy()
+            n_failed=0
+            contact_frames=0
+            joint_jump=0.
+            worst_error=0.
+            for j in range(25):
+                desired=motion_sample(j/24,target,target_R)
+                x=compute_ik(model,data,body_id,qids,limits,
+                             desired.position_m,desired.rotation,q,
+                             max_evals=90)
+                joint_jump=max(joint_jump,float(np.linalg.norm(x['q']-q)))
+                q=x['q']
+                if not x['solved']:
+                    n_failed+=1
+                worst_error=max(worst_error,x['position_error_mm'])
+                external,internal=_contacts(model,data)
+                if external or internal:
+                    contact_frames+=1
+            metric=(n_failed,contact_frames,round(worst_error,3),
+                    round(joint_jump,3),-clearance(candidate))
+            ranked.append((metric,candidate))
+            print(f'Initial IK candidate {idx+1}/{len(successes)} '
+                  f'route_score={metric}',flush=True)
+        metric,best=min(ranked,key=lambda x:x[0])
+        print('Selected collision-screened FR5 start:',metric,flush=True)
     else:
         best=min(results,key=lambda r:r["position_error_mm"]+
                  8*r["rotation_error_deg"])
@@ -216,8 +237,11 @@ def _contacts(model,data):
         n1=g1.name or ''
         n2=g2.name or ''
         # Only include contact pairs with at least one robot physical collision geom.
-        robot1=n1.startswith('collision/')
-        robot2=n2.startswith('collision/')
+        # Main FR5 collision proxies AND PGI gripper/finger proxies are robot.
+        def robot_part(name):
+            return name.startswith(('collision/','gripper_','finger'))
+        robot1=robot_part(n1)
+        robot2=robot_part(n2)
         if not robot1 and not robot2:
             continue
         # Supporting base-on-pedestal contact is intentional. Report all
@@ -369,7 +393,7 @@ def run(args):
     collisions=sum(len(r['environment_contacts']) for r in rows)
     self_contacts=sum(len(r['self_contacts']) for r in rows)
     report=dict(
-       status='PASS' if all_ik and all_within and collisions==0 else 'FAIL',
+       status='PASS' if all_ik and all_within and collisions==0 and self_contacts==0 else 'FAIL',
        interpretation='True FR5 six hinge qpos are replayed kinematically via bounded IK; rigid visual pitcher mount; no motors or grasp physics',
        frames=args.frames,fps=args.fps,
        initial_position_error_mm=initial['position_error_mm'],
