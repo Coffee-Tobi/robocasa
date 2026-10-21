@@ -56,6 +56,7 @@ jobs:
           assert b['mp4_created']
           assert Path('runs/ci_coffee/coffee_workflow.mp4').stat().st_size>10000
           assert Path('runs/ci_room/rgbd_room_vs_truth.png').stat().st_size>10000
+          assert Path('runs/ci_room/rgbd_room_3d_cloud.png').stat().st_size>10000
           PY
       - uses: actions/upload-artifact@v4
         if: always()
@@ -67,6 +68,7 @@ jobs:
             runs/ci_coffee/recipe.json
             runs/ci_coffee/summary.json
             runs/ci_room/rgbd_room_vs_truth.png
+            runs/ci_room/rgbd_room_3d_cloud.png
             runs/ci_room/reconstructed_xyz_cloud.npz
             runs/ci_room/summary.json
           if-no-files-found: warn
