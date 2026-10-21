@@ -40,7 +40,8 @@ TAG_ID={
 }
 CAMERAS={
     'cell_left':((-1.12,-1.0,2.30),(0,0,1.02)),
-    'cell_right':((1.12,-1.0,2.30),(0,0,1.02)),
+    # Deliberately lower, oblique view for side-facing tags on pitcher/cups.
+    'cell_right':((1.12,-1.12,1.67),(0,-0.22,1.05)),
     'cell_back':((0,1.05,2.34),(0,-0.07,1.04)),
 }
 
@@ -227,7 +228,7 @@ def build_cell_scene(vendor_dir: Path) -> Path:
     _geom(pour,'rb_plastic_rim','cylinder',[0,0,.107],
           [.045,.003],'.9 .95 .98 .68')
     # Corner tab at cup rim, with explicit marker; cup is movable.
-    cup_tag=_body(pour,'rb_cup_marker',[.083,-.013,.118])
+    cup_tag=_body(pour,'rb_cup_marker',[0,-.091,.118])
     _tag(cup_tag,'cell_plastic_cup',TAG_ID['plastic_cup'],[0,0,0],
          tag_outer_side=.090)
     rinser=_body(world,'rb_rinser',[.07,.59,TABLE_TOP])
