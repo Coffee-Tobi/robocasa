@@ -14,6 +14,8 @@
 
 **Erreichbarkeit:** Der Grundriss `layout_topdown.png` zeigt eine räumliche Planungskontur; der echte FR5-Check löst außerdem pro Station eine Reihe von Musterposen durch inverse Kinematik und protokolliert `reachability.json`. Die bloße Erreichbarkeit einer Testpose garantiert noch keinen kollisionsfreien Anfahrweg; das folgt vor der physischen Umsetzung.
 
+**Automatischer MuJoCo-Test (21.10.2026):** Alle **acht Stations-Zielposen** waren in einer getesteten Orientierung mit dem echten FR5-Gelenkmodell per IK erreichbar. **Alle neun festen Referenz-AprilTags sowie der Becher-Tag und der obere Kännchen-Tag waren in 8/8 gerenderten Testbildern erkennbar** (mindestens eine der drei Kameras; nicht notwendigerweise alle gleichzeitig). Der seitliche Kännchenmarker wurde noch nicht erkannt; Sichtbarkeit ist nur für diese Testsequenz belegt, nicht für spätere Greifposen. Ein separater, echter `mj_step`-Antriebstest hat den **55-mm-Tamperhub einschließlich Rückfahrt** bestätigt, allerdings ohne Schwerkraft und ohne Tamp-Druck gegen echten Kaffee. Filme und Reports sind [im GitHub-Actions-Artefakt verfügbar](https://github.com/Coffee-Tobi/robocasa/actions/runs/39622147422/artifacts/12356305368).
+
 **Outputs:** gerenderte Szenenvorschau `workcell_preview.png`, MP4/GIF `workcell_demo.*`, Grundriss, Sichtbarkeits-/Reichweitenbericht; automatische GitHub-Tests unter [Workcell Preview](https://github.com/Coffee-Tobi/robocasa/actions/workflows/workcell.yml).
 
 ## Gewählter MVP-Aufbau
