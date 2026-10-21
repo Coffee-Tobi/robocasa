@@ -46,6 +46,11 @@ def prepare_grasp_scene(vendor_dir: Path):
     if pitcher is None:
         raise RuntimeError("rb_pitcher missing in generated scene")
     world.remove(pitcher)
+    # A workbench-height pedestal under the robot base (the six-joint arm
+    # belongs beside the counter, not at floor height inside the counter).
+    ET.SubElement(world,'geom',{'name':'rb_robot_pedestal',
+        'type':'cylinder','pos':'1.15 -0.42 0.225',
+        'size':'0.095 0.225','rgba':'0.3 0.35 0.4 1'})
     pitcher.set('pos',' '.join(str(x) for x in WRIST_PITCHER_OFFSET_M))
     pitcher.set('quat','1 0 0 0')
     # Make the pitcher a massless purely graphical rigid fixture for this
@@ -79,8 +84,8 @@ def prepare_grasp_scene(vendor_dir: Path):
     base=robot.getroot().find(".//body[@name='base_link']")
     if base is None:
         raise RuntimeError("FR5 base_link missing")
-    base.set('pos','0 -0.4 0')
-    base.set('euler','0 0 2.70')
+    base.set('pos','1.15 -0.42 0.45')
+    base.set('euler','0 0 0')
     wrist.append(pitcher)
     attached_robot_path=scene_path.with_name('rb_fr5_replay_robot.xml')
     robot.write(attached_robot_path,encoding='unicode')
@@ -156,7 +161,7 @@ def compute_ik(model,data,body_id,qids,limits,position,rotation,seed,
 def first_configuration(model,data,body_id,qids,limits):
     """Find feasible start near scene's demonstration pose, with honest fallback."""
     import mujoco
-    target=np.array([.67,-.14,.452],float)
+    target=np.array([.67,-.14,.60],float)
     target_R=np.eye(3)
     guesses=[
         HOME_HINT,
@@ -184,7 +189,14 @@ def first_configuration(model,data,body_id,qids,limits):
         def clearance(x):
             normalized_margin=1-np.abs((x['q']-mid)/half_width)
             return float(np.min(normalized_margin))
-        best=max(successes,key=clearance)
+        # Favor zero external contacts at the initial pose. The robot's
+        # supporting contact with its own pedestal is ignored by _contacts.
+        def score(x):
+            data.qpos[qids]=x['q']
+            mujoco.mj_forward(model,data)
+            external,internal=_contacts(model,data)
+            return (-len(external)-len(internal),clearance(x))
+        best=max(successes,key=score)
     else:
         best=min(results,key=lambda r:r["position_error_mm"]+
                  8*r["rotation_error_deg"])
@@ -207,6 +219,11 @@ def _contacts(model,data):
         robot1=n1.startswith('collision/')
         robot2=n2.startswith('collision/')
         if not robot1 and not robot2:
+            continue
+        # Supporting base-on-pedestal contact is intentional. Report all
+        # other actual arm/environment and arm/self contacts.
+        support={n1,n2}=={'collision/base_link','rb_robot_pedestal'}
+        if support:
             continue
         if robot1 and robot2:
             internal.append([n1,n2])
@@ -271,7 +288,7 @@ def run(args):
     print('IK starting pose:',initial, 'anchor xyz=',anchor_pos,flush=True)
     # If we cannot even position the pitcher near the scene, fail explicitly,
     # instead of showing an unrelated remote gesture as success.
-    if np.linalg.norm(anchor_pos - np.array([.67,-.14,.452]))>.065:
+    if np.linalg.norm(anchor_pos - np.array([.67,-.14,.60]))>.065:
         raise RuntimeError('Initial robot pitcher too far from testbench; '
                            f'actual={anchor_pos.tolist()}')
     width=args.width
