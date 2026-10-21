@@ -1,0 +1,72 @@
+name: Coffee Workflow and RGBD Room Reconstruction
+on:
+  push:
+    paths:
+      - 'robobarista/coffee_workflow.py'
+      - 'robobarista/room_reconstruction.py'
+      - 'robobarista/barista_cell.py'
+      - 'robobarista/safe_staging.py'
+      - '.github/workflows/coffee-vision-room.yml'
+  workflow_dispatch:
+jobs:
+  full-coffee-and-room:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - name: Install headless MuJoCo and AprilTag
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 libglx-mesa0 libgl1-mesa-dri ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Reconstruct visible workcell surfaces and 8 fiducials from RGB-D pixels
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.room_reconstruction --width 960 --height 720 --stride 6 --output runs/ci_room
+      - name: Animate safe coffee grinder / espresso / milk / pour storyboard
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.coffee_workflow --width 760 --height 570 --frames-leg 4 --seed 14 --output runs/ci_coffee
+      - name: Confirm honest simulation boundaries and independent observations
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          a=json.loads(Path('runs/ci_room/summary.json').read_text())
+          b=json.loads(Path('runs/ci_coffee/summary.json').read_text())
+          print('Room', {k:v for k,v in a.items() if k!='fixed_station_details'})
+          print('Coffee',b)
+          assert a['status']=='PASS'
+          assert a['tag_count_observed']==a['tag_count_expected']==8
+          assert a['rgbd_points']>8000
+          assert a['max_fixed_tag_position_error_mm']<8
+          assert b['status']=='PASS'
+          assert b['virtual_espresso_and_milk_workflow_stages']==11
+          assert b['safe_predock_stages']==11
+          assert not b['true_machine_docking_completed']
+          assert not b['true_milk_frothing_or_espresso_flow']
+          assert b['mp4_created']
+          assert Path('runs/ci_coffee/coffee_workflow.mp4').stat().st_size>10000
+          assert Path('runs/ci_room/rgbd_room_vs_truth.png').stat().st_size>10000
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RoboBarista-Coffee-Story-and-RGBD-Room
+          path: |
+            runs/ci_coffee/coffee_workflow.mp4
+            runs/ci_coffee/coffee_workflow.gif
+            runs/ci_coffee/recipe.json
+            runs/ci_coffee/summary.json
+            runs/ci_room/rgbd_room_vs_truth.png
+            runs/ci_room/reconstructed_xyz_cloud.npz
+            runs/ci_room/summary.json
+          if-no-files-found: warn
