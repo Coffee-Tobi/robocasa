@@ -26,7 +26,7 @@ jobs:
           MUJOCO_GL: osmesa
           PYOPENGL_PLATFORM: osmesa
         run: |
-          python -u -m robobarista.camera_joint_replay --frames 13 --fps 5 --width 640 --height 480 --seed 14 --output runs/ci_motor_camera
+          python -u -m robobarista.camera_joint_replay --frames 13 --fps 5 --width 960 --height 720 --seed 14 --output runs/ci_motor_camera
       - name: Advance torque motors with mj_step following camera-based joint trajectory
         env:
           MUJOCO_GL: osmesa
