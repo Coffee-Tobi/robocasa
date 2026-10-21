@@ -105,7 +105,7 @@ def _assets(fr):
 
 
 def build_cell_scene(vendor_dir: Path) -> Path:
-    vendor_dir=Path(vendor_dir)
+    vendor_dir=Path(vendor_dir).resolve()
     # Existing pinned upstream FR5/assets and marker textures are reused.
     baseline=generate_scene(vendor_dir,pitcher_side_tags=True,
                             camera_count=3,pitcher_tag_count=1)
