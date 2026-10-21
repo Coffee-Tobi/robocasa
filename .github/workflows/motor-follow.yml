@@ -1,0 +1,62 @@
+name: FR5 Torque Motor Follow Test
+on:
+  push:
+    paths:
+      - 'robobarista/motor_follow.py'
+      - 'robobarista/camera_joint_replay.py'
+      - '.github/workflows/motor-follow.yml'
+  workflow_dispatch:
+jobs:
+  physics-tracking:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - name: Install MuJoCo and ffmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 libglx-mesa0 libgl1-mesa-dri ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Reconstruct camera 6D movement and IK replay
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.camera_joint_replay --frames 13 --fps 5 --width 640 --height 480 --seed 14 --output runs/ci_motor_camera
+      - name: Advance torque motors with mj_step following camera-based joint trajectory
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.motor_follow --input runs/ci_motor_camera --output runs/ci_motor_follow --fps 6 --width 640 --height 480
+      - name: Verify real dynamic simulation and failure reporting
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('runs/ci_motor_follow')
+          r=json.loads((p/'summary.json').read_text())
+          print('Motor dynamic result',r)
+          assert r['status']=='PASS'
+          assert r['motor_dynamics_called_mj_step']
+          assert r['six_fr5_real_torque_actuators_used']
+          assert r['first_safety_violation'] is None
+          assert r['frames_rendered']>10
+          assert (p/'motor_tracking.mp4').stat().st_size>10000
+          assert (p/'motor_tracking.json').stat().st_size>1000
+          PY
+      - name: Export motor, camera and evaluation data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: robobarista-torque-motor-tracking
+          path: |
+            runs/ci_motor_follow/motor_tracking.mp4
+            runs/ci_motor_follow/motor_tracking.json
+            runs/ci_motor_follow/summary.json
+            runs/ci_motor_camera/summary.json
+          if-no-files-found: warn
