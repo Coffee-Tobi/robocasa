@@ -81,10 +81,12 @@ def fit_continuous_6d(records,position_smoothing_mm=.35):
     return evaluate
 
 
-def _robot_ik_at_knots(model,data,times,positions,quats):
+def _robot_ik_at_knots(model,data,times,positions,quats,initial_q=None):
     qids,limits=robot_qpos_addresses(model)
     body=model.body('rb_cell_tcp').id
-    seed=np.asarray(data.qpos[qids],float).copy()
+    seed=(np.asarray(initial_q,float).copy()
+          if initial_q is not None
+          else np.asarray(data.qpos[qids],float).copy())
     knots=[]
     for i,(t,p,quat) in enumerate(zip(times,positions,quats)):
         R=Rotation.from_quat(quat).as_matrix()
@@ -229,8 +231,17 @@ def run(args):
     _set_free_pose(model,data,'rb_pitcher_free',[-10,-10,-10],0)
     _set_free_pose(model,data,'rb_plastic_cup_free',[-10,-10,-10],0)
     mujoco.mj_forward(model,data)
+    # Start IK near the known camera-derived solution, not the original
+    # (hidden) random-demonstrator joints or original simulation truth.
+    prior_ik_file=Path(args.input)/'robot_replay.json'
+    init_q=None
+    if prior_ik_file.is_file():
+        previous_replay=json.loads(prior_ik_file.read_text())
+        if previous_replay:
+            init_q=np.asarray(previous_replay[0]['q_rad'],float)
     q,qids,limits=_robot_ik_at_knots(
-        model,data,key_time,key_curve['position_m'],key_curve['rotation_xyzw'])
+        model,data,key_time,key_curve['position_m'],
+        key_curve['rotation_xyzw'],initial_q=init_q)
     last_problem=None
     planned=None
     for factor in (args.initial_slowdown,4,6,9,13):
