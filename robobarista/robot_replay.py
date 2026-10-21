@@ -13,6 +13,7 @@ import argparse
 import csv
 import json
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import time
@@ -26,6 +27,7 @@ from scipy.spatial.transform import Rotation
 from .motion import motion_sample, frame_times, world_spout
 from .scene import generate_scene, SPOUT_TIP_LOCAL_M
 from .demo import render_pair, to_json
+from .geometry import Calibration
 
 JOINTS=("shoulder_pan","shoulder_lift","elbow",
         "wrist_1","wrist_2","wrist_3")
@@ -256,6 +258,33 @@ def _contacts(model,data):
     return external,internal
 
 
+def annotate_spout_pixels(rgb,calibration,desired_spout,actual_spout):
+    """Project two independent world points onto the real rendered view.
+
+    Desired (orange cross): target motion planner. Actual (green circle):
+    forward kinematics from the six FR5 joints. NOT a camera measurement.
+    """
+    img=Image.fromarray(rgb)
+    draw=ImageDraw.Draw(img)
+    for point,color,style in (
+        (desired_spout,(255,150,12),'cross'),
+        (actual_spout,(20,245,100),'circle'),
+    ):
+        uv=calibration.project(point)
+        if uv is None: continue
+        x,y=(float(uv[0]),float(uv[1]))
+        if x < -25 or x > calibration.width+25 or y < -25 or y > calibration.height+25:
+            continue
+        if style=='cross':
+            draw.line((x-12,y,x+12,y),fill=color,width=4)
+            draw.line((x,y-12,x,y+12),fill=color,width=4)
+        else:
+            draw.ellipse((x-9,y-9,x+9,y+9),outline=color,width=4)
+    draw.rectangle((8,8,387,34),fill=(25,35,45))
+    draw.text((16,15),'ORANGE desired tip    GREEN actual FR5 FK',fill=(255,255,255))
+    return np.asarray(img)
+
+
 def _montage(image_array, frame, time_s, phase, position_err, angle_err,
              collisions):
     image=Image.fromarray(image_array).resize((1000,750),Image.Resampling.BILINEAR)
@@ -318,6 +347,7 @@ def run(args):
     width=args.width
     height=args.height
     renderer=mujoco.Renderer(model,width=width,height=height)
+    calibration=Calibration.from_mujoco(model,data,'rb_robot_overview',width,height)
     previous_q=initial["q"]
     previews=[]
     rows=[]
@@ -337,6 +367,7 @@ def run(args):
             # Frames are rendered with *the robot joint configuration* that FK
             # actually produced. The desired pitcher pose is NOT set on the body.
             rgb,depth=render_pair(renderer,data,'rb_robot_overview')
+            rgb=annotate_spout_pixels(rgb,calibration,wanted_tip,actual_tip)
             image=_montage(rgb,i,t,desired.phase,
                            ik['position_error_mm'],ik['rotation_error_deg'],
                            len(outside))
@@ -371,6 +402,10 @@ def run(args):
         renderer.close()
 
     if previews:
+        frame_folder=out/'video_frames'
+        frame_folder.mkdir(exist_ok=True)
+        for j,im in enumerate(previews):
+            im.save(frame_folder/f'fr5_{j:04d}.png')
         frames=[im.convert('P',palette=Image.Palette.ADAPTIVE,colors=96)
                 for im in previews]
         frames[0].save(out/'fr5_replay.gif',save_all=True,
@@ -378,6 +413,20 @@ def run(args):
                        duration=round(1000/args.fps),loop=0,optimize=False)
         for frame in (0,len(previews)//2,len(previews)-1):
             previews[frame].save(out/f'frame_{frame:04d}.png')
+    # Optional MP4 directly playable in Colab. GIF remains the fallback.
+    mp4_created=False
+    if previews and shutil.which('ffmpeg'):
+        video=out/'fr5_replay.mp4'
+        cmd=['ffmpeg','-y','-loglevel','error',
+             '-framerate',str(args.fps),'-i',
+             str(out/'video_frames'/'fr5_%04d.png'),
+             '-vf','pad=ceil(iw/2)*2:ceil(ih/2)*2',
+             '-vcodec','libx264','-pix_fmt','yuv420p',str(video)]
+        try:
+            subprocess.run(cmd,check=True)
+            mp4_created=video.stat().st_size>1000
+        except (subprocess.CalledProcessError,OSError):
+            print('MP4 encoder unavailable: displaying GIF instead.',flush=True)
     _plot(rows,out)
     (out/'trajectory.json').write_text(json.dumps(rows,indent=2))
     fields=('frame','time_s','phase','pitcher_pose_error_mm',
@@ -408,6 +457,7 @@ def run(args):
        collisions_checked='MuJoCo contact diagnostics on physical FR5 collision proxy geoms. Virtual pitcher collision geoms disabled.',
        safety_warning='No motor control, trajectory dynamics, physical grip, force constraints, velocity/acceleration limits, or realistic real-world safety proof.',
        camera_vision_used=False,
+       mp4_created=mp4_created,
        runtime_s=round(time.monotonic()-start_time,2))
     (out/'summary.json').write_text(json.dumps(report,indent=2))
     print('RESULT:',json.dumps(report,indent=2),flush=True)
