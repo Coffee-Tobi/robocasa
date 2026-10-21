@@ -46,7 +46,14 @@ jobs:
           assert (p/'workcell_demo.mp4').stat().st_size>10000
           assert (p/'workcell_demo.gif').stat().st_size>10000
           assert len(s['reachability'])==8
-          assert s['pitcher_tag_visible_frames']>=1
+          assert s['pitcher_tag_visible_frames']==8
+          assert s['tamper_motor_diagnostics']['down_success']
+          assert s['tamper_motor_diagnostics']['return_success']
+          # All fixed station references (61..69), the mobile cup (70),
+          # and the mobile top pitcher tag (71) must be visible in every
+          # tested pose with at least one of the three cameras.
+          for tag in range(61,72):
+              assert s['tag_visibility_by_frame'][str(tag)]==8, (tag,s['tag_visibility_by_frame'])
           PY
       - name: Save video and reports
         if: always()
