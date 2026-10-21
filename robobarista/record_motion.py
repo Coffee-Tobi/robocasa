@@ -321,6 +321,16 @@ def main():
     parser.add_argument('--max-spout-mm',type=float,default=.5)
     parser.add_argument('--max-rotation-deg',type=float,default=1.)
     run(parser.parse_args())
+    # OSMesa/PyOpenGL occasionally segfaults during Python interpreter
+    # shutdown *after* all MuJoCo frames, GIFs and JSON files have been
+    # successfully written. It is an external GL teardown bug, not a failed
+    # camera pose estimate. Only use this clean-process exit after run()
+    # returns successfully; any actual exception still propagates as an error.
+    import os, sys
+    sys.stdout.flush()
+    sys.stderr.flush()
+    if os.environ.get('MUJOCO_GL','').lower()=='osmesa':
+        os._exit(0)
 
 
 if __name__=='__main__':
