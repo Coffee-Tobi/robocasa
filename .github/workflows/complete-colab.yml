@@ -93,6 +93,7 @@ jobs:
           assert g['tag_count_observed']==8
           assert g['max_fixed_tag_position_error_mm']<8
           assert g['rgbd_points']>8000
+          assert (root/'room/rgbd_room_3d_cloud.png').stat().st_size>10000
           assert a['tamper_integrated_in_grinder']
           assert not a['separate_tamper_station']
           assert len(a['docking_targets'])==7
@@ -130,6 +131,7 @@ jobs:
           name: RoboBarista-Full-Colab-Results
           path: |
             runs/full/room/rgbd_room_vs_truth.png
+            runs/full/room/rgbd_room_3d_cloud.png
             runs/full/room/reconstructed_xyz_cloud.npz
             runs/full/room/summary.json
             runs/full/coffee/coffee_workflow.mp4
