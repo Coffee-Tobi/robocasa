@@ -253,6 +253,32 @@ def require_safe_segment(*args,**kwargs):
     return report
 
 
+def require_safe_robot_state(model,data,tool_pose=None,tool='bare_tcp',
+                             dock=None):
+    """Fail-closed gate combining MuJoCo FR5 collision pairs and payload AABBs.
+
+    Call on *every* FK-interpolated robot configuration before accepting a
+    trajectory sample. This is still a simulation preflight and does not
+    implement safety-rated sensing or motor emergency stops.
+    """
+    from .robot_replay import _contacts
+    outside,inside=_contacts(model,data)
+    if outside or inside:
+        one=(outside+inside)[0]
+        raise UnsafeMotionError(
+            f'Blocked robot collision at MuJoCo contact {one}')
+    if tool_pose is not None:
+        p,R=tool_pose
+        violations=payload_check(p,R,tool=tool,dock=dock,
+              clearance_m=DOCK_CLEARANCE_M if dock else TRAVEL_CLEARANCE_M)
+        if violations:
+            first=violations[0]
+            raise UnsafeMotionError(
+                f"Blocked carried {tool}: {first['machine']}, "
+                f"clearance {first['remaining_m']*1000:.1f} mm")
+    return True
+
+
 def export_workspace():
     """JSON-compatible single-source-of-truth for Colab, CAD and robot planning."""
     from dataclasses import asdict
