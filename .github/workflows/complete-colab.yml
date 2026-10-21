@@ -71,7 +71,7 @@ jobs:
           MUJOCO_GL: osmesa
           PYOPENGL_PLATFORM: osmesa
         run: |
-          python -u -m robobarista.motor_follow --input runs/full/camera --output runs/full/motor --width 960 --height 720 --fps 7 --time-scale 2.5
+          python -u -m robobarista.motor_follow --input runs/full/camera --output runs/full/motor --width 960 --height 720 --fps 7 --time-scale 4.0
       - name: Check full single Colab, 7 modules and visuals
         run: |
           python - <<'PY'
