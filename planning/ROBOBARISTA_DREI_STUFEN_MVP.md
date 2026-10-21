@@ -26,9 +26,19 @@ Einarmiger Ansatz. Zuerst einfache, visuell prüfbare Bewegungen **ohne simulier
 
 **Unbedingt beachten:** Dieses Ergebnis gilt nur für drei idealisierte **statische** Posen (0°, 12°, 25°). MuJoCo kennt die Kameraparameter exakt und verwendet vereinfachte Kännchen-/Ausgießergeometrie. Kein Nachweis einer 0,2–0,5-mm-Genauigkeit im realen Betrieb oder über vollständige Bewegungsbahnen.
 
+## Schritt nach der ersten Kameraentscheidung – bewegter Kännchen-Test (21.10.2026)
+
+**Aktuell implementiert:** [COLAB_MOTION.ipynb](../COLAB_MOTION.ipynb) und [robobarista/record_motion.py](../robobarista/record_motion.py) geben eine deterministische **synthetische Gießgeste** in MuJoCo vor. In jedem Frame erzeugen die drei Kameras RGB- und Tiefenmessungen; AprilTag-3-Erkennung + Mehrkamera-Optimierung rekonstruiert aus den Kamerabildern die 6D-Kännchenpose. Aus der geschätzten Pose wird die Ausgießerspitze berechnet. Soweit die Tasse ausreichend erfasst wird, wird ihre Relativposition ergänzt.
+
+**Messdaten:** `trajectory.csv/.json` (ausschließlich geschätzte Posen und Zeitstempel), `evaluation.csv/.json` (separate MuJoCo-Ground-Truth und Fehler, nicht als Eingang der Posenschätzung), `preview.gif` (Kamerafilm), `trajectory.png`, `validation.png`, pro Kamera/JPG die annotierten Bilder. Kein Fehlframe wird mit der tatsächlichen MuJoCo-Pose ersetzt.
+
+**Keine falschen Versprechen:** Dies ist eine **virtuell vorprogrammierte Bewegung**, nicht die Erfassung eines echten Menschen oder ein FR5-Replay. Die Bilder werden in zeitlicher Reihenfolge gerendert, der Simulationszeitstempel ist `frame/fps`; noch keine Echtzeit, Kollisionsprüfung oder Milch. Ein erfolgreicher Durchlauf bestätigt nur einen ersten dynamischen Sensorik-Datenfluss. Als nächstes die gemessene Bahn relativ zur Tasse prüfen, dann echten FR5-IK-/Dry-Run planen.
+
+**Qualitätssicherung:** Zusätzliche Unit-Tests für Zeitbasis, Rotation, Start-/Endpose und fehlende Messungen sowie ein automatischer GitHub-Test mit echtem MuJoCo-Rendering (`.github/workflows/motion-smoke.yml`).
+
 ## Stufe 1 – Kamera-Motion-Capture zuverlässig machen
 
-**Status:** erster statischer Sicht-/Positions-Benchmark bestanden; dynamisches Tracking steht aus.
+**Status:** statischer Benchmark bestanden. Bewegte synthetische Kameraaufnahme als nächster Prototyp implementiert; vollständige Bewegungsqualität und echte menschliche Demonstration noch ausstehend.
 
 **Ausgangspunkt:** [COLAB_START.ipynb](../COLAB_START.ipynb). Es verwendet jetzt standardmäßig genau den gewählten 1-Tag-/3-Kamera-/Pupil-Aufbau. [COLAB_COMPARE.ipynb](../COLAB_COMPARE.ipynb) bewahrt den Vergleich von 16 Alternativen.
 
@@ -71,7 +81,8 @@ Viele Zwei-Tag-Varianten hatten **`pitcher_status=PASS`, aber `scene_status=FAIL
 
 ## Code und Dateien – zentrale Anlaufstellen
 
-- [COLAB_START.ipynb](../COLAB_START.ipynb) – **primärer 1-Tag-/3-Kamera-Start**.
+- [COLAB_START.ipynb](../COLAB_START.ipynb) – bisherige statische 1-Tag-/3-Kamera-Baseline.
+- [COLAB_MOTION.ipynb](../COLAB_MOTION.ipynb) – **jetzt: animierte Kamerademonstration des bewegten Kännchens**.
 - [COLAB_COMPARE.ipynb](../COLAB_COMPARE.ipynb) – **16-Wege-Archivvergleich**, nicht löschen.
 - [robobarista/scene.py](../robobarista/scene.py) – MuJoCo-Szene, FR5-Assets, Tags und Kamerageometrie.
 - [robobarista/geometry.py](../robobarista/geometry.py) – AprilTag-Erkennung und 6D-Mehrkamera-Pose.
