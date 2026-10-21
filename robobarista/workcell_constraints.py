@@ -42,10 +42,11 @@ DOCKS={
     # for both grind and tamp, not two separate docking machines.
     'grinder_portafilter':Dock(
         'grinder_portafilter','grinder','portafilter',
-        (-.56,.122,.954),(0,0,0),(0,1,0),.052,'front'),
+        (-.56,.122,.954),(0,0,0),(0,1,0),.052,'front',permitted_depth_m=.020),
     'espresso_portafilter':Dock(
         'espresso_portafilter','espresso','portafilter',
-        (.440,.287,1.090),(0,0,0),(0,1,0),.053,'front'),
+        (.440,.287,1.090),(0,0,0),(0,1,0),.090,'front',
+        permitted_depth_m=.030),
     'espresso_cup':Dock(
         'espresso_cup','espresso','plastic_cup',
         (.440,.205,.882),(0,0,0),(0,1,0),.055,'front'),
@@ -54,7 +55,7 @@ DOCKS={
         (.653,.222,.871),(0,0,0),(0,1,0),.058,'front'),
     'milk_dispenser_pitcher':Dock(
         'milk_dispenser_pitcher','milk_dispenser','pitcher',
-        (.575,-.500,.841),(0,0,0),(0,1,0),.054,'front'),
+        (.575,-.500,.841),(0,0,0),(0,1,0),.150,'front'),
     'pitcher_park':Dock(
         'pitcher_park','pitcher_stand','pitcher',
         (-.150,-.550,.834),(0,0,0),(0,0,-1),.060,'top'),
@@ -152,6 +153,10 @@ def payload_check(position_m,rotation,tool='pitcher',dock=None,
     R=np.asarray(rotation,float)
     if p.shape!=(3,) or R.shape!=(3,3):
         raise ValueError('Expected 3D tool pose')
+    # A named dock must NEVER be a magic global exception: the precise
+    # target pose (both position and angle) must be reached first.
+    authorized_dock=(dock if dock and docking_pose_check(dock,tool,p,R)['within_goal']
+                     else None)
     problems=[]
     for key,box in KEEP_OUTS.items():
         for index,(offset,radius) in enumerate(PAYLOAD_SPHERES[tool]):
@@ -159,8 +164,8 @@ def payload_check(position_m,rotation,tool='pitcher',dock=None,
             signed=distance_to_box(centre,box)-radius
             if signed >= clearance_m:
                 continue
-            if (_allowed_docking_contact(centre,radius,key,dock,tool)
-                    and signed >= -max(0.,DOCKS[dock].permitted_depth_m)):
+            if (_allowed_docking_contact(centre,radius,key,authorized_dock,tool)
+                    and signed >= -max(0.,DOCKS[authorized_dock].permitted_depth_m)):
                 continue
             problems.append(dict(machine=key,part=index,
                 remaining_m=round(signed,6),
@@ -223,6 +228,22 @@ def validate_segment(start_position,end_position,start_rotation,end_rotation,
             problems.append({'sample':i,'of':len(samples)-1,**item})
     return {'safe':not problems,'samples':len(samples),
             'violations':problems}
+
+
+class UnsafeMotionError(ValueError):
+    """Raised when a planner attempts to execute an unsafe payload segment."""
+
+
+def require_safe_segment(*args,**kwargs):
+    """Mandatory guard for future movement code, not mere diagnostic logging."""
+    report=validate_segment(*args,**kwargs)
+    if not report['safe']:
+        first=report['violations'][0]
+        raise UnsafeMotionError(
+            f"Blocked tool trajectory: {first['machine']} at sample "
+            f"{first['sample']}/{first['of']}; "
+            f"clearance={first['remaining_m']*1000:.1f} mm")
+    return report
 
 
 def export_workspace():
