@@ -129,14 +129,14 @@ def run(args):
     target_q=q_ref[0]
     errors=[]
     renderer=mujoco.Renderer(model,width=args.width,height=args.height)
-    t_stop=START_HOLD+t_ref[-1]+T_AFTER_END
+    t_stop=START_HOLD+args.time_scale*t_ref[-1]+T_AFTER_END
     next_render=0.0
     elapsed=0.0
     try:
         while elapsed < t_stop-1e-10:
             # Camera measurement timestamps are unchanged. A short start hold
             # allows torque motors to establish gravity-compensated equilibrium.
-            source_t=elapsed-START_HOLD
+            source_t=(elapsed-START_HOLD)/args.time_scale
             target_q=_target_at(source_t,t_ref,q_ref)
             if elapsed-last_control>=CONTROL_DT-1e-7:
                 now=np.asarray(data.qpos[qids],float)
@@ -186,6 +186,8 @@ def run(args):
                     wanted_R@current_R.T).magnitude()))
                 errors.append(pos_err_mm)
                 logs.append(dict(time_s=round(elapsed,4),
+                    original_camera_time_s=round(max(0.,source_t),4),
+                    joint_velocity_rad_s=data.qvel[dofs].tolist(),
                     desired_q_rad=target_q.tolist(),
                     actual_q_rad=qactual.tolist(),
                     lag_position_mm=pos_err_mm,
@@ -227,6 +229,11 @@ def run(args):
         'camera_trajectory_loaded_from':str(qfile),
         'frames_rendered':len(frames),
         'source_camera_frames':len(camera),
+        'time_scale':args.time_scale,
+        'actual_simulated_duration_s':round(elapsed,4),
+        'max_joint_velocity_rad_s':max(
+            [max(abs(v) for v in rec['joint_velocity_rad_s'])
+             for rec in logs],default=None),
         'max_motor_tracking_position_lag_mm':max_err,
         'mean_motor_tracking_position_lag_mm':float(np.mean(errors)) if errors else None,
         'torque_saturation_control_intervals':sat_count,
@@ -247,8 +254,13 @@ def main():
     p.add_argument('--width',type=int,default=960)
     p.add_argument('--height',type=int,default=720)
     p.add_argument('--fps',type=float,default=7)
-    p.add_argument('--max-frames',type=int,default=32)
-    r=run(p.parse_args())
+    p.add_argument('--max-frames',type=int,default=64)
+    p.add_argument('--time-scale',type=float,default=2.5,
+                   help='Stretch camera trajectory in time; 2.5 means slower controlled movement')
+    args=p.parse_args()
+    if args.time_scale<1:
+        raise ValueError('time-scale must be >=1 for this conservative motor experiment')
+    r=run(args)
     import sys
     sys.stdout.flush();sys.stderr.flush()
     if os.environ.get('MUJOCO_GL','').lower()=='osmesa':
