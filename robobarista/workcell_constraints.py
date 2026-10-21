@@ -80,6 +80,12 @@ KEEP_OUTS={
     'milk_dispenser':Keepout('milk_dispenser',(.600,-.340,.980),(.105,.110,.160)),
     # Small machine surfaces also matter if carrying the kettle.
     'grinder_hopper':Keepout('grinder_hopper',(-.560,.250,1.160),(.075,.075,.085)),
+    'grinder_tamper_guard_left':Keepout(
+        'grinder_tamper_guard_left',(-.644,.122,1.004),(.010,.055,.070)),
+    'grinder_tamper_guard_right':Keepout(
+        'grinder_tamper_guard_right',(-.476,.122,1.004),(.010,.055,.070)),
+    'grinder_tamper_guard_top':Keepout(
+        'grinder_tamper_guard_top',(-.560,.122,1.085),(.094,.055,.010)),
     'rinser':Keepout('rinser',(.070,.590,.855),(.135,.095,.025)),
 }
 
