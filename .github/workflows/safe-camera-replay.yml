@@ -1,0 +1,64 @@
+name: Safe FR5 Camera-to-Joint Replay
+on:
+  push:
+    paths:
+      - 'robobarista/camera_joint_replay.py'
+      - 'robobarista/barista_cell.py'
+      - 'robobarista/workcell_constraints.py'
+      - 'COLAB_SAFE_REPLAY.ipynb'
+      - '.github/workflows/safe-camera-replay.yml'
+  workflow_dispatch:
+jobs:
+  camera-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - name: Install headless MuJoCo and ffmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 libglx-mesa0 libgl1-mesa-dri ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Simulate seeded random safe robot motion captured by 3 cameras
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.camera_joint_replay --frames 13 --fps 5 --width 960 --height 720 --seed 14 --output runs/ci_safe_replay
+      - name: Validate independent vision / IK / videos
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('runs/ci_safe_replay')
+          s=json.loads((p/'summary.json').read_text())
+          print('Camera-to-robot report:',s)
+          assert s['status']=='PASS'
+          assert s['replay_inputs_camera_estimates_only']
+          assert not s['human_demonstration']
+          assert s['camera_valid_frames']==13
+          assert s['camera_two_view_frames']==13
+          assert s['replayed_frames']==13
+          assert s['arm_link_and_payload_swept_preflight_on_every_generated_motion']
+          assert (p/'demo_and_replay.mp4').stat().st_size>10000
+          assert (p/'camera_measurements.json').stat().st_size>1000
+          assert (p/'robot_replay.json').stat().st_size>1000
+          PY
+      - name: Upload videos and trajectory data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: robobarista-safe-camera-to-fr5
+          path: |
+            runs/ci_safe_replay/demo_and_replay.mp4
+            runs/ci_safe_replay/demo_and_replay.gif
+            runs/ci_safe_replay/summary.json
+            runs/ci_safe_replay/camera_measurements.json
+            runs/ci_safe_replay/robot_replay.json
+            runs/ci_safe_replay/ground_truth_evaluation_only.json
+            runs/ci_safe_replay/camera_vs_truth_EVAL_ONLY.json
+          if-no-files-found: warn
