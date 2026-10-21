@@ -53,6 +53,10 @@ jobs:
           assert len(s['docking_targets'])==7
           assert s['no_contact_policy_test']['forbidden_pass_through_blocked']
           assert all(v['site_position_error_m']<1e-6 for v in s['docking_targets'].values())
+          assert all(v['carried_tool_at_dock_clearance_ok']
+                     for v in s['docking_targets'].values())
+          assert all(v['exact_pose_spec_valid']
+                     for v in s['docking_targets'].values())
           assert (p/'dock_targets.json').stat().st_size>100
           assert (p/'workspace_constraints.json').stat().st_size>100
           assert s['pitcher_tag_visible_frames']==8
