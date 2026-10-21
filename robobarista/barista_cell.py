@@ -247,7 +247,7 @@ def build_cell_scene(vendor_dir: Path) -> Path:
     # Dedicated elevated fiducials in open corners, outside working stroke.
     marker_xy={
         'grinder':(-.73,.24),'tamper':(-.36,.65),
-        'portafilter':(-.75,-.18),'espresso':(.72,.52),
+        'portafilter':(-.75,-.18),'espresso':(.75,.17),
         'milk_dispenser':(.76,-.36),
         'pitcher_stand':(-.27,-.64),'pour':(.30,-.58),
         'rinser':(.08,.74),'robot_base':(.18,.055),
