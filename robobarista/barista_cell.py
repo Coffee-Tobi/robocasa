@@ -195,9 +195,9 @@ def build_cell_scene(vendor_dir: Path) -> Path:
          '.19 .2 .22 1')
     _geom(pf,'rb_portafilter_basket','cylinder',[0,0,.078],
           [.048,.019],'.70 .72 .72 1')
-    _geom(pf,'rb_portafilter_handle','capsule',[.12,0,.084],
+    _geom(pf,'rb_portafilter_handle','capsule',[0,-.12,.084],
           [.015,.12],'.16 .17 .18 1',
-          extra={'euler':'0 1.5708 0'})
+          extra={'euler':'1.5708 0 0'})
     # Chilled milk dosing station. No simulated flow yet.
     milk=_body(world,'rb_milk_dispenser',[.6,-.36,TABLE_TOP])
     _box(milk,'rb_milk_body',[0,.02,.16],[.105,.11,.16],
