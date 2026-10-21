@@ -84,6 +84,28 @@ def test_magic_dock_cannot_exempt_other_tool_or_different_body():
     assert no_exemption==default
 
 
+def test_every_declared_precision_dock_respects_full_payload_keepouts():
+    # Geometric fixture specifications must not contradict their own no-go
+    # constraints at the exact authorised target pose.
+    for name,d in DOCKS.items():
+        R=rotation_matrix(d.euler_xyz_deg)
+        assert payload_check(d.position_m,R,tool=d.tool,
+                             dock=name,clearance_m=DOCK_CLEARANCE_M)==[],name
+
+
+def test_robot_contact_guard_rejects_actual_link_machine_contact(monkeypatch):
+    from robobarista import robot_replay
+    from robobarista.workcell_constraints import require_safe_robot_state
+    monkeypatch.setattr(robot_replay,'_contacts',
+                        lambda model,data:([['collision/wrist1_link',
+                                             'rb_espresso_body']],[]))
+    with pytest.raises(UnsafeMotionError,match='Blocked robot collision'):
+        require_safe_robot_state(None,None)
+    monkeypatch.setattr(robot_replay,'_contacts',lambda model,data:([],[]))
+    assert require_safe_robot_state(None,None,tool_pose=(
+        [.0,-.2,1.7],np.eye(3)),tool='pitcher')
+
+
 def test_continuous_spatial_sampling_and_export():
     steps=sample_motion([0,0,1.5],[.2,0,1.5],np.eye(3),np.eye(3))
     assert len(steps)>=41
