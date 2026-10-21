@@ -42,6 +42,9 @@ jobs:
           assert not s['human_demonstration']
           assert s['camera_valid_frames']==13
           assert s['camera_two_view_frames']==13
+          assert s['fixed_station_tags_recognized_in_initial_render']==8
+          assert s['max_fixed_station_tag_vision_error_mm']<5
+          assert (p/'fixed_reference_vision_check.json').stat().st_size>100
           assert s['replayed_frames']==13
           assert s['arm_link_and_payload_swept_preflight_on_every_generated_motion']
           assert (p/'demo_and_replay.mp4').stat().st_size>10000
@@ -63,6 +66,7 @@ jobs:
             runs/ci_safe_replay/camera_fr5_trajectory_comparison.png
             runs/ci_safe_replay/summary.json
             runs/ci_safe_replay/camera_measurements.json
+            runs/ci_safe_replay/fixed_reference_vision_check.json
             runs/ci_safe_replay/robot_replay.json
             runs/ci_safe_replay/ground_truth_evaluation_only.json
             runs/ci_safe_replay/camera_vs_truth_EVAL_ONLY.json
