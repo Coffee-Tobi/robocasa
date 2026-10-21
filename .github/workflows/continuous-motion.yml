@@ -27,7 +27,7 @@ jobs:
         env:
           MUJOCO_GL: osmesa
           PYOPENGL_PLATFORM: osmesa
-        run: pytest tests/test_continuous_motion.py -q
+        run: python -m pytest tests/test_continuous_motion.py -q
       - name: Capture AprilTags at 15 FPS (31 camera frames)
         env:
           MUJOCO_GL: osmesa
