@@ -2,6 +2,20 @@
 
 **Status (21.10.2026):** Virtuelles Kamera-Motion-Capture und erstes **kinematisches FR5-Sechs-Gelenk-Replay** erfolgreich in MuJoCo getestet. Das Kännchen ist dabei als **starre visuelle Attrappe** ans FR5-Handgelenk montiert. **Kein physikalisches Greifen, keine Motorregelung, keine echten Flüssigkeiten und keine reale Hardware.**
 
+## Neue Standard-Szene: kompakte Artly-inspirierte Kaffeeinsel (Oktober 2026)
+
+**Ab jetzt Grundlage unserer räumlichen Entwicklung:** [COLAB_WORKCELL.ipynb](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_WORKCELL.ipynb)
+
+`robobarista/barista_cell.py` erzeugt unabhängig vom alten Kameratest die Szene `rb_artly_inspired_island.xml` aus dem vorhandenen FR5-Modell und geometrischen Grundformen. **Artly ist eine konzeptionelle Inspiration, kein behaupteter CAD-Nachbau.** Arbeitsfläche z=0,82 m, FR5 zentral auf 9 cm Sockel, kompakte Tischinsel, Wandbegrenzungen und drei erhöhte reale MuJoCo-Kameras. Stationen: Espresso, Mühle, automatischer Tamper, Siebträger-Ablage, Milchspender, Milchkanne, Übungsbereich mit **Kunststoffbecher** und Rinser. Sie sind über `STATIONS` als Koordinaten/Interaktionspunkte definiert.
+
+**Neu zur bisherigen Szene:** bewegliche Milchkanne (`rb_pitcher_free`, Masse und Kollisionen) und ein leichter transparenter Kunststoff-Übungsbecher (`rb_plastic_cup_free`, Masse/Kollision am Boden); der Tamper besitzt einen realen Schubgelenkantrieb (`rb_tamper_motor`). *Die Demo* bewegt Kännchen und Tamper noch kinematisch (ohne echten FR5-Griff, dynamische Tamper-Kraft, Milch/Flüssigkeit oder Kaffeeextraktion). Die Becher sind vereinfachte Volumenmodelle ohne echte Wand-/Schaumphysik.
+
+**AprilTags:** Drei stationäre Ansichten von vorne links, vorne rechts und hinten. Für jede Station eigene erhöhte, nach oben gerichtete AprilTag-Referenzmarker. Auf beweglichen Gegenständen zusätzliche Marker: Kännchen seitlich und oben, Kunststoffbecher auf kleinem Markerträger. `robobarista/cell_demo.py` erkennt die Marker aus **gerenderten RGB-Bildern** (pupil-apriltags) und schreibt `visibility.json`; eine jederzeitige Sichtbarkeit bei verdeckenden Gegenständen oder anderen Greifstellungen ist damit **nicht pauschal garantiert**.
+
+**Erreichbarkeit:** Der Grundriss `layout_topdown.png` zeigt eine räumliche Planungskontur; der echte FR5-Check löst außerdem pro Station eine Reihe von Musterposen durch inverse Kinematik und protokolliert `reachability.json`. Die bloße Erreichbarkeit einer Testpose garantiert noch keinen kollisionsfreien Anfahrweg; das folgt vor der physischen Umsetzung.
+
+**Outputs:** gerenderte Szenenvorschau `workcell_preview.png`, MP4/GIF `workcell_demo.*`, Grundriss, Sichtbarkeits-/Reichweitenbericht; automatische GitHub-Tests unter [Workcell Preview](https://github.com/Coffee-Tobi/robocasa/actions/workflows/workcell.yml).
+
 ## Gewählter MVP-Aufbau
 
 **Drei virtuelle RGB-D-Kameras, ein seitlicher AprilTag 36h11 am Milchkännchen, offizieller AprilTag-3-Detektor (`pupil-apriltags`) und SciPy-Mehrkamera-Optimierung.**
@@ -39,6 +53,7 @@ Die bisherigen 16 Vergleichsvarianten, einschließlich Caliscope und vier Kamera
 | Notebook | Zweck |
 | --- | --- |
 | **[COLAB_START.ipynb](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_START.ipynb)** | **Standard**: Drei Kameras, ein AprilTag 3, gemeinsame Poseoptimierung |
+| **[COLAB_WORKCELL.ipynb](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_WORKCELL.ipynb)** | **NEUE STANDARDSZENE:** gesamte Artly-inspirierte Kaffeeinsel, bewegliche Milchkanne und Kunststoffbecher, Tamper, Kameras und AprilTag-Sichtcheck |
 | **[COLAB_ROBOT.ipynb](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_ROBOT.ipynb)** | **JETZT:** echter FR5-Gelenk-Dry-Run, Video mit Soll-/Ist-Ausgießerposition, Kollisions- und IK-Prüfung |
 | **[COLAB_MOTION.ipynb](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_MOTION.ipynb)** | **Jetzt ausprobieren**: animierte Bewegungssequenz + drei Kameraperspektiven + zeitgestempelte geschätzte 6D-Bahn |
 | **[COLAB_COMPARE.ipynb](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_COMPARE.ipynb)** | **Forschung/Archiv**: 16 Varianten mit 1/2 Tags, 3/4 Kameras, OpenCV/AprilTag 3, direkter Optimierung/Caliscope |
