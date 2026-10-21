@@ -46,3 +46,15 @@ jobs:
           assert (p/'trajectory.json').stat().st_size>100
           assert (p/'ik_metrics.csv').stat().st_size>100
           PY
+      - name: Upload replay film and measurement report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: robobarista-fr5-joint-replay
+          path: |
+            runs/ci_fr5/fr5_replay.mp4
+            runs/ci_fr5/fr5_replay.gif
+            runs/ci_fr5/ik_error.png
+            runs/ci_fr5/ik_metrics.csv
+            runs/ci_fr5/summary.json
+          if-no-files-found: warn
