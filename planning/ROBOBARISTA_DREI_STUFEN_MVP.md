@@ -26,6 +26,12 @@ Einarmiger Ansatz. Zuerst einfache, visuell prüfbare Bewegungen **ohne simulier
 
 **Unbedingt beachten:** Dieses Ergebnis gilt nur für drei idealisierte **statische** Posen (0°, 12°, 25°). MuJoCo kennt die Kameraparameter exakt und verwendet vereinfachte Kännchen-/Ausgießergeometrie. Kein Nachweis einer 0,2–0,5-mm-Genauigkeit im realen Betrieb oder über vollständige Bewegungsbahnen.
 
+## Sicheres Pre-Dock und visuelles FR5-Lernen – neuer Meilenstein (21.10.2026)
+
+**Neu abgeschlossen:** Sieben vollständige kollisionsvorgeprüfte FR5-Hin-/Rückwege zu **freien Vorpositionen** aller sieben Stationsschnittstellen, vollständig mit Gelenkwinkeln und Werkzeug-Kollisionshüllen geprüft. **Keine endgültigen mechanischen Dockkontakte freigegeben.** [COLAB_SAFE_STAGING](../COLAB_SAFE_STAGING.ipynb) · [Videobeleg](https://github.com/Coffee-Tobi/robocasa/actions/runs/39632253591/artifacts/12358904241).
+
+**Neu abgeschlossen:** Getrennte gerenderte Demonstrationsbilder von drei RGB-D-Kameras, AprilTag-3-Schätzung der beweglichen Kanne aus den Bildpunkten (zusätzlicher Marker #72), invers-kinematisches Replay **nur anhand der gemessenen Bahn** mit allen 13/13 Frames und Gelenk-Sicherheitsvorprüfung. Maximaler Kamerafehler in dieser ideal kalibrierten virtuellen Sequenz: 0,924 mm / 0,339°. Alle acht festen Referenzmarker aus Bildern erkannt; maximaler Referenzfehler 2,784 mm. **Keine echte Menschendemonstration oder motorische Simulation.** [COLAB_SAFE_REPLAY](../COLAB_SAFE_REPLAY.ipynb) · [Vergleichsvideo](https://github.com/Coffee-Tobi/robocasa/actions/runs/39632915461/artifacts/12359487863) · [Codeerklärung](SAFE_CAMERA_REPLAY_EXPLAINED.md).
+
 ## Neue Standard-Szene V0.2: Artly-inspirierte Kaffeeinsel mit Andockrahmen (21.10.2026)
 
 **[Neue Szene in Colab öffnen](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_WORKCELL.ipynb)** · **[Verbindlicher virtueller Geometrie- und Sicherheitsplan](WORKCELL_GEOMETRY_AND_SAFETY.md)**
