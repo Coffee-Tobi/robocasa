@@ -1,0 +1,65 @@
+name: Artly-Inspired Workcell Preview
+on:
+  push:
+    paths:
+      - 'robobarista/barista_cell.py'
+      - 'robobarista/cell_demo.py'
+      - 'tests/test_barista_cell.py'
+      - 'COLAB_WORKCELL.ipynb'
+      - '.github/workflows/workcell.yml'
+  workflow_dispatch:
+jobs:
+  scene-and-visibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - name: Install MuJoCo CPU dependencies and video
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 libglx-mesa0 libgl1-mesa-dri ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Render new robot-barista cell
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.cell_demo --frames 8 --fps 5 --width 920 --height 660 --output runs/workcell_ci --reach
+      - name: Check content, video and real tag detections
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('runs/workcell_ci')
+          s=json.loads((p/'summary.json').read_text())
+          print('Workcell validation:',s)
+          assert len(s['stations'])==8
+          assert len(s['cameras'])==3
+          assert s['plastic_cup_instead_of_ceramic']
+          assert s['tamper_actuator_exists']
+          assert s['mp4_created']
+          assert (p/'workcell_preview.png').stat().st_size>10000
+          assert (p/'workcell_demo.mp4').stat().st_size>10000
+          assert (p/'workcell_demo.gif').stat().st_size>10000
+          assert len(s['reachability'])==8
+          assert s['pitcher_tag_visible_frames']>=1
+          PY
+      - name: Save video and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: robobarista-artly-inspired-workcell
+          path: |
+            runs/workcell_ci/workcell_preview.png
+            runs/workcell_ci/workcell_last_frame.png
+            runs/workcell_ci/workcell_demo.mp4
+            runs/workcell_ci/workcell_demo.gif
+            runs/workcell_ci/layout_topdown.png
+            runs/workcell_ci/summary.json
+            runs/workcell_ci/visibility.json
+            runs/workcell_ci/reachability.json
+          if-no-files-found: warn
