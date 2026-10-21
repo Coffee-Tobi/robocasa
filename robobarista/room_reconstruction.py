@@ -133,6 +133,28 @@ def run(args):
     fig.tight_layout()
     fig.savefig(out/'rgbd_room_vs_truth.png',dpi=140)
     plt.close(fig)
+    # A real XYZ cloud visualisation, not a hand-authored drawing of the
+    # workcell. It contains only camera-visible RGB-D surfaces.
+    fig=plt.figure(figsize=(10,8))
+    ax3=fig.add_subplot(111,projection='3d')
+    active=cloud[(np.abs(cloud[:,0])<1.7)&(np.abs(cloud[:,1])<1.4)
+                 &(cloud[:,2]>0)&(cloud[:,2]<2.2)]
+    if len(active):
+        active=active[np.linspace(0,len(active)-1,
+                 min(6500,len(active)),dtype=int)]
+        ax3.scatter(active[:,0],active[:,1],active[:,2],
+                    c=active[:,2],cmap='viridis',s=.4,alpha=.38)
+    for row in rows:
+        if row['position_estimated_m'] is not None:
+            xyz=row['position_estimated_m']
+            ax3.scatter([xyz[0]],[xyz[1]],[xyz[2]],
+                        marker='x',s=65,color='red')
+    ax3.set(xlabel='X (m)',ylabel='Y (m)',zlabel='Z (m)',
+            title='Gesehenes 3D-Volumen aus 3 RGB-D-Kameras + rekonstruierte AprilTags')
+    ax3.view_init(elev=26,azim=-63)
+    fig.tight_layout()
+    fig.savefig(out/'rgbd_room_3d_cloud.png',dpi=135)
+    plt.close(fig)
     (out/'reconstructed_xyz_cloud.npz').parent.mkdir(exist_ok=True,parents=True)
     np.savez_compressed(out/'reconstructed_xyz_cloud.npz',xyz=cloud.astype('float32'))
     report={
