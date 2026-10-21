@@ -1,6 +1,6 @@
 # RoboBarista – sichere Anfahrten und echte Kamera→FR5-Wiedergabe
 
-**Stand: 21. Oktober 2026.** Alle Testergebnisse sind **rein virtuell, kinematisch, mit ideal kalibrierten MuJoCo-Kameras**. Dies ist kein Nachweis der Sicherheit oder Positioniergenauigkeit des realen FAIRINO FR5.
+**Stand: 21. Oktober 2026.** Alle Testergebnisse sind **rein virtuell**. Die Stationsplanung und das Kamera→Gelenk-Replay sind kinematisch und verwenden ideal kalibrierte MuJoCo-Kameras; **ein zusätzliches Experiment verwendet nun die echten sechs virtuellen Drehmomentmotoren mit `mujoco.mj_step`**. Dies ist kein Nachweis der Sicherheit oder Positioniergenauigkeit des realen FAIRINO FR5.
 
 ## Zwei getestete Simulationen
 
@@ -99,3 +99,14 @@ _write_q(model, data, qids, sol['q'])  # NUR kinematische Visualisierung
 - Die Bewegung in MuJoCo mit **`mj_step` und echten FR5-Motoraktuatoren** reproduzieren, dadurch Zeit, Geschwindigkeiten, Beschleunigungen, Kräfte und mögliche Abweichungen prüfen.
 - Stationäre AprilTag-Bildregistrierung gegen die bekannte Zellreferenz prüfen und eine echte Kamera-zu-Roboter-Kalibrierung vorbereiten.
 - Später: menschliche Demonstrationsaufnahme statt des seedbasierten künstlichen Zufallswegs.
+
+## Neues integriertes Haupt-Colab – alle vier Schritte in einem Ablauf
+
+**[COLAB_ROBOBARISTA.ipynb](../COLAB_ROBOBARISTA.ipynb)** ist jetzt der empfohlene Einstieg. Es richtet die gemeinsame MuJoCo-Kaffeeinsel ein, rendert die Markerprüfung und sieben Maschinenstationen, berechnet freie pre-dock-Anfahrten, führt danach den beschriebenen drei-Kamera-Versuch durch und simuliert schließlich eine **dynamische motorische Ausführung** derselben kameragemessenen Gelenkbahn. Die Daten bleiben getrennt, sämtliche MP4s und JSON-Dateien gehen in ein gemeinsames ZIP.
+
+**Motorische Versuchsregelung in [`motor_follow.py`](../robobarista/motor_follow.py):** Die bereits aus AprilTag-Pixeln gewonnene Sollbewegung wird mittels fünfter-Ordnung-Interpolation `10u³−15u⁴+6u⁵` und vorsichtiger Zeitstreckung um Faktor 2,5 verlangsamt. Ein PD-Regler verfolgt die sechs Gelenkwinkel und Geschwindigkeiten; die statische Schwerkraftkompensation wird mit `mujoco.mj_inverse` berechnet. Jeder der sechs FR5-Motoraktuatoren wird innerhalb der im Modell eingetragenen Drehmomentgrenzen angesteuert; `mujoco.mj_step()` berechnet die tatsächliche Bewegung. Kontakte von FR5 und vereinfachte Kollisionsabstände der gesamten mitgetragenen Kanne werden laufend überprüft. Anders als im kinematischen Vergleich können tatsächliche und gewünschte Gelenkpositionen **auseinanderliegen**.
+
+**Getesteter virtueller Motorlauf:** **6,7 s simulierte Zeit**, 41 Videobilder; maximale Abweichung der tatsächlichen Kännchenposition von der aus dem Soll-Gelenkwinkel berechneten Position **12,36 mm**, mittlere **4,46 mm**. Keine gemeldeten Kontakt-/Abstandsverletzungen oder Drehmomentsättigung im Test. **Diese Werte sind zu unpräzise für echte Latte Art und vorerst nur ein Nachweis funktionierender Motorphysik!** Die Modellbeladung entspricht noch nicht einer echten gefüllten Kanne, der virtuelle Greifer ist nicht physikalisch fest angekoppelt und der PD-Regler nicht sicherheitsqualifiziert. Die motorische zeitliche Abfolge ist dadurch untersuchbar, aber **nicht** für eine echte Maschine validiert.
+
+**Qualitätskontrolle:** [Kompletter automatischer Test von allen vier Colab-Schritten](https://github.com/Coffee-Tobi/robocasa/actions/workflows/complete-colab.yml), getrenntes [Motor-Folgeexperiment](https://github.com/Coffee-Tobi/robocasa/actions/workflows/motor-follow.yml). Beide erfordern keine lokale Hardware.
+
