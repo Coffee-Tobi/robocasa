@@ -24,6 +24,10 @@ from .workcell_constraints import DOCKS, PAYLOAD_SPHERES
 from .demo import render_pair
 
 
+POUR_PHASES=('Approach','Base-fill','Lower','Sway','Cut-through')
+# Five illustrative skill stages inspired by phase-structured latte-art
+# demonstrations; NOT learned DMPs and NOT actual milk hydrodynamics.
+
 RECIPE=[
     ('01  Siebtraeger aufnehmen (virtuell)','pitcher_park','portafilter','portafilter_pickup'),
     ('02  Mahlen + integrierter Tamper','grinder_portafilter','portafilter','grind_tamp'),
@@ -142,6 +146,29 @@ def _random_pour_gesture(model,data,qids,limits,home,stages,seed):
         okay,reason,_=_check_route(model,data,qids,limits,
                                   home,q,'pitcher')
         if not okay:continue
+        # Prefer a REPRODUCIBLE five-phase demonstrator: first settle,
+        # gradually pitch the wrist, then sway sideways and cut through.
+        # These are joint-space gestures, explicitly NOT milk-pouring curves.
+        offsets=[
+            (0.,0.,0.),
+            (0.,-.020,0.),
+            (-.015,-.035,0.),
+            (.020,-.038,.012),
+            (0.,-.010,-.006),
+        ]
+        for scale in (1.,.5,.25):
+            proposed=[]
+            for delta0,delta4,delta5 in offsets:
+                sample=q.copy()
+                sample[0]+=delta0*scale
+                sample[4]+=delta4*scale
+                sample[5]+=delta5*scale
+                proposed.append(sample)
+            segments=zip(proposed,proposed[1:])
+            if all(_check_route(model,data,qids,limits,a,b,'pitcher')[0]
+                   for a,b in segments) and _check_route(
+                        model,data,qids,limits,q,proposed[0],'pitcher')[0]:
+                return name,proposed
         controls=[q.copy()]
         for i in range(4):
             found=None
@@ -247,7 +274,9 @@ def run(args):
                 desc=('coffee-coloured flow symbolic' if espresso_visual
                       else 'no espresso extracted')
                 if pitcher_foam:desc+=' | milk foam SYMBOLIC'
-                if action=='pour':desc+=' | assumed artistic wave (no fluid)'
+                if action=='pour':
+                    which=min(4,int(5*seq_index/max(1,len(leg))))
+                    desc+=' | POUR STAGE: '+POUR_PHASES[which]+' (no milk physics)'
                 frames.append(_frame(rgb,step['label'],action,
                     'predock',seq_index,len(leg),
                     step['checked_joint_substeps'],
@@ -290,6 +319,8 @@ def run(args):
         'true_milk_frothing_or_espresso_flow':False,
         'assumed_synthetic_wrist_latte_pattern':
             pour_ctrls is not None,
+        'latte_art_five_phase_structure':list(POUR_PHASES),
+        'pour_motion_is_demonstrative_not_cdmp_learned':True,
         'video_frames':len(frames),
         'mp4_created':mp4,
         'no_mechanical_contact_or_liquid_physics':True,
