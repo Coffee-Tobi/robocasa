@@ -8,6 +8,10 @@ Ein virtueller **FAIRINO FR5** soll aus der **optisch erfassten 6D-Bewegung eine
 
 Einarmiger Ansatz. Zuerst einfache, visuell prüfbare Bewegungen **ohne simulierte Milchphysik**; später kontrollierter realer Gießversuch. Espresso-Mühle, Siebträgerbedienung, Aufschäumen und Reinigung bleiben spätere separate Ausbaustufen.
 
+## Aktueller Fortschritt: ein zentrales Colab für alle vier Tests
+
+**[Hier die komplette RoboBarista-Simulation auf Google Colab starten](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_ROBOBARISTA.ipynb).** Arbeitsinsel/Marker/Tamper, sieben geprüfte Vorpositionen, optische AprilTag-Schätzung und rein kinematisches FR5-Replay sowie **neuer echter virtueller Drehmoment-Motorlauf** hintereinander. Der sichere, vorab modellierte Zeitablauf mit 2,5-facher Zeitstreckung führte im ersten dynamischen Test zu einem maximalen **12,36-mm-Motorfolgefehler** (Mittel 4,46 mm) ohne erkannte Kollisionen. Das ist keine Aussage über die Präzision oder die Greifmechanik eines physischen FR5. Für echtes Latte Art sind reale Werkzeug-CAD-Daten, präzise gefasste Docking- und Greifbewegungen, Modelllasten, dynamische Sicherheitsprüfungen und Flüssigkeitsphysik weiter offen.
+
 ### Verbindliche Designentscheidungen
 
 | Frage | Entscheidung für den nächsten MVP |
