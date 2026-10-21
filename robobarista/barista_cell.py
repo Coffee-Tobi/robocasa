@@ -168,8 +168,15 @@ def build_cell_scene(vendor_dir: Path) -> Path:
           [.03,.018],'.10 .1 .1 1')
     # The tamper is part of the grinder housing/portafilter cradle. It has
     # no separate countertop footprint or independent docking station.
-    _box(grinder,'rb_grinder_inbuilt_tamper_shroud',
-         [0,-.128,.184],[.079,.055,.070],'.23 .26 .28 1')
+    # An OPEN portafilter tunnel: solid side rails leave a clear centre
+    # for the basket at the one approved grinding/tamping docking frame.
+    for side,offset in [('left',-.084),('right',.084)]:
+        _box(grinder,'rb_grinder_tamper_guard_'+side,
+             [offset,-.128,.184],[.010,.055,.070],
+             '.23 .26 .28 1',collide=True)
+    _box(grinder,'rb_grinder_tamper_guard_top',
+         [0,-.128,.265],[.094,.055,.010],
+         '.23 .26 .28 1',collide=True)
     shaft=_body(grinder,'rb_grinder_tamper_press',[0,-.132,.255])
     ET.SubElement(shaft,'joint',{'name':'rb_grinder_tamper_slide','type':'slide',
         'axis':'0 0 -1','range':'0 .055','limited':'true',
