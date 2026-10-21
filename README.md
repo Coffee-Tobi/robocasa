@@ -2,6 +2,18 @@
 
 **Status (21.10.2026):** Virtuelles Kamera-Motion-Capture und erstes **kinematisches FR5-Sechs-Gelenk-Replay** erfolgreich in MuJoCo getestet. Das Kännchen ist dabei als **starre visuelle Attrappe** ans FR5-Handgelenk montiert. **Kein physikalisches Greifen, keine Motorregelung, keine echten Flüssigkeiten und keine reale Hardware.**
 
+## NEU (21.10.2026): Sieben sichere Vorpositionen und optisches Kamera→FR5-Replay
+
+**[🎬 Safe Staging Colab – sieben Geräte-Anfahrten](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_SAFE_STAGING.ipynb)** · **[fertiger Video-Test mit MP4](https://github.com/Coffee-Tobi/robocasa/actions/runs/39632253591/artifacts/12358904241)**
+
+Alle **sieben** benannten Geräte-/Werkzeug-Schnittstellen haben eine **kollisionsgeprüfte freie Vorposition** mit Gelenk-Hin-/Rückroute aus einem sicheren Startzustand gefunden. Die eigentlichen mechanischen letzten Zentimeter bis Brühgruppe, Dampflanze, Mühle und Milchspender sind **nicht** freigegeben. Alle Wege sind kinematisch; Robotermotoren, Griffkräfte und kontinuierliche hardwaretaugliche Kollisionsüberwachung fehlen.
+
+**[🎬 Kamera-Motion-Capture → echter FR5-Gelenkreplay in Colab](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_SAFE_REPLAY.ipynb)** · **[Vergleichs-MP4 und Berichte](https://github.com/Coffee-Tobi/robocasa/actions/runs/39632915461/artifacts/12359487863)**
+
+Eine **mit Seed reproduzierbare zufällige, sichere Gelenkbewegung** wird zunächst von einer **separaten virtuellen Kanne** vorgeführt und von drei MuJoCo-Kameras gefilmt. Aus gerenderten RGB-/Tiefenbildern rekonstruiert AprilTag-3 plus Mehrkamera-Optimierung die tatsächliche 6D-Bewegung: **13/13** Zeitpunkte optisch gültig (mindestens zwei Kameras); der FR5 fährt anschließend **13/13** ausschließlich gemessene Zielposen durch seine sechs Gelenke nach. Kein Zugriff auf die versteckten Quellgelenke/Quellpositionen während der Kameraschätzung oder beim Replay. Getrennt gemessener maximaler Fehler gegenüber der nur zur Bewertung gespeicherten Simulatorwahrheit: **0,924 mm** / **0,339°**. Alle **acht** festmontierten Stations-Referenzmarker wurden aus Kamerabildern im ersten Frame erkannt; maximale Positionsdifferenz zur Simulatorwelt **2,784 mm**. Dies sind **ideal kalibrierte virtuelle Kameras**, keine reale Präzisionsaussage. Ein zusätzlich schräg montierter AprilTag #72 verbessert die zeitweilige Sichtverdeckung.
+
+Das neue Video stellt **die von den Kameras beobachtete Demonstration links und die nachgeführte FR5-Gelenkbewegung rechts** nebeneinander, dazu ein separater XYZ-Trajektorienvergleich. Für den vollständigen Aufbau, Code und Einschränkungen siehe **[technische Erklärung](planning/SAFE_CAMERA_REPLAY_EXPLAINED.md)**. Die früheren unabhängigen Kamera- und FR5-Benchmarks bleiben weiterhin im Repository.
+
 ## Neue Standard-Szene V0.2: Artly-inspirierte Kaffeeinsel mit Andockrahmen (21.10.2026)
 
 **[Neue Szene in Colab öffnen](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_WORKCELL.ipynb)** · **[Verbindlicher virtueller Geometrie- und Sicherheitsplan](planning/WORKCELL_GEOMETRY_AND_SAFETY.md)**
