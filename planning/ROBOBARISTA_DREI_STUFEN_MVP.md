@@ -26,6 +26,20 @@ Einarmiger Ansatz. Zuerst einfache, visuell prüfbare Bewegungen **ohne simulier
 
 **Unbedingt beachten:** Dieses Ergebnis gilt nur für drei idealisierte **statische** Posen (0°, 12°, 25°). MuJoCo kennt die Kameraparameter exakt und verwendet vereinfachte Kännchen-/Ausgießergeometrie. Kein Nachweis einer 0,2–0,5-mm-Genauigkeit im realen Betrieb oder über vollständige Bewegungsbahnen.
 
+## Neue Standard-Szene: kompakte Artly-inspirierte Kaffeeinsel (Oktober 2026)
+
+**Ab jetzt Grundlage unserer räumlichen Entwicklung:** [COLAB_WORKCELL.ipynb](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_WORKCELL.ipynb)
+
+`robobarista/barista_cell.py` erzeugt unabhängig vom alten Kameratest die Szene `rb_artly_inspired_island.xml` aus dem vorhandenen FR5-Modell und geometrischen Grundformen. **Artly ist eine konzeptionelle Inspiration, kein behaupteter CAD-Nachbau.** Arbeitsfläche z=0,82 m, FR5 zentral auf 9 cm Sockel, kompakte Tischinsel, Wandbegrenzungen und drei erhöhte reale MuJoCo-Kameras. Stationen: Espresso, Mühle, automatischer Tamper, Siebträger-Ablage, Milchspender, Milchkanne, Übungsbereich mit **Kunststoffbecher** und Rinser. Sie sind über `STATIONS` als Koordinaten/Interaktionspunkte definiert.
+
+**Neu zur bisherigen Szene:** bewegliche Milchkanne (`rb_pitcher_free`, Masse und Kollisionen) und ein leichter transparenter Kunststoff-Übungsbecher (`rb_plastic_cup_free`, Masse/Kollision am Boden); der Tamper besitzt einen realen Schubgelenkantrieb (`rb_tamper_motor`). *Die Demo* bewegt Kännchen und Tamper noch kinematisch (ohne echten FR5-Griff, dynamische Tamper-Kraft, Milch/Flüssigkeit oder Kaffeeextraktion). Die Becher sind vereinfachte Volumenmodelle ohne echte Wand-/Schaumphysik.
+
+**AprilTags:** Drei stationäre Ansichten von vorne links, vorne rechts und hinten. Für jede Station eigene erhöhte, nach oben gerichtete AprilTag-Referenzmarker. Auf beweglichen Gegenständen zusätzliche Marker: Kännchen seitlich und oben, Kunststoffbecher auf kleinem Markerträger. `robobarista/cell_demo.py` erkennt die Marker aus **gerenderten RGB-Bildern** (pupil-apriltags) und schreibt `visibility.json`; eine jederzeitige Sichtbarkeit bei verdeckenden Gegenständen oder anderen Greifstellungen ist damit **nicht pauschal garantiert**.
+
+**Erreichbarkeit:** Der Grundriss `layout_topdown.png` zeigt eine räumliche Planungskontur; der echte FR5-Check löst außerdem pro Station eine Reihe von Musterposen durch inverse Kinematik und protokolliert `reachability.json`. Die bloße Erreichbarkeit einer Testpose garantiert noch keinen kollisionsfreien Anfahrweg; das folgt vor der physischen Umsetzung.
+
+**Outputs:** gerenderte Szenenvorschau `workcell_preview.png`, MP4/GIF `workcell_demo.*`, Grundriss, Sichtbarkeits-/Reichweitenbericht; automatische GitHub-Tests unter [Workcell Preview](https://github.com/Coffee-Tobi/robocasa/actions/workflows/workcell.yml).
+
 ## Nächster Schritt fertig: kinematisches FR5-Gelenk-Replay (21.10.2026)
 
 **Direkt in [COLAB_ROBOT.ipynb](../COLAB_ROBOT.ipynb)** demonstriert das virtuelle FAIRINO-FR5-Modell nun die vorherige synthetische Gießbewegung mithilfe seiner **sechs echten Arm-Gelenke**. Der Fügepunkt `rb_pitcher` ist im MJCF **fest an `wrist3_link` montiert**; keine Teleportation eines frei bewegten Kännchens. Über `scipy.optimize.least_squares` wird die 6D-Wunschpose pro Frame per IK aus den richtigen MuJoCo-Gelenkgrenzen errechnet; anschließend liefert `mj_forward` die tatsächlich erreichte 6D-Pose, die mit dem Ziel verglichen wird. Mehrere IK-Lösungen werden über alle 25 Bilder auch auf Roboter- und Greiferkontakte überprüft, um eine ungeeignete Armhaltung auszusortieren.
