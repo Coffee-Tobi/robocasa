@@ -45,6 +45,9 @@ jobs:
           assert s['replayed_frames']==13
           assert s['arm_link_and_payload_swept_preflight_on_every_generated_motion']
           assert (p/'demo_and_replay.mp4').stat().st_size>10000
+          assert s['side_by_side_video_created']
+          assert (p/'camera_vs_fr5_side_by_side.mp4').stat().st_size>10000
+          assert (p/'camera_fr5_trajectory_comparison.png').stat().st_size>10000
           assert (p/'camera_measurements.json').stat().st_size>1000
           assert (p/'robot_replay.json').stat().st_size>1000
           PY
@@ -56,6 +59,8 @@ jobs:
           path: |
             runs/ci_safe_replay/demo_and_replay.mp4
             runs/ci_safe_replay/demo_and_replay.gif
+            runs/ci_safe_replay/camera_vs_fr5_side_by_side.mp4
+            runs/ci_safe_replay/camera_fr5_trajectory_comparison.png
             runs/ci_safe_replay/summary.json
             runs/ci_safe_replay/camera_measurements.json
             runs/ci_safe_replay/robot_replay.json
