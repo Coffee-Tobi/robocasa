@@ -8,8 +8,8 @@ from robobarista.workcell_constraints import payload_check
 
 
 def test_two_fixture_tags_are_known_without_online_object_truth():
-    assert 71 in MARKERS and 23 in MARKERS
-    assert len(TAG_DEFINITIONS)==2
+    assert 71 in MARKERS and 72 in MARKERS and 23 in MARKERS
+    assert len(TAG_DEFINITIONS)==3
     for tid,(T,side) in MARKERS.items():
         assert T.shape==(4,4)
         assert 0.04<side<0.1
