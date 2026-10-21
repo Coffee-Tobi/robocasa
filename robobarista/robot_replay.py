@@ -73,6 +73,14 @@ def prepare_grasp_scene(vendor_dir: Path):
     wrist=robot.getroot().find(".//body[@name='wrist3_link']")
     if wrist is None:
         raise RuntimeError("FR5 wrist3_link missing")
+    # The upstream FR5 origin is at 0,0, pointing away from our coffee bench
+    # and reaching its shoulder-pan stop as it tries to pour. Place the robot
+    # NEXT TO the counter, aimed at it, as real installations would do.
+    base=robot.getroot().find(".//body[@name='base_link']")
+    if base is None:
+        raise RuntimeError("FR5 base_link missing")
+    base.set('pos','0 -0.4 0')
+    base.set('euler','0 0 2.70')
     wrist.append(pitcher)
     attached_robot_path=scene_path.with_name('rb_fr5_replay_robot.xml')
     robot.write(attached_robot_path,encoding='unicode')
@@ -166,10 +174,20 @@ def first_configuration(model,data,body_id,qids,limits):
         x=compute_ik(model,data,body_id,qids,limits,
                      target,target_R,np.array(hint,float),max_evals=110)
         results.append(x)
-        if x["solved"]:
-            break
-    best=min(results,key=lambda r:r["position_error_mm"]+
-             8*r["rotation_error_deg"])
+    successes=[x for x in results if x["solved"]]
+    if successes:
+        # Choose configuration with the most margin to *all* joint limits.
+        # The first exact solution can be at a hard stop, where any follow-up
+        # pouring gesture will fail despite the first pose fitting perfectly.
+        half_width=(limits[:,1]-limits[:,0])/2
+        mid=(limits[:,1]+limits[:,0])/2
+        def clearance(x):
+            normalized_margin=1-np.abs((x['q']-mid)/half_width)
+            return float(np.min(normalized_margin))
+        best=max(successes,key=clearance)
+    else:
+        best=min(results,key=lambda r:r["position_error_mm"]+
+                 8*r["rotation_error_deg"])
     data.qpos[qids]=best['q']
     mujoco.mj_forward(model,data)
     actual_pos,actual_rot=read_pose(data,body_id)
@@ -282,6 +300,8 @@ def run(args):
                            ik['position_error_mm'],ik['rotation_error_deg'],
                            len(outside))
             previews.append(image)
+            if i==0:
+                print("First frame robot contacts:",outside,inside,flush=True)
             r=dict(frame=i,time_s=t,phase=desired.phase,
                    desired_pitcher_xyz_m=desired.position_m,
                    measured_pitcher_xyz_m=actual_pos,
