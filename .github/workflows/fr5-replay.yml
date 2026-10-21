@@ -1,0 +1,48 @@
+name: FR5 Robot Joint Replay
+on:
+  push:
+    paths:
+      - 'robobarista/robot_replay.py'
+      - 'robobarista/motion.py'
+      - 'robobarista/scene.py'
+      - 'tests/test_robot_replay.py'
+      - 'COLAB_ROBOT.ipynb'
+      - '.github/workflows/fr5-replay.yml'
+  workflow_dispatch:
+jobs:
+  ik-real-fr5:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - name: Install headless MuJoCo
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 libglx-mesa0 libgl1-mesa-dri
+          python -m pip install -r requirements.txt
+      - name: Generate real FR5 joint-driven replay
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.robot_replay --frames 25 --fps 8 --width 640 --height 480 --output runs/ci_fr5
+      - name: Check kinematic measurements and frames
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('runs/ci_fr5')
+          s=json.loads((p/'summary.json').read_text())
+          print('Joint replay summary:',s)
+          assert s['frames']==25
+          assert s['successful_ik_frames']==25
+          assert s['joint_limit_failures']==0
+          assert s['status']=='PASS'
+          assert (p/'fr5_replay.gif').stat().st_size>1000
+          assert (p/'trajectory.json').stat().st_size>100
+          assert (p/'ik_metrics.csv').stat().st_size>100
+          PY
