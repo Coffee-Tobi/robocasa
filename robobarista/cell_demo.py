@@ -175,12 +175,51 @@ def _reachcheck(model,data):
     return result
 
 
+def _check_tamper_motor(model):
+    """Independent MuJoCo dynamics check for the tamper's position actuator.
+
+    Gravity is temporarily disabled for this isolated functional actuator
+    test so the otherwise unpowered robot and free objects cannot collapse.
+    This proves piston movement and return under the *motor*, NOT tamp force.
+    """
+    import mujoco
+    data=mujoco.MjData(model)
+    jid=model.joint('rb_tamper_slide').id
+    qadr=int(model.jnt_qposadr[jid])
+    actuator=int(model.actuator('rb_tamper_motor').id)
+    gravity=model.opt.gravity.copy()
+    try:
+        model.opt.gravity[:]=0
+        mujoco.mj_forward(model,data)
+        data.ctrl[actuator]=.055
+        for _ in range(1800):
+            mujoco.mj_step(model,data)
+        depressed=float(data.qpos[qadr])
+        data.ctrl[actuator]=0.
+        for _ in range(1800):
+            mujoco.mj_step(model,data)
+        returned=float(data.qpos[qadr])
+        return {
+            'motor_tested':True,
+            'down_m':depressed,'returned_m':returned,
+            'down_success':abs(depressed-.055)<.003,
+            'return_success':abs(returned)<.003,
+            'note':'Isolated motor dynamics with gravity disabled, not tamping contact force'
+        }
+    finally:
+        model.opt.gravity[:]=gravity
+
+
 def run(args):
     import mujoco
     out=Path(args.output).resolve()
     out.mkdir(parents=True,exist_ok=True)
     xml=build_cell_scene(Path(args.vendor_dir))
     model=mujoco.MjModel.from_xml_path(str(xml))
+    # Validate the physical tamper motor once, independently of the visual
+    # scripted storyboard.
+    motor_report=_check_tamper_motor(model)
+    print('Tamper motor:',motor_report,flush=True)
     data=mujoco.MjData(model)
     mujoco.mj_forward(model,data)
     names=list(CAMERAS)+['cell_overview']
@@ -280,7 +319,8 @@ def run(args):
                   'freejoint_plastic_cup','rinser'],
         'plastic_cup_instead_of_ceramic':True,
         'tamper_actuator_exists':True,
-        'tamper_motor_physics_tested':False,
+        'tamper_motor_physics_tested':bool(motor_report['motor_tested']),
+        'tamper_motor_diagnostics':motor_report,
         'scripted_preview_no_real_grasp':True,
         'tag_visibility_by_frame':counts,
         'pitcher_tag_visible_frames':sum(
