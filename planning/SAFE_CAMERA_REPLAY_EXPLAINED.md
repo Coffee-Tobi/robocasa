@@ -42,6 +42,8 @@ Für jede Vorposition prüft der Algorithmus einen **vollständigen Hin- und Rü
 - maximaler Kamerafehler gegenüber gehaltenem Simulator-Wahrheitswert: **0,924 mm** und **0,339°**; bedeutet **nicht** 0,9-mm-Genauigkeit mit physischer Hardware
 - Das nachgefahrene FR5-Ziel stammt **nur aus den Kamerabildern**, nicht aus den Quellgelenkwinkeln oder versteckten Originalposen.
 
+**Zusätzlicher Szenenabgleich:** Im ersten Video-Frame werden auch die **acht stationären Referenz-AprilTags** direkt aus den gerenderten RGB-Pixeln rekonstruiert und gegen die fest im Modell bekannten Positionen ausgewertet. **8/8 erkannt, maximale Differenz 2,784 mm**. Das ist noch **kein Kalibrieren unbekannter externer realer Kameras** – der virtuelle Kamera→Welt-Transform ist exakt bekannt.
+
 **Filme / Details:**
 - [Colab: Kamera→FR5-Film und Messdiagramme](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_SAFE_REPLAY.ipynb)
 - [Kamerapose-Programm](../robobarista/camera_joint_replay.py)
@@ -80,11 +82,11 @@ p = np.asarray(camera_record['position_m'])
 R = Rotation.from_quat(camera_record['rotation_xyzw']).as_matrix()
 sol = compute_ik(model, data, tcp, qids, limits, p, R, previous_q)
 if not sol['solved']:
-    STOP  # sinngemäß: Algorithmus blockiert, keine ungültige Ersatzbewegung
+    raise UnsafeMotionError('Keine gueltige IK-Pose')
 allowed, reason, substeps = _safe_q_segment(model, data, qids,
                                             limits, previous_q, sol['q'])
 if not allowed:
-    STOP
+    raise UnsafeMotionError(reason)
 _write_q(model, data, qids, sol['q'])  # NUR kinematische Visualisierung
 ```
 
