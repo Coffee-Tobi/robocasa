@@ -1,6 +1,6 @@
 # RoboBarista – FAIRINO FR5 / Camera-Based Pitcher Motion Capture
 
-**Status (21.10.2026):** reproduzierbarer **statischer** MuJoCo-Kamera-Prototyp mit Messdaten aus Google Colab. Noch **kein dynamisches Motion Capture**, kein funktionierendes Greifen/Gießen, keine reale Hardware.
+**Status (21.10.2026):** Virtuelles Kamera-Motion-Capture und erstes **kinematisches FR5-Sechs-Gelenk-Replay** erfolgreich in MuJoCo getestet. Das Kännchen ist dabei als **starre visuelle Attrappe** ans FR5-Handgelenk montiert. **Kein physikalisches Greifen, keine Motorregelung, keine echten Flüssigkeiten und keine reale Hardware.**
 
 ## Gewählter MVP-Aufbau
 
@@ -22,11 +22,24 @@ Die bisherigen 16 Vergleichsvarianten, einschließlich Caliscope und vier Kamera
 
 **[Hier direkt das neue Animations-/Motion-Capture-Notebook starten](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_MOTION.ipynb)**. Es zeigt `preview.gif`, `trajectory.png`, `validation.png` und den zeitgestempelten Verlauf als Tabelle; `trajectory.csv`, `evaluation.csv` und RGB-Einzelbilder werden separat gesichert. Die Animation ist eine **synthetische kinematische Probe** ohne Flüssigkeit, echte menschliche Demonstration, Roboterbewegung oder kollisionsgeprüfte Ausführung. Fehlende Kameraposen werden als fehlend berichtet, nicht mit der Simulator-Wahrheit ausgefüllt.
 
+## Neuer Meilenstein: Der FR5 führt die Bewegung selbst mit sechs Gelenken aus
+
+**[▶ FR5-Gelenk-Replay in Colab öffnen](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_ROBOT.ipynb)**
+
+- `robobarista/robot_replay.py` verwendet den unveränderten FAIRINO-FR5-Roboter aus den Third-Party-Assets. Für die neue Szene steht der FR5 neben der Arbeitsfläche auf einem Sockel.
+- Das Kännchen ist **als starres, masseloses Objekt** am Roboterhandgelenk befestigt. Nur die sechs echten Gelenkwinkel verändern seine Pose; `mujoco.mj_forward()` ermittelt unabhängig die Ist-Pose.
+- Inverse Kinematik (SciPy) prüft mehrere alternative Armhaltungen über die gesamte synthetische Gießbewegung. Es werden echte Gelenkgrenzen und MuJoCo-Kontakte der FR5-Kollisionskörper geprüft, einschließlich Greiferkontakten. Die rein visuelle Kännchengeometrie ist dabei **nicht kollisionsaktiv**.
+- Film `fr5_replay.mp4` (bei verfügbarem FFmpeg), Animation `fr5_replay.gif`, unabhängige Soll/Ist-Markierungen im Kamerabild (**orange = Soll-Ausgießerspitze, grün = FR5-Ist-Ausgießerspitze**), `ik_error.png` und alle Gelenkwinkel/Fehler in `trajectory.json`. Der Bericht `summary.json` trennt erfolgreiche IK von Kollisions- und Grenzprüfungen.
+- **Vollständiger automatischer GitHub-Actions-Test (25 Frames) bestanden:** alle 25 Bewegungsposen per FR5-Gelenken reproduziert, keine Gelenkgrenzen verletzt, keine registrierten Fremd- oder Selbstkollisionen der berücksichtigten Roboter-/Greiferkörper. Das sind **idealisierte kinematische** Ergebnisse ohne dynamische Motorführung oder physikalische Kännchenkollision.
+
+**[GitHub Actions – FR5 Robot Joint Replay](https://github.com/Coffee-Tobi/robocasa/actions/workflows/fr5-replay.yml)** stellt den Film und Diagnosebericht als herunterladbares Artefakt bereit.
+
 ## Start in Google Colab
 
 | Notebook | Zweck |
 | --- | --- |
 | **[COLAB_START.ipynb](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_START.ipynb)** | **Standard**: Drei Kameras, ein AprilTag 3, gemeinsame Poseoptimierung |
+| **[COLAB_ROBOT.ipynb](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_ROBOT.ipynb)** | **JETZT:** echter FR5-Gelenk-Dry-Run, Video mit Soll-/Ist-Ausgießerposition, Kollisions- und IK-Prüfung |
 | **[COLAB_MOTION.ipynb](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_MOTION.ipynb)** | **Jetzt ausprobieren**: animierte Bewegungssequenz + drei Kameraperspektiven + zeitgestempelte geschätzte 6D-Bahn |
 | **[COLAB_COMPARE.ipynb](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_COMPARE.ipynb)** | **Forschung/Archiv**: 16 Varianten mit 1/2 Tags, 3/4 Kameras, OpenCV/AprilTag 3, direkter Optimierung/Caliscope |
 
@@ -47,7 +60,7 @@ Das dritte Parteimodell [ma-weiss/Fairino-Mujoco](https://github.com/ma-weiss/Fa
 
 ## Nächster Schritt
 
-**Die neu implementierte bewegte Funktionsprobe validieren** und daraus anschließend eine echte, reproduzierbare Demonstration samt mehr unterschiedliche Neigungs-/Positionsfälle, Verdeckung durch Griff/Greifer/Roboterarm, Ausgießerposition **relativ zur Tasse**, danach sichere inverse Kinematik und Bewegungswiedergabe mit FAIRINO FR5 **ohne Milch**.
+**Als Nächstes:** Die kameragemessene Bahn aus `COLAB_MOTION.ipynb` anstelle der synthetisch vorgeschriebenen Wunschbahn mit dem FR5 nachfahren lassen. Dafür müssen wir Koordinatensysteme und Zeitstempel abgleichen, die gesamte Greifer-/Kännchengeometrie für physikalische Kollisionen modellieren und dynamische Bewegungs- und Geschwindigkeitsgrenzen prüfen. Das neue kinematische FR5-Dry-Run-Notebook ist bereits erfolgreich automatisiert getestet.
 
 Ein zusätzlicher Tag oder eine vierte Kamera kommt nur dann dazu, wenn Tests über den ganzen Bewegungsbereich zeigen, dass wir sie wirklich benötigen. Der zweite Marker verbessert möglicherweise Sichtbarkeit, verlangt aber genaues Einmessen seines Starrkörperversatzes.
 
