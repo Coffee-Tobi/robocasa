@@ -29,16 +29,18 @@ jobs:
           MUJOCO_GL: osmesa
           PYOPENGL_PLATFORM: osmesa
         run: |
-          python -u -m robobarista.record_motion --frames 5 --fps 8 --width 640 --height 480 --output runs/ci_motion
+          python -u -m robobarista.record_motion --frames 25 --fps 8 --width 960 --height 720 --output runs/ci_motion
           python - <<'PY'
           import json
           from pathlib import Path
           p=Path('runs/ci_motion')
           s=json.loads((p/'summary.json').read_text())
           print('Motion capture smoke test:',s)
-          assert s['frames']==5
+          assert s['frames']==25
+          assert s['pitcher_valid_frames']>=20
+          assert s['relative_valid_frames']>=20
           assert (p/'preview.gif').stat().st_size>1000
           assert (p/'trajectory.csv').stat().st_size>100
           assert (p/'evaluation.json').stat().st_size>100
-          assert len(list((p/'frames').glob('*/*.jpg')))==15
+          assert len(list((p/'frames').glob('*/*.jpg')))==75
           PY
