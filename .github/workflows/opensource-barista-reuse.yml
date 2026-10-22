@@ -1,0 +1,95 @@
+name: RoboBarista Open Source Fixture and FAIRINO Readiness Gates
+on:
+  pull_request:
+    paths:
+      - 'robobarista/robocasa_coffee_adapter.py'
+      - 'robobarista/barista_cell.py'
+      - 'robobarista/coffee_workflow.py'
+      - 'robobarista/fairino_sdk_preflight.py'
+      - 'robobarista/external_asset_validator.py'
+      - 'robobarista/latte_dataset_bridge.py'
+      - 'tests/test_reused_coffee_and_fairino_preflight.py'
+      - 'tests/test_external_espresso_assets.py'
+      - '.github/workflows/opensource-barista-reuse.yml'
+  workflow_dispatch:
+jobs:
+  verify-source-reuse-and-hardware-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install small test dependency only
+        run: python -m pip install 'pytest>=8'
+      - name: Pure-Python source reuse and fail-closed checks
+        run: |
+          python -m pytest -q tests/test_reused_coffee_and_fairino_preflight.py tests/test_external_espresso_assets.py
+          python -m py_compile robobarista/robocasa_coffee_adapter.py robobarista/fairino_sdk_preflight.py robobarista/latte_dataset_bridge.py robobarista/external_asset_validator.py
+      - name: Publish readiness summary, never claim hardware qualification
+        run: |
+          mkdir -p runs/opensource_audit
+          python - <<'PY'
+          from robobarista.robocasa_coffee_adapter import CoffeeMachineState
+          from robobarista.fairino_sdk_preflight import hardware_readiness_gate
+          from pathlib import Path
+          import json
+          cup=CoffeeMachineState().demo_brew_step((.440,.205,.882))
+          report={"source":"RoboCasa MIT coffee_machine.py logic adapted, plus FAIRINO SDK documented getters/IK",
+              "espresso_cup_alignment":cup,
+              "hardware_readiness":hardware_readiness_gate(),
+              "espresso_geometry_source":"Our existing test-workcell model; 3D CAD NOT replaced",
+              "cad_stub_rejected":True,
+              "firmware_contact_replay_tested":False,
+              "geometry_collision_safety_verified":False}
+          p=Path('runs/opensource_audit/integration.json')
+          p.write_text(json.dumps(report,indent=2))
+          assert not report['hardware_readiness']['hardware_ready_for_autonomous_espresso_latte_art']
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RoboBarista-OSS-Reuse-Readiness-Checks
+          path: runs/opensource_audit/integration.json
+
+  real-mujoco-site-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 19
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install MuJoCo and scene geometry dependencies
+        run: |
+          sudo apt-get install -y -qq libosmesa6 libgl1
+          python -m pip install 'numpy>=1.26,<3' 'scipy>=1.11' 'opencv-contrib-python-headless>=4.8,<5' 'Pillow>=10' 'mujoco>=3.2,<4' 'matplotlib>=3.8'
+      - name: Compile real FR5 workcell and test cup-to-espresso-site alignment
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import numpy as np
+          import mujoco
+          from robobarista.coffee_workflow import _story_scene
+          from robobarista.cell_demo import _set_free_pose
+          from robobarista.workcell_constraints import DOCKS
+          from robobarista.robocasa_coffee_adapter import CoffeeMachineState,CoffeeMachineGeometry
+          model=mujoco.MjModel.from_xml_path(str(_story_scene(Path('vendor'))))
+          data=mujoco.MjData(model)
+          _set_free_pose(model,data,'rb_plastic_cup_free',
+                         DOCKS['espresso_cup'].position_m,0)
+          mujoco.mj_forward(model,data)
+          cup=data.xpos[model.body('rb_plastic_cup').id].copy()
+          site=data.site_xpos[model.site('rb_brew_outlet_site').id].copy()
+          assert np.allclose(site,[.44,.25,1.09],atol=1e-6),site
+          adapter=CoffeeMachineState(CoffeeMachineGeometry(outlet_xyz_m=tuple(site)))
+          result=adapter.demo_brew_step(cup)
+          assert result['state']=='CUP_PLACEMENT_OK_BUT_NO_REAL_BREW',result
+          assert result['virtual_coffee_disc_may_be_drawn']
+          assert not result['actual_brewing_allowed']
+          assert model.site('rb_brew_start_button_site')
+          print('Real MuJoCo coffee fixture geometry / adapted RoboCasa logic PASS',result)
+          PY
