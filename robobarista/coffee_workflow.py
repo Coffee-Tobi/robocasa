@@ -255,7 +255,7 @@ def run(args):
     cup_at_espresso=False
     espresso_visual=False
     pitcher_foam=False
-    level_stats={"attempts":0,"success":0,"blocked":0,"worst_observed_tilt_deg":0.0}
+    level_stats={"attempts":0,"success":0,"blocked":0,"hold_frames":0,"worst_observed_tilt_deg":0.0}
     try:
         for idx,step in enumerate(recipe):
             action=step['action'];tool=step['tool']
@@ -323,6 +323,26 @@ def run(args):
                                 level_stats["success"]+=1
                             else:level_stats["blocked"]+=1
                         else:level_stats["blocked"]+=1
+                        # Fail closed: don't animate the cup/pitcher tipped
+                        # when a collision-safe upright IK is unavailable.
+                        # This may BLOCK a station; never claim arrival.
+                        if (level_stats["blocked"]>0
+                                and np.asarray(q).shape==(6,)):
+                            data.qpos[qids]=q
+                            mujoco.mj_forward(model,data)
+                            zz=data.xmat[tcp_id].reshape(3,3)[:,2]
+                            if np.rad2deg(np.arccos(np.clip(zz[2],-1,1)))>3.0:
+                                if previous_display_q is None:
+                                    raise RuntimeError("Unsafe first upright tool pose")
+                                q=previous_display_q.copy()
+                                level_stats["hold_frames"]+=1
+                if previous_display_q is not None and tool in ("pitcher","plastic_cup") and action!="pour":
+                    route_safe,_,_=_check_route(model,data,qids,limits,
+                                               previous_display_q,q,tool)
+                    if not route_safe:
+                        # No discontinuous corrective motion: hold.
+                        q=previous_display_q.copy()
+                        level_stats["hold_frames"]+=1
                 # Re-run collision check for displayed q, with actual tool.
                 okay,why=_valid_state(model,data,qids,limits,q,tool)
                 if tool in ("pitcher","plastic_cup") and action!="pour":
@@ -401,6 +421,8 @@ def run(args):
         'transport_upright_ik_attempts':level_stats['attempts'],
         'transport_upright_ik_successes':level_stats['success'],
         'transport_upright_ik_blocked':level_stats['blocked'],
+        'transport_level_fail_closed_hold_frames':level_stats['hold_frames'],
+        'transport_station_targets_not_guaranteed_if_holds':level_stats['hold_frames']>0,
         'transport_worst_tilt_deg':level_stats['worst_observed_tilt_deg'],
         'strict_upright_guarantee':level_stats['worst_observed_tilt_deg']<=3.,
         'mp4_created':mp4,
