@@ -74,7 +74,8 @@ def sequence(home,stage,action,pour_ctrls,fps,speed):
 
 def overlay(base,action,stage_idx,phase,t_s,velocity,slide,progress,
             wrench,verdict,history,blocked_count):
-    img=draw_panel(base,action,stage_idx,progress,wrench,verdict,history,True)
+    img=draw_panel(base,action,stage_idx,progress,wrench,verdict,history,True,
+                   tamper_depth_mm=slide*1000.)
     draw=ImageDraw.Draw(img)
     # Header explicitly shows camera + real robot pose rate.
     draw.rectangle((0,0,960,58),fill=(14,26,37))
