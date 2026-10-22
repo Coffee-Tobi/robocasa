@@ -1,0 +1,52 @@
+name: FAIRINO Native Spline Dry Run
+on:
+  pull_request:
+    paths:
+      - 'robobarista/fairino_native_spline.py'
+      - 'tests/test_fairino_native_spline.py'
+      - '.github/workflows/fairino-spline-dry-run.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  native-fairino-api-plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Minimal offline math requirements
+        run: python -m pip install 'numpy>=1.26,<3' 'scipy>=1.11' 'pytest>=8'
+      - name: Test vendor API signatures, units and safety guards
+        run: python -m pytest -q tests/test_fairino_native_spline.py
+      - name: Download prior PASS camera benchmark (GitHub Actions artifact)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api /repos/Coffee-Tobi/robocasa/actions/artifacts/12365696486/zip > old_camera_artifact.zip
+          python -c "import zipfile;z=zipfile.ZipFile('old_camera_artifact.zip');assert 'camera/camera_measurements.json' in z.namelist()"
+      - name: Build official NewSpline and blended MoveL API mock commands
+        run: |
+          python -m robobarista.fairino_native_spline --artifact old_camera_artifact.zip --output runs/fairino_native_sdk_dryrun --duration 20 --stride 3 --blend-radius-mm 0.5
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('runs/fairino_native_sdk_dryrun')
+          s=json.loads((p/'summary.json').read_text())
+          assert s['camera_frame_count']==31
+          assert s['modes']['new_spline']['waypoints']==11
+          assert s['modes']['new_spline']['sdk_calls_exercised']==13
+          assert s['modes']['movel_blend']['sdk_calls_exercised']==11
+          assert s['connection_to_real_robot'] is False
+          assert s['firmware_generated_trajectory'] is False
+          print(s)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: FAIRINO-Official-Methods-Camera-DryRun
+          path: runs/fairino_native_sdk_dryrun/
+          if-no-files-found: warn
