@@ -26,6 +26,7 @@ def add_visual_dual_ir40_50(tcp:ET.Element,cup_diameter_mm:float=80.,include_pro
     mounts={}
     for tool,pos in MOUNTS.items():
         unit=body(tcp,"rb_"+tool+"_IR40_50",pos)
+        unit.set("euler","0 -90 0")  # jaws extend forward (robot TCP -X), not vertically
         mounts[tool]=unit
         box(unit,"rb_"+tool+"_housing",(0,0,.025),(.020,.024,.025),".24 .28 .32 1")
         if tool=="handle_tool":
@@ -47,27 +48,30 @@ def add_visual_dual_ir40_50(tcp:ET.Element,cup_diameter_mm:float=80.,include_pro
         # Their rigid joint does not represent actual grasp forces or friction.
         handle=mounts["handle_tool"]
         jug=body(handle,"rb_gripped_pitcher",(0,0,.080))
+        jug.set("euler","0 90 0")  # counter-rotate for upright object
         box(jug,"rb_gripped_pitcher_adapter",(0,0,0),(.012,.013,.014),".83 .71 .21 1")
         box(jug,"rb_gripped_pitcher_stop_lower",(0,0,-.023),(.019,.021,.004),".83 .71 .21 1")
         box(jug,"rb_gripped_pitcher_stop_upper",(0,0,.023),(.019,.021,.004),".83 .71 .21 1")
-        box(jug,"rb_gripped_pitcher_bridge",(0,.055,-.008),(.010,.061,.010),".34 .42 .44 1")
+        box(jug,"rb_gripped_pitcher_bridge",(-.055,0,-.008),(.061,.010,.010),".34 .42 .44 1")
         ET.SubElement(jug,"geom",name="rb_gripped_pitcher_body",type="cylinder",
-            pos="0 .113 -.022",size=".044 .055",rgba=".50 .72 .81 1",
+            pos="-.113 0 -.022",size=".044 .055",rgba=".50 .72 .81 1",
             mass="0",contype="0",conaffinity="0")
         ET.SubElement(jug,"geom",name="rb_gripped_pitcher_rim",type="cylinder",
-            pos="0 .113 .033",size=".047 .003",rgba=".70 .79 .83 1",
+            pos="-.113 0 .033",size=".047 .003",rgba=".70 .79 .83 1",
             mass="0",contype="0",conaffinity="0")
-        box(jug,"rb_gripped_pitcher_spout",(0,.160,.032),(.018,.016,.004),".15 .89 .92 1")
+        box(jug,"rb_gripped_pitcher_spout",(-.160,0,.032),(.018,.016,.004),".15 .89 .92 1")
         ET.SubElement(jug,"geom",name="rb_gripped_pitcher_foam",type="cylinder",
-            pos="0 .113 .034",size=".040 .002",rgba=".98 .96 .85 0",
+            pos="-.113 0 .034",size=".040 .002",rgba=".98 .96 .85 0",
             mass="0",contype="0",conaffinity="0")
         pf=body(handle,"rb_gripped_portafilter",(0,0,.080))
+        pf.set("euler","0 90 0")  # counter-rotate for upright object
         box(pf,"rb_gripped_portafilter_adapter",(0,0,0),(.012,.013,.014),".75 .65 .22 1")
-        box(pf,"rb_gripped_portafilter_handle",(0,.085,-.005),(.014,.080,.015),".29 .29 .31 1")
+        box(pf,"rb_gripped_portafilter_handle",(-.085,0,-.005),(.080,.014,.015),".29 .29 .31 1")
         ET.SubElement(pf,"geom",name="rb_gripped_portafilter_basket",type="cylinder",
-            pos="0 .175 -.005",size=".043 .020",rgba=".7 .72 .74 1",
+            pos="-.175 0 -.005",size=".043 .020",rgba=".7 .72 .74 1",
             mass="0",contype="0",conaffinity="0")
         cup=body(mounts["cup_tool"],"rb_gripped_cup",(0,0,.080))
+        cup.set("euler","0 90 0")  # counter-rotate for upright object
         ET.SubElement(cup,"geom",name="rb_gripped_cup_body",type="cylinder",
             pos="0 0 0",size=f"{cup_diameter_mm/2000} .047",
             rgba=".72 .87 .93 .82",mass="0",contype="0",conaffinity="0")
