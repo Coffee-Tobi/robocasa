@@ -11,7 +11,7 @@ import numpy as np
 def scene_xml():
     return """<mujoco model="two_ir40_contact_probe">
   <compiler angle="radian"/>
-  <option timestep="0.001" gravity="0 0 -9.81" integrator="implicitfast"/>
+  <option timestep="0.001" gravity="0 0 0" integrator="implicitfast"/>
   <default><geom friction="1.2 0.005 0.0001" solref="0.015 1" condim="4"/></default>
   <worldbody>
     <geom name="floor" type="plane" size=".8 .8 .02" rgba=".65 .68 .70 1"/>
@@ -91,7 +91,7 @@ def run(output):
     result={"frames":len(records),
        "handle_contact_samples":sum(any(any("handle_" in n for n in e["geoms"]) for e in s["contacts"]) for s in records),
        "cup_contact_samples":sum(any(any("cup_" in n for n in e["geoms"]) for e in s["contacts"]) for s in records),
-       "note":"Stationary fixtures and idealized rigid bodies; no robot transport, cup deformation, or actual vendor gripper performance."}
+       "note":"Gravity-free stationary contact fixture and idealized rigid bodies; no robot transport, cup deformation, or actual vendor gripper performance."}
     (out/"summary.json").write_text(json.dumps(result,indent=2))
     print(json.dumps(result,indent=2))
     return result
