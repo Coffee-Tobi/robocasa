@@ -1,5 +1,22 @@
 # RoboBarista — 3-Kamera-Aufnahme → FAIRINO FR5
 
+## Open-Source-Zubehör und FAIRINO-Check (Oktober 2026)
+
+**Neu: tatsächliche, getestete Wiederverwendung statt bloßer eigener Geräteattrappen.**
+
+- [RoboCasa-Kaffeemaschinenlogik (MIT) für unsere Espresso-Station](robobarista/robocasa_coffee_adapter.py): Prüft die reale Position des Kunststoffbechers zum Auslauf, bevor symbolischer Espresso angezeigt wird. Echte Verriegelung, Kontaktsensor und Brühdruck sind weiterhin **nicht simuliert**. Die neue Geometrie enthält benannte Auslauf- und Startknopf-Positionen.
+- [FAIRINO-SDK: auslesbare Sensorik und acht IK-Lösungen](robobarista/fairino_sdk_preflight.py): `GetActualTCPPose`, Gelenkposition/-tempo, F/T, Not-Aus, Warteschlange und `TCFToAllJoint` sind per sicheren Offline-Mocks vorbereitet, ohne einen Roboter zu steuern.
+- [LeRobot-inspirierter Export synthetischer Latte-Art-Kameraaufnahmen](robobarista/latte_dataset_bridge.py): Kameradaten und Simulationswahrheit für spätere echte Demonstrationen getrennt speichern. Noch kein natives LeRobot-Dataset.
+- [CAD-Dateien vor Import prüfen](robobarista/external_asset_validator.py): Die recherchierte MIT-Espressomaschine enthielt ein **leeres STEP** und **ein STL mit nur einem Dreieck**. Keine Änderung an unserer physischen Kollisionsszene durch solche Dateien.
+- [Vollständiger Open-Source-, SDK- und Prototypen-Reifebericht](planning/OSS_BARISTA_FR5_READINESS_AUDIT.md).
+
+**Status:** Unser Projekt eignet sich als Grundlage für einen kontrollierten
+ersten **Trockenprototypen**, nicht für einen unbeaufsichtigten echten
+Milch-/Espresso-Barista. Es fehlen kalibrierte Greifer, Lastmessung,
+Düsenkontakt, Portafilter-Einrasten, echte Hersteller-Regelung, reale
+Messkameras und Flüssigkeits-/Temperatursicherheit.
+
+
 ## NEU: Gesamter Kaffeeprozess mit beiden IR40-50 und F/T-Prototypen
 
 Der [34,5-sekündige komplette RoboBarista-Videotest](https://github.com/Coffee-Tobi/robocasa/actions/workflows/full-barista-contacts.yml)
