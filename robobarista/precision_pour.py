@@ -362,6 +362,28 @@ def run(args):
     axes[0].legend();fig.tight_layout()
     fig.savefig(out/"precision_controller_comparison.png",dpi=145)
     plt.close(fig)
+    # Local-coordinate close-up, so a 4mm pour is visible even though
+    # the whole-cell overview video barely shows millimetre motion.
+    fig,ax=plt.subplots(figsize=(8,7))
+    any_ref=np.asarray(samples["computed_torque_robust"][0]["reference_spout_m"],
+                       dtype=float)
+    for name,track in samples.items():
+        actual=np.array([x["executed_spout_m"] for x in track],float)
+        target=np.array([x["reference_spout_m"] for x in track],float)
+        if name=="computed_torque_robust":
+            ax.plot((target[:,0]-any_ref[0])*1000,
+                    (target[:,1]-any_ref[1])*1000,
+                    "k--",lw=2,label="Soll-Ausgießerspitze")
+        ax.plot((actual[:,0]-any_ref[0])*1000,
+                (actual[:,1]-any_ref[1])*1000,lw=1.3,
+                label=name)
+    ax.set(xlabel="Ausgießer ΔX [mm]",ylabel="Ausgießer ΔY [mm]",
+           title="Latte-Art-Präzisionsmodus: reale Simulationsbahn der Ausgießerspitze")
+    ax.set_aspect("equal",adjustable="datalim")
+    ax.grid(alpha=.3);ax.legend(fontsize=8)
+    fig.tight_layout()
+    fig.savefig(out/"precision_spout_path_zoom.png",dpi=145)
+    plt.close(fig)
     safe=all(v["status"]=="PASS" for v in comparison.values())
     report={
         "status":"PASS" if safe and mp4 else "FAIL",
