@@ -46,7 +46,7 @@ def read_only_snapshot(robot):
         "motion_done":int(done),"queue_length":int(queued),
         "emergency_stop":int(emergency),
         "safety_stops":vec("safety",safety,2),
-        "actual_fairino_sdk_read":False}
+        "hardware_provenance_verified":False}
     result["motion_authorizable_from_this_snapshot_alone"]=False
     result["stop_or_hold"]=bool(result["emergency_stop"]!=0 or
          any(s!=0 for s in result["safety_stops"]) or result["queue_length"]<0)
