@@ -52,7 +52,7 @@ def _story_scene(vendor_dir):
     tcp=root.getroot().find(".//body[@name='rb_cell_tcp']")
     if tcp is None:raise RuntimeError('Missing FR5 wrist TCP')
     # Conceptual non-contact dual IR40-50 equipment. Not a physical pickup.
-    add_visual_dual_ir40_50(tcp)
+    add_visual_dual_ir40_50(tcp,include_props=True)
     for tool in ('portafilter','plastic_cup'):
         b=ET.SubElement(tcp,'body',{'name':'rb_story_'+tool,'pos':'0 0 0'})
         if tool=='portafilter':
@@ -95,15 +95,28 @@ def _story_scene(vendor_dir):
 
 
 def _alpha(model,tool):
+    # Hide legacy TCP tool clones; the new props mount under gripper jaws.
     tools={
         'pitcher':('rb_replay_pitcher_body',
                    'rb_replay_pitcher_spout','rb_replay_pitcher_handle'),
         'portafilter':('rb_story_portafilter_basket',
                       'rb_story_portafilter_handle'),
         'plastic_cup':('rb_story_plastic_cup_cup',)}
-    for key,names in tools.items():
+    for names in tools.values():
         for name in names:
-            model.geom(name).rgba[3]=(1.0 if tool==key else 0.0)
+            model.geom(name).rgba[3]=0.
+    attached={
+        'pitcher':('rb_gripped_pitcher_adapter','rb_gripped_pitcher_stop_lower',
+                   'rb_gripped_pitcher_stop_upper','rb_gripped_pitcher_bridge',
+                   'rb_gripped_pitcher_body','rb_gripped_pitcher_rim',
+                   'rb_gripped_pitcher_spout'),
+        'portafilter':('rb_gripped_portafilter_adapter',
+                      'rb_gripped_portafilter_handle',
+                      'rb_gripped_portafilter_basket'),
+        'plastic_cup':('rb_gripped_cup_body',)}
+    for key,names in attached.items():
+        for name in names:
+            model.geom(name).rgba[3]=(0.82 if key=='plastic_cup' else 1.0) if tool==key else 0.0
 
 
 def _make_cup_contents(model):
@@ -260,7 +273,8 @@ def run(args):
             model.geom('rb_story_espresso_disc').rgba[3]=.9 if espresso_visual else 0.
             model.geom('rb_story_latte_pattern').rgba[3]=(
                 1.0 if action in ('pour','rinse') else 0.0)
-            model.geom('rb_story_foam_in_pitcher').rgba[3]=(
+            model.geom('rb_story_foam_in_pitcher').rgba[3]=0.
+            model.geom('rb_gripped_pitcher_foam').rgba[3]=(
                 .92 if pitcher_foam and tool=='pitcher' else 0.0)
             model.geom('rb_story_steam_visual').rgba[3]=(
                 .25 if action=='steam' else 0.0)
@@ -346,6 +360,9 @@ def run(args):
         'over_shoulder_follow_with_overview_inset':camera_mode=='follow',
         'calibrated_apriltag_rgbd_cameras_unchanged':True,
         'two_IR40_grippers_visible_only':True,
+        'tool_objects_attached_to_gripper_frames':True,
+        'old_tcp_attached_tool_clones_hidden':True,
+        'actual_finger_contact_force_simulated':False,
         'mp4_created':mp4,
         'no_mechanical_contact_or_liquid_physics':True,
         'limitations':'Full logical kinematic espresso/milk/latte choreography with explicit no-contact machine pre-docks; simulated processes are labels and proxy object poses only. No portafilter insertion, safe-contact modelling, espresso fluid, froth texture or actual latte art.'
