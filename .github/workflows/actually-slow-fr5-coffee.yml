@@ -1,0 +1,63 @@
+name: Actually Slower FR5 12fps Coffee Movie
+on:
+  pull_request:
+    paths:
+      - 'robobarista/coffee_real_slow.py'
+      - '.github/workflows/actually-slow-fr5-coffee.yml'
+  workflow_dispatch:
+jobs:
+  fully-render-slow-real-joint-poses:
+    runs-on: ubuntu-latest
+    timeout-minutes: 36
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install MuJoCo and video deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 libglx-mesa0 libgl1-mesa-dri ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Verify source and render new 12fps joint-speed limited movie
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -m py_compile robobarista/coffee_real_slow.py
+          python -u -m robobarista.coffee_real_slow --output runs/new_actual_slow --fps 12 --max-joint-speed-rad-s 0.72 --width 640 --height 480 --cleanup-frames
+      - name: Validate actual fixed fps, motion speed, stationary tamper
+        run: |
+          python - <<'PY'
+          import json,subprocess
+          from pathlib import Path
+          p=Path('runs/new_actual_slow')
+          s=json.loads((p/'summary.json').read_text())
+          assert s['status']=='PASS',s
+          assert s['eleven_stages']==11,s
+          assert s['video_fps']==12,s
+          assert not s['frame_duplication_used'],s
+          assert s['max_joint_speed_rad_s'] <= 0.72*1.12,s
+          assert s['grinder_arm_speed_while_tamping_rad_s'] < .01,s
+          assert s['grinder_tamper_max_depth_mm'] > 30.,s
+          assert s['frames']>450,s
+          assert s['duration_s']>39,s
+          movie=p/'coffee_process_real_slow_12fps.mp4'
+          assert movie.stat().st_size>200000
+          v=subprocess.check_output(['ffprobe','-v','error','-select_streams','v:0',
+              '-show_entries','stream=avg_frame_rate','-of','default=nw=1:nk=1',
+              str(movie)],text=True).strip()
+          assert v=='12/1',v
+          d=float(subprocess.check_output(['ffprobe','-v','error','-show_entries',
+              'format=duration','-of','default=nw=1:nk=1',str(movie)]))
+          assert abs(d-s['duration_s'])<.05,(d,s['duration_s'])
+          print(json.dumps({k:v for k,v in s.items() if k!='stages'},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RoboBarista-REAL-Slow-12fps-Stable-Tamper-FR5
+          path: |
+            runs/new_actual_slow/coffee_process_real_slow_12fps.mp4
+            runs/new_actual_slow/summary.json
+          if-no-files-found: warn
