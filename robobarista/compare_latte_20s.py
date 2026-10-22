@@ -37,7 +37,7 @@ def initial_pose(model,data):
 def composite(left,right,time_s,error_mm,phase,traces,initial_point):
     """Same physical image scale plus two explicitly labelled ideal/motor traces."""
     width,height=left.shape[1],left.shape[0]
-    out=Image.new("RGB",(2*width,height+400),(15,24,31))
+    out=Image.new("RGB",(2*width,height+440),(15,24,31))
     d=ImageDraw.Draw(out)
     out.paste(Image.fromarray(left),(0,44))
     out.paste(Image.fromarray(right),(width,44))
