@@ -140,10 +140,17 @@ def panel(img,scene,phase,t,err,delta,extra=None,raw_cam=None):
         d.text((15,790),f"Gesamter 3D-Fehler: {err:.3f} mm",font=font(17),fill=(255,212,151))
     if raw_cam is not None:
         inset=raw_cam.resize((270,196),Image.Resampling.BILINEAR)
-        frame.paste(inset,(681,48))
-        d.rectangle((678,45,953,246),outline="white",width=3)
-        d.rectangle((682,48,949,72),fill=(14,25,36))
-        d.text((690,52),"3 RGB-D KAMERAS",font=font(15),fill="white")
+        label="3 RGB-D KAMERAS"
+    else:
+        # Zoom from the SAME already-rendered follow camera, NOT a second
+        # camera with a different viewing direction.
+        inset=Image.fromarray(img).crop((195,135,445,355)).resize(
+             (270,196),Image.Resampling.BILINEAR)
+        label="KANNE / GREIFER NAHAUFNAHME"
+    frame.paste(inset,(681,48))
+    d.rectangle((678,45,953,246),outline="white",width=3)
+    d.rectangle((682,48,949,72),fill=(14,25,36))
+    d.text((690,52),label,font=font(13),fill="white")
     if extra:
         d.rectangle((14,47,360,76),fill=(15,26,34))
         d.text((20,52),extra,font=font(16),fill=(254,230,175))
@@ -162,6 +169,17 @@ def render(args):
     data=mujoco.MjData(model)
     qids,limits=robot_qpos_addresses(model)
     q0,_=_find_start(model,data,qids,limits,14)
+    # During ORIGINAL and TRACKING, hide only the robot arm mesh. Otherwise
+    # it misleadingly dominates what should be a free-pitcher demonstration.
+    base_link=model.body("base_link").id
+    arm_geom_ids=[]
+    for gid in range(model.ngeom):
+        body=int(model.geom_bodyid[gid])
+        while body>0 and body!=base_link:
+            body=int(model.body_parentid[body])
+        if body==base_link:
+            arm_geom_ids.append(gid)
+    initial_arm_alpha=model.geom_rgba[arm_geom_ids,3].copy()
     freeid=int(model.jnt_qposadr[model.joint("rb_pitcher_free").id])
     jug=model.body("rb_gripped_pitcher").id
     wrist=model.body("rb_cell_tcp").id
@@ -204,6 +222,7 @@ def render(args):
             shared_quat=None
             for phase in ("original","tracking","robot"):
                 if phase=="robot":
+                    model.geom_rgba[arm_geom_ids,3]=initial_arm_alpha
                     _set_free_pose(model,data,"rb_pitcher_free",[-10,-10,-10],0)
                     _alpha(model,"pitcher")
                     targetR=Ro@relativeR.T
@@ -243,6 +262,7 @@ def render(args):
                     raw=None
                 else:
                     _alpha(model,"none")
+                    model.geom_rgba[arm_geom_ids,3]=0.
                     data.qpos[qids]=q0
                     pp,RR=(p0,R0) if phase=="original" else (po,Ro)
                     pose(data,model,"rb_pitcher_free",pp,RR)
