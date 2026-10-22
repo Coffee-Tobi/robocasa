@@ -29,6 +29,9 @@ jobs:
           PYOPENGL_PLATFORM: osmesa
         run: |
           python -u -m robobarista.room_reconstruction --width 960 --height 720 --stride 6 --output runs/ci_room
+      - name: Render progressive 3D camera reconstruction video
+        run: |
+          python -u -m robobarista.room_reconstruction_video --input runs/ci_room --output runs/ci_room --frames 24 --fps 6 --max-points-per-camera 1200
       - name: Animate safe coffee grinder / espresso / milk / pour storyboard
         env:
           MUJOCO_GL: osmesa
@@ -57,6 +60,9 @@ jobs:
           assert Path('runs/ci_coffee/coffee_workflow.mp4').stat().st_size>10000
           assert Path('runs/ci_room/rgbd_room_vs_truth.png').stat().st_size>10000
           assert Path('runs/ci_room/rgbd_room_3d_cloud.png').stat().st_size>10000
+          assert Path('runs/ci_room/rgbd_room_reconstruction.mp4').stat().st_size>10000
+          v=json.loads(Path('runs/ci_room/rgbd_reconstruction_video_summary.json').read_text())
+          assert v['simulation_truth_used_only_in_final_visual_comparison']
           PY
       - uses: actions/upload-artifact@v4
         if: always()
@@ -69,6 +75,8 @@ jobs:
             runs/ci_coffee/summary.json
             runs/ci_room/rgbd_room_vs_truth.png
             runs/ci_room/rgbd_room_3d_cloud.png
+            runs/ci_room/rgbd_room_reconstruction.mp4
+            runs/ci_room/rgbd_reconstruction_video_summary.json
             runs/ci_room/reconstructed_xyz_cloud.npz
             runs/ci_room/summary.json
           if-no-files-found: warn
