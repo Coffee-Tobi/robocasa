@@ -244,6 +244,7 @@ def render(args):
         video=out/(mode+"_20s.mp4")
         subprocess.run(["ffmpeg","-y","-loglevel","error",
                         "-framerate",str(args.fps),"-i",str(f/"f_%04d.jpg"),
+                        "-vf","pad=ceil(iw/2)*2:ceil(ih/2)*2",
                         "-c:v","libx264","-pix_fmt","yuv420p","-movflags",
                         "+faststart",str(video)],check=True)
         videos[mode]=video.name
