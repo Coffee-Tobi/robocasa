@@ -20,12 +20,15 @@ def test_one_colab_includes_all_four_verified_experiments():
                 'robobarista.motor_follow',
                 'robobarista.continuous_motion',
                 'robobarista.room_reconstruction',
-                'robobarista.coffee_workflow'):
+                'robobarista.coffee_workflow',
+                'robobarista.precision_pour'):
         assert job in all_code
     assert 'camera_vs_fr5_side_by_side' in all_code
     assert "'--fps','15'" in all_code
     assert "'--frames','31'" in all_code
     assert 'continuous_ruckig' in all_code
+    assert 'precision_controller_comparison.png' in all_code
+    assert "'--disturbance-nm','.5'" in all_code
     assert 'RoboBarista_Gesamtpaket.zip' in all_code
     assert 'Video(filename=' not in all_code
     assert 'MUJOCO_GL' in all_code
