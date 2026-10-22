@@ -188,7 +188,7 @@ def _render(model,data,t,mode,spout_mm,tcp_mm,ref_p,ref_tip):
 
 
 def _run_one(model,qids,limits,dofs,act_ids,ranges,start_q,
-             reference,t_end,method,fps,renderer=None):
+             reference,t_end,method,fps,disturbance_nm=0.,renderer=None):
     data=mujoco.MjData(model)
     ref=mujoco.MjData(model)
     inv=mujoco.MjData(model)
@@ -196,6 +196,10 @@ def _run_one(model,qids,limits,dofs,act_ids,ranges,start_q,
     _set_free_pose(model,data,"rb_plastic_cup_free",[-10,-10,-10],0)
     data.qpos[qids]=start_q
     data.qvel[:]=0.
+    # Deliberately UNKNOWN TO THE INVERSE-DYNAMICS MODEL:
+    # external constant wrist torque is a simple model-mismatch stress test,
+    # NOT a physically simulated nonrigid handle, liquid or filled pitcher.
+    data.qfrc_applied[dofs[4]]=float(disturbance_nm)
     mujoco.mj_forward(model,data)
     body=model.body("rb_cell_tcp").id
     ref.qpos[:]=data.qpos
@@ -312,6 +316,7 @@ def run(args):
             result,track,video=_run_one(model,qids,limits,dofs,act_ids,
                      ranges,start_q,reference,duration,method,
                      fps=args.video_fps,
+                     disturbance_nm=args.disturbance_nm,
                      renderer=renderer if method=="computed_torque" else None)
             comparison[method]=result
             samples[method]=track
@@ -363,6 +368,7 @@ def run(args):
         "kinematic_pose_source":"small deterministic task trajectory in safe pour-cup pre-dock; not an optical demonstration",
         "spout_local_offset_m":SPOUT_LOCAL_M.tolist(),
         "motor_simulator":"MuJoCo 6 joint torque actuators with mj_step",
+        "unmodelled_external_wrist_torque_nm":args.disturbance_nm,
         "methods":comparison,
         "video_created":mp4,
         "warnings":"Virtual joints/tuning/geometry only. Spout is geometry approximated as rigid offset, not calibrated real nozzle. No grip mass, foam or liquid."
@@ -381,6 +387,8 @@ def main():
     p.add_argument("--duration-s",type=float,default=3.)
     p.add_argument("--seed",type=int,default=14)
     p.add_argument("--video-fps",type=int,default=8)
+    p.add_argument("--disturbance-nm",type=float,default=0.0,
+                   help="Model mismatch stress: apply unknown wrist torque to plant, not to inverse model")
     args=p.parse_args()
     r=run(args)
     import sys
