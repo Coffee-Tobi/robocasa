@@ -16,7 +16,7 @@ import numpy as np
 import mujoco
 from scipy.interpolate import CubicSpline
 from PIL import Image,ImageDraw
-from .latte_art_20s import _story_scene,gesture,phase_name,preflight
+from .latte_art_20s import _story_scene,phase_name,build_latte_path
 from .coffee_workflow import _alpha,_valid_state
 from .camera_joint_replay import _find_start
 from .safe_staging import plan_staging
@@ -35,31 +35,92 @@ def initial_pose(model,data):
 
 
 def composite(left,right,time_s,error_mm,phase,traces,initial_point):
+    """Same physical image scale plus two explicitly labelled ideal/motor traces."""
     width,height=left.shape[1],left.shape[0]
-    out=Image.new("RGB",(2*width,height+135),(15,24,31))
-    canvas=ImageDraw.Draw(out)
+    out=Image.new("RGB",(2*width,height+400),(15,24,31))
+    d=ImageDraw.Draw(out)
     out.paste(Image.fromarray(left),(0,44))
     out.paste(Image.fromarray(right),(width,44))
-    canvas.rectangle((width-2,44,width+2,44+height),fill=(240,233,210))
-    canvas.text((14,11),"SOLL | generierte 20s-Bewegung (ideal)",fill=(182,235,245))
-    canvas.text((width+14,11),"IST | FR5 mit MuJoCo-Drehmomentregelung",fill=(255,216,160))
-    bottom=48+height
-    canvas.text((14,bottom),f"{time_s:05.2f}s / 20.00s   |   {phase}   |   Ausgiesserfehler: {error_mm:.3f} mm",fill=(250,250,250))
-    canvas.text((14,bottom+22),"Beide Bilder: gleiche Kamerapose. Keine echte Milch, Griffigkeit oder fluessige Latte Art.",fill=(190,202,212))
-    # Exaggerated *plot scale only*, not an altered robot animation.
-    origin=(width+width//2,bottom+58)
-    canvas.text((width+14,bottom+22),"2D-Spur von oben: 1 mm = 14 px (nur Diagramm)",fill=(182,235,245))
-    canvas.ellipse((origin[0]-2,origin[1]-2,origin[0]+2,origin[1]+2),fill=(230,230,230))
-    def projected(row):
-        rel=(np.asarray(row)-initial_point)*1000
-        return (int(origin[0]+14*rel[0]),int(origin[1]-14*rel[1]))
-    for index,color in [(0,(120,225,245)),(1,(255,193,117))]:
-        coords=[projected(t[index]) for t in traces]
-        if len(coords)>1:canvas.line(coords,fill=color,width=2)
+    d.rectangle((width-2,44,width+2,44+height),fill=(220,223,230))
+    d.text((14,11),"SOLL | generierte Bewegung (ideale Kinematik)",fill=(113,222,245))
+    d.text((width+14,11),"IST | FR5 Motorphysik (MuJoCo)",fill=(255,192,107))
+    bottom=height+48
+    d.text((20,bottom),f"{time_s:05.2f} / 20.00 s    {phase}    Abstand Soll-Ist am Ausgiesser: {error_mm:.4f} mm",fill="white")
+    d.text((20,bottom+22),"Beide Ansichten: gleiche Kamera | Werkzeug starr gegriffen | keine Milchphysik",fill=(179,195,207))
+    d.text((42,bottom+53),"Ausgiesserspitze von oben, X/Y in mm",fill="white")
+    # Fixed millimeter scale (not scaling robot geometry), centered at start.
+    ox,oy=290,bottom+230
+    scale=6.5
+    for mm in (-20,-10,0,10,20):
+        x=int(ox+scale*mm)
+        y=int(oy-scale*mm)
+        d.line((x,bottom+92,x,bottom+365),fill=(54,69,80),width=1)
+        d.line((ox-180,y,ox+180,y),fill=(54,69,80),width=1)
+        d.text((x-9,bottom+367),str(mm),fill=(170,185,196))
+        d.text((ox-211,y-7),str(mm),fill=(170,185,196))
+    d.text((ox+194,oy),"X +",fill=(170,185,196))
+    d.text((ox-15,bottom+83),"Y +",fill=(170,185,196))
+    def xy(item):
+        rel=1000*(np.asarray(item)-initial_point)
+        return int(ox+scale*rel[0]),int(oy-scale*rel[1])
+    for index,color,label in [
+        (0,(101,225,243),"SOLL (ideal)"),
+        (1,(255,188,90),"IST (Motor)")]:
+        coords=[xy(pair[index]) for pair in traces]
+        if len(coords)>1:d.line(coords,fill=color,width=3)
         if coords:
-            x,y=coords[-1]
-            canvas.ellipse((x-4,y-4,x+4,y+4),fill=color)
+            x,y=coords[-1];d.ellipse((x-5,y-5,x+5,y+5),fill=color)
+        d.text((540,bottom+108+index*24),label,fill=color)
+    # Error plotted separately: millimetre deviation, not visual exaggeration.
+    x0,x1=630,2*width-36
+    y0,y1=bottom+335,bottom+170
+    d.text((x0,bottom+144),"Soll-Ist-Abweichung [mm] ueber 20 s",fill="white")
+    errs=[float(1000*np.linalg.norm(np.asarray(p[0])-np.asarray(p[1]))) for p in traces]
+    upper=max(.2,max(errs)*1.2) if errs else .2
+    for fraction in (0.,.5,1.):
+        y=int(y0+(y1-y0)*fraction)
+        d.line((x0,y,x1,y),fill=(54,69,80),width=1)
+        d.text((x0-30,y-7),f"{upper*fraction:.2f}",fill=(176,187,196))
+    coords=[(int(x0+(x1-x0)*(i/max(1,len(traces)-1))),
+             int(y0-(y0-y1)*err/upper)) for i,err in enumerate(errs)]
+    if len(coords)>1:d.line(coords,fill=(255,205,138),width=2)
+    d.text((x0,y0+10),"0s",fill=(176,187,196))
+    d.text((x1-20,y0+10),"20s",fill=(176,187,196))
     return out
+
+
+def plot_comparison(traces,out):
+    """Saved side-by-side trace and time comparison using data, not graphics poses."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    ts=np.array([x["t_s"] for x in traces],float)
+    a=np.array([x["generated_tip_xyz_m"] for x in traces])*1000
+    b=np.array([x["motor_tip_xyz_m"] for x in traces])*1000
+    origin=a[0].copy()
+    a-=origin
+    b-=origin
+    fig,axes=plt.subplots(1,3,figsize=(16,4.6))
+    axes[0].plot(a[:,0],a[:,1],label="Soll",lw=2.0)
+    axes[0].plot(b[:,0],b[:,1],label="Ist (Motor)",lw=1.3,ls="--")
+    axes[0].set_title("Ausgiesserpfad XY (Millimeter)")
+    axes[0].set(xlabel="X relativ zum Start [mm]",ylabel="Y relativ zum Start [mm]")
+    axes[0].set_aspect("equal",adjustable="datalim")
+    for j,axis in enumerate("xyz"):
+        axes[1].plot(ts,a[:,j],label=f"{axis.upper()} Soll")
+        axes[1].plot(ts,b[:,j],ls="--",label=f"{axis.upper()} Ist")
+    axes[1].set_title("Ausgiesserkoordinaten Soll/Ist")
+    axes[1].set(xlabel="Zeit [s]",ylabel="Verschiebung [mm]")
+    errors=np.array([x["error_spout_mm"] for x in traces])
+    axes[2].plot(ts,errors,label="3D-Abstand Soll-Ist")
+    axes[2].set_title("Tatsaechlicher Motorfolgefehler (idealisiertes Modell)")
+    axes[2].set(xlabel="Zeit [s]",ylabel="Positionsabweichung [mm]")
+    for ax in axes:
+        ax.grid(alpha=.25)
+        ax.legend(fontsize=7)
+    fig.tight_layout()
+    fig.savefig(out,dpi=160)
+    plt.close(fig)
 
 
 def run(args):
@@ -77,8 +138,9 @@ def run(args):
     if stage is None:raise RuntimeError("no preflighted pour predock")
     origin=np.asarray(stage["q_rad"],float)
     points=np.linspace(0,20,20*15+1)
-    trajectory,scale=preflight(model,pre,qids,limits,origin,
-                              np.array([gesture(t) for t in points]))
+    trajectory,scale,spout_excursion=build_latte_path(
+        model,pre,qids,limits,origin,points,
+        target_spout_mm=args.target_spout_mm,maximum_spout_mm=20.)
     # Estimate smooth joint velocity & acceleration from the same poses.
     fit=CubicSpline(points,trajectory,axis=0,bc_type=((1,np.zeros(6)),(1,np.zeros(6))))
     reference=mujoco.MjData(model)
@@ -162,13 +224,15 @@ def run(args):
     finally:
         renderer.close()
     if len(film)!=video_count:raise RuntimeError(f"missing frames: {len(film)}")
+    plot_comparison(observations,out/"spout_soll_ist_plot.png")
     if not shutil.which("ffmpeg"):raise RuntimeError("ffmpeg missing")
     frames=out/"frames"
     frames.mkdir(exist_ok=True)
     for i,f in enumerate(film):f.save(frames/f"compare_{i:04d}.png")
     movie=out/"generated_vs_fr5_motor_20s.mp4"
     subprocess.run(["ffmpeg","-y","-loglevel","error","-framerate",str(args.fps),
-        "-i",str(frames/"compare_%04d.png"),"-c:v","libx264","-pix_fmt","yuv420p",
+        "-i",str(frames/"compare_%04d.png"),"-vf","pad=ceil(iw/2)*2:ceil(ih/2)*2",
+        "-c:v","libx264","-pix_fmt","yuv420p",
         "-movflags","+faststart",str(movie)],check=True)
     errs=np.array([x["error_spout_mm"] for x in observations])
     report={"status":"PASS","duration_s":20,"fps":args.fps,"frames":len(film),
@@ -181,7 +245,11 @@ def run(args):
         "p95_spout_tracking_error_mm":float(np.percentile(errs,95)),
         "torque_saturation_events":int(torque_saturated),
         "maximum_raw_motor_torque_nm":float(max_tau),
-        "gesture_scale":float(scale),"real_liquid":False,"robot_hardware_validated":False,
+        "gesture_scale":float(scale),
+        "reference_spout_max_displacement_mm":float(spout_excursion),
+        "reference_spout_cap_mm":20.,
+        "reference_spout_target_mm":float(args.target_spout_mm),
+        "real_liquid":False,"robot_hardware_validated":False,
         "notes":"Errors measured between 2 independently simulated data objects with same model; does not include payload mass, flexible handle, camera noise, actual safety envelope or latte art fluid."}
     (out/"summary.json").write_text(json.dumps(report,indent=2))
     (out/"spout_tracking.json").write_text(json.dumps(observations,indent=1))
@@ -196,6 +264,7 @@ def main():
     p.add_argument("--seed",type=int,default=14)
     p.add_argument("--duration",type=int,default=20)
     p.add_argument("--fps",type=int,default=12)
+    p.add_argument("--target-spout-mm",type=float,default=18.)
     p.add_argument("--width",type=int,default=520)
     p.add_argument("--height",type=int,default=400)
     args=p.parse_args()
