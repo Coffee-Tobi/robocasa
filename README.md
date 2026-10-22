@@ -1,61 +1,73 @@
-# RoboBarista — FAIRINO FR5 in MuJoCo
+# RoboBarista — 3-Kamera-Aufnahme → FAIRINO FR5
 
-**Research prototype, virtual only.** This repository is centered on one simulated FAIRINO FR5 servicing a coffee station with grinder/integrated tamper, espresso machine, pitcher, milk dispenser, cup and cleaning area. None of the symbolic coffee/liquid/grasp actions should be mistaken for real machine operations.
+**Ein einziger aktiver Bewegungsansatz:** drei fest kalibrierte RGB-D-Kameras
+erkennen AprilTags auf der Milchkanne; daraus wird eine 6D-Bewegung rekonstruiert,
+in FR5-Werkzeugkoordinaten umgerechnet und als
+**offizielle FAIRINO `NewSpline`-Befehle** bereitgestellt.
 
-## Start here
+- **[Google Colab: komplette neue Pipeline](COLAB_ROBOBARISTA.ipynb)**
+- [Drei-Kamera-Erfassung (nur Bildmessung)](robobarista/camera_joint_replay.py), Kommando `--capture-only`
+- [Aktiver Ablauf: Kamera → FAIRINO](robobarista/fairino_barista_pipeline.py)
+- [Offizielle FAIRINO-NewSpline/MoveL-Befehlsanbindung](robobarista/fairino_native_spline.py)
+- [Hersteller-Motion-API](https://manual.fairino.support/latest/SDKManual/PythonRobotMovement.html)
+- [Letzter getesteter offline Kamera/Spline-Workflow](https://github.com/Coffee-Tobi/robocasa/actions/workflows/fairino-camera-pipeline.yml)
 
-- **[Open the one unified Google Colab](COLAB_ROBOBARISTA.ipynb)** — main workcell, three RGB-D + AprilTags, room reconstruction, collision-checked station staging, 11-stage coffee storyboard, camera-based replay, Ruckig and motor/precision experiments.
-- **[Read the coffee workflow source](robobarista/coffee_workflow.py)** — the 11-stage storyboard and rendering.
-- **[See the smooth following camera source](robobarista/follow_camera.py)** — follows just behind and above the FR5 wrist; a small static whole-cell view remains inset. For old video style use `--camera-view overview`. **The following video camera is cinematic ONLY; it never replaces the fixed calibrated RGB-D cameras for AprilTag tracking.**
-- **[Last verified complete demonstration (MP4 download artifact)](https://github.com/Coffee-Tobi/robocasa/actions/runs/39641910809/artifacts/12365696486)** — completed successfully on 21 Oct 2026 on `main`, **before** following camera was implemented.
-- **[New following-camera preview test](https://github.com/Coffee-Tobi/robocasa/actions/workflows/pov-preview.yml)** — renders and uploads `coffee_workflow.mp4` from this branch when CI passes. Do not claim a new video has been verified until the run succeeds.
+## Wie die Kette genau funktioniert
 
-## What works vs. what remains an experiment
+1. **Aufnehmen (Kameras):** Drei simulierte RGB-D-Kameras beobachten AprilTags auf der Kanne. Das System rekonstruiert Position **und Orientierung** je Zeitstempel. Falls Tags in weniger als zwei Kameras sichtbar sind, wird die Aufnahme nicht freigegeben.
+2. **Kalibrierung:** Die Position der Kanne ist nicht automatisch die Werkzeugpose. Es gilt `T_base_tcp = T_base_world @ T_world_pitcher @ T_pitcher_tcp`. Beide extrinsischen Transformationen müssen vor realem Einsatz gemessen und überprüft werden.
+3. **FAIRINO-Vorbereitung:** Positions-/Orientierungswegpunkte in mm/Grad umwandeln und mit `NewSplineStart / NewSplinePoint / NewSplineEnd` eine zusammenhängende Bewegung anfordern (wahlweise `MoveL` mit `blendR`).
+4. **Ausführen:** Erst an einem kompatiblen FAIRINO-Controller mit realen Sicherheitsprüfungen, korrekten Greifern und Werkzeugdaten. **Wir haben noch keinen realen FAIRINO-Controller verbunden.**
+5. **Spätere Live-Korrektur:** Dieselben Kameras beobachten Kanne und Becher während der Bewegung. Die nötige Closed-Loop-Korrektur über FAIRINO `ServoCart` ist geplant, **noch nicht implementiert**.
 
-| Component | Current honest status | Code |
-|---|---|---|
-| Scene + 3 fixed RGB-D cameras + AprilTags | Complete previous integrated virtual test PASS; virtual camera calibration remains idealized | `barista_cell.py`, `geometry.py`, `camera_joint_replay.py` |
-| Room 3D reconstruction | Virtual point cloud generated and checked, not SLAM | `room_reconstruction.py` |
-| FR5 stations + collision-aware safe predocks | Seven staging targets checked, **real contacts are not performed** | `safe_staging.py` |
-| 11-stage espresso/milk/latte visual sequence | Kinematic video and symbolic liquids, **no real flow / gripping** | `coffee_workflow.py` |
-| Arm POV movie + small fixed overview | Implemented in branch; dedicated CI validation pending | `follow_camera.py` |
-| Two Inlux IR40-50 grippers | **Visual concept only** on this branch; isolated physical contact prototype is in the [experimental PR](https://github.com/Coffee-Tobi/robocasa/pull/1) | `dual_ir40_concept.py` |
-| Robust computed torque | Separate 3-second mm-scale simulation baseline PASS; 0.0105 mm ideal max and 1.238 mm max with 0.5 Nm artificial torque; no real payload | `precision_pour.py` |
-| MPC | Not on this stable branch; still undergoing full MuJoCo verification in [experimental PR #1](https://github.com/Coffee-Tobi/robocasa/pull/1) | Separate experimental branch |
-| Steam-wand contact sensor | Isolated prototype under development in experimental branch, not part of current stable workcell | Separate experimental branch |
-| Real 20 s latte art / milk dynamics | **Not yet implemented** | — |
+## Was schon getestet wurde
 
-## Reproduce a coffee video
+| Merkmal | Status |
+|---|---|
+| Virtuelle FR5-Kaffeestation und drei Kameras/AprilTags | Kamera-/Szenentests bestanden |
+| Rekonstruktion einer demonstrierten 6D-Bewegung | 31 simulierte Messbilder, 15 FPS, Aufnahme dauert 2 s |
+| 20-s-Referenz mit max. 18 mm Kannenmittelpunkt-Auslenkung | Durch bewusstes Skalieren und zeitliches Strecken der aufgenommenen Bahn |
+| FAIRINO-NewSpline-Befehlsgenerierung | Offline-Mock: offizielle Methodennamen und Parameter getestet |
+| Herstellerinterne Spline-Interpolationsbahn | **NICHT getestet** (keine echte Controller- oder SimMachine-Ausführung) |
+| Echte FAIRINO-Nachfahrgenauigkeit | **NICHT gemessen** |
+| Tatsächlicher Abstand der Ausgießerspitze zur Crema | Noch nicht kalibriert; 18-mm-Grenze betrifft die Kannenmitte; die Ausgießerspitze wird nur mit einem explizit angegebenen virtuellen Offset mitgeprüft |
+| Simulierte Milchdynamik, Kräfte an Greifbacken und Latte-Art-Muster | Noch nicht physikalisch validiert |
 
-From a setup with dependencies in `requirements.txt`, MuJoCo OSMesa, FFmpeg and the project vendor assets:
+## Neue Pipeline reproduzieren
 
 ```bash
 export MUJOCO_GL=osmesa
 export PYOPENGL_PLATFORM=osmesa
-python -m robobarista.coffee_workflow \
-  --camera-view follow \
-  --output runs/coffee_pov --frames-leg 6 --fps 12
+
+# Virtuelle Kameraaufnahme aus drei Bildern, ohne alten Roboter-Nachfahrversuch:
+python -m robobarista.camera_joint_replay \
+  --capture-only --frames 31 --fps 15 --width 960 --height 720 \
+  --output runs/fairino_camera_capture
+
+# Standardausgabe: OFFLINE vorbereitete offizielle FAIRINO-Spline-Befehle:
+python -m robobarista.fairino_barista_pipeline \
+  --input runs/fairino_camera_capture/camera_measurements.json \
+  --output runs/fairino_standard \
+  --target-mm 18 --duration-s 20 --stride 2 \
+  --virtual-spout-offset-m -.073 0 .117
 ```
 
-Output: `runs/coffee_pov/coffee_workflow.mp4`, `summary.json`, `recipe.json`.
-To switch back to the old overview: `--camera-view overview`.
+Erzeugt `runs/fairino_standard/fairino_new_spline_commands.json`,
+`fairino_movel_blend_commands.json`, `summary.json` und die
+zeitlich angepassten Kamera-Wegpunkte. **Diese Programme verbinden sich aus
+Sicherheitsgründen nicht mit einem Roboter und rufen keinen Controller auf.**
+Für reale Roboterbefehle fehlen gemessene Kamera-/Werkzeugextrinsiken,
+Werkzeugkalibrierung, Kollisionsplanung und Hardwarefreigabe.
 
-**What the video does:** per recipe step the arm travels from home to a checked free-space pre-dock and back. A small explicitly artificial, safe tilted sway is shown as latte art. Three RGB-D tracking cameras and the additional follow camera are *different camera systems*.
+## Was mit dem alten Ansatz passiert
 
-## Main source map (do not remove these dependencies)
+Die eigene Bewegungsglättung mit Ruckig, IK-Nachfahrtests und
+`mj_step`-Drehmomentregler sind **nicht mehr Teil des Standardablaufs**
+und auch **nicht mehr die empfohlene Roboteransteuerung**. Der frühere Code
+liegt zur wissenschaftlichen Nachvollziehbarkeit und zum Vergleich weiterhin
+im Git-Verlauf beziehungsweise in experimentellen Modulen; die bisherigen
+Referenzzahlen gehören nicht zur echten FAIRINO-Herstellerregelung.
 
-- `robobarista/barista_cell.py` and `workcell_constraints.py`: machines, stations, robot geometry, clearance rules.
-- `robobarista/coffee_workflow.py` and `follow_camera.py`: recipe/video and movable virtual viewpoint.
-- `robobarista/camera_joint_replay.py`, `geometry.py`, `room_reconstruction.py`: pixel-based AprilTag/point cloud tests.
-- `robobarista/robot_replay.py`, `continuous_motion.py`, `motor_follow.py`, `precision_pour.py`: IK, jerk-limited path and tested motor-control baselines.
-- `robobarista/dual_ir40_concept.py`: two **non-physical visual** IR40-50 examples; actual gripping and force feedback are still separate experiments.
-- `planning/`: historical test assumptions, measured virtual benchmarks, CAD/material decisions. Use with caution; not all experiments were performed on the current branch.
-- `.github/workflows/`: independent reproducible regression and video artifact jobs; these modules import other parts of the project.
-
-## Why fewer notebooks?
-
-Three former standalone Colabs (safe replay, safe staging, workcell) were superseded by **`COLAB_ROBOBARISTA.ipynb`** and removed **on this cleanup branch**; their contents are retrievable through Git history. We retain the underlying Python packages and tests because the unified notebook and the accepted GitHub Actions pipeline rely on them.
-
-## Safety and precision
-
-The core prototype does not yet have an installed live robot, actual tool-changer/grip forces, dynamic cup/pitcher fluid, calibrated vendor cameras, compliant steam contact or production-safe collision handling. Numerical ideal-model precision is **not** real mechanical or latte-art precision.
+Wichtig: Der eigene Kameracode, AprilTag-Kalibrierung, Szenenmodell,
+Kollisionsabschätzung sowie die Logik für Latte-Art- und Milchflusskorrekturen
+bleiben nützlich; eine reine FAIRINO-SDK ersetzt diese Fähigkeiten nicht.

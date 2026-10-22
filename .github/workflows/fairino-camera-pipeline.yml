@@ -1,0 +1,129 @@
+name: RoboBarista FAIRINO Camera Pipeline
+on:
+  pull_request:
+    paths:
+      - 'robobarista/fairino_barista_pipeline.py'
+      - 'robobarista/fairino_native_spline.py'
+      - 'robobarista/camera_joint_replay.py'
+      - 'COLAB_ROBOBARISTA.ipynb'
+      - '.github/workflows/fairino-camera-pipeline.yml'
+  workflow_dispatch:
+jobs:
+  verified-camera-poses-to-fairino-new-spline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install numeric dependencies only
+        run: python -m pip install 'numpy>=1.26,<3' 'scipy>=1.11' 'pytest>=8'
+      - name: Fetch 3-camera AprilTag recordings from previous successful run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api /repos/Coffee-Tobi/robocasa/actions/artifacts/12365696486/zip > validated_camera.zip
+          python - <<'PY'
+          import json,zipfile
+          with zipfile.ZipFile('validated_camera.zip') as z:
+              poses=json.loads(z.read('camera/camera_measurements.json'))
+          assert len(poses)==31
+          assert all(r['valid'] and r['visible_views']==3 for r in poses)
+          print('Measured with all three virtual RGB-D cameras')
+          PY
+      - name: New default FAIRINO NewSpline pipeline -- NO custom motors
+        run: |
+          python -m robobarista.fairino_barista_pipeline \
+            --input validated_camera.zip --output runs/fairino_default \
+            --target-mm 18 --duration-s 20 --stride 2 --virtual-spout-offset-m -.073 0 .117
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('runs/fairino_default')
+          s=json.loads((p/'summary.json').read_text())
+          assert s['status']=='OFFLINE_DRY_RUN_ONLY'
+          assert s['no_legacy_ruckig_or_torque_controllers_used']
+          assert s['source_camera_frames']==31
+          assert s['new_spline_waypoints']==16
+          assert s['new_spline_mock_api_calls']==18
+          assert 0<s['rescaled_pitcher_center_excursion_mm']<=20
+          assert 0 < s['spout_tip_excursion_mm'] < 20
+          assert s['real_fairino_controller_invoked'] is False
+          assert s['real_fairino_tracking_error_mm'] is None
+          commands=json.loads((p/'fairino_new_spline_commands.json').read_text())
+          assert commands['commands'][0]['api']=='NewSplineStart'
+          assert commands['commands'][-1]['api']=='NewSplineEnd'
+          assert sum(x['api']=='NewSplinePoint' for x in commands['commands'])==16
+          print('Official-command mock validated:',s)
+          PY
+      - name: Reject missing views instead of inventing positions
+        run: |
+          python - <<'PY'
+          import json,zipfile,tempfile
+          from pathlib import Path
+          from robobarista.fairino_barista_pipeline import load_camera
+          with zipfile.ZipFile('validated_camera.zip') as f:
+              poses=json.loads(f.read('camera/camera_measurements.json'))
+          poses[6]['visible_views']=1
+          p=Path('invalid_test.json');p.write_text(json.dumps(poses))
+          try:load_camera(p)
+          except ValueError:print('Correctly rejected one-camera dropout')
+          else:raise AssertionError('Dropped 2-camera visibility gate!')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: FAIRINO-3-Camera-Default-Pipeline
+          path: |
+            runs/fairino_default/
+          if-no-files-found: warn
+
+  fresh-camera-only-capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - name: Install MuJoCo, AprilTags, and FFmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 libglx-mesa0 libgl1-mesa-dri ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Run 3 virtual RGB-D cameras ONLY, no old IK replay
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.camera_joint_replay --capture-only --frames 11 --fps 15 --seed 14 --width 960 --height 720 --output runs/camera_capture_only
+      - name: FAIRINO new default output based on fresh measured images
+        run: |
+          python -u -m robobarista.fairino_barista_pipeline --input runs/camera_capture_only/camera_measurements.json --output runs/fairino_fresh_camera --duration-s 20 --target-mm 18 --stride 2
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path('runs/camera_capture_only/summary.json').read_text())
+          b=json.loads(Path('runs/fairino_fresh_camera/summary.json').read_text())
+          assert a['status']=='PASS',a
+          assert a['camera_capture_only']
+          assert a['replayed_frames']==0
+          assert (Path('runs/camera_capture_only/camera_capture.mp4')).stat().st_size>10000
+          assert a['camera_valid_frames']==11
+          assert a['camera_two_view_frames']==11
+          assert b['source_camera_frames']==11
+          assert b['no_legacy_ruckig_or_torque_controllers_used']
+          assert b['real_fairino_controller_invoked'] is False
+          print('Fresh 3-camera capture-only -> native FAIRINO commands passed')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: FAIRINO-Fresh-MuJoCo-Three-Camera-Capture
+          path: |
+            runs/camera_capture_only/camera_measurements.json
+            runs/camera_capture_only/summary.json
+            runs/fairino_fresh_camera/
+          if-no-files-found: warn
