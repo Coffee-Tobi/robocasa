@@ -1,0 +1,56 @@
+name: RoboBarista POV Preview
+on:
+  push:
+    paths:
+      - "robobarista/follow_camera.py"
+      - "robobarista/coffee_workflow.py"
+      - "robobarista/dual_ir40_concept.py"
+      - ".github/workflows/pov-preview.yml"
+  pull_request:
+  workflow_dispatch:
+jobs:
+  camera-pov-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - name: Install MuJoCo and ffmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 libglx-mesa0 libgl1-mesa-dri ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Render POV cinematic preview with stable workcell inset
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.coffee_workflow --output runs/pov_preview --camera-view follow --frames-leg 6 --fps 12 --width 840 --height 630
+      - name: Validate simulation/POV separation
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          out=Path('runs/pov_preview')
+          d=json.loads((out/'summary.json').read_text())
+          assert d['status']=='PASS',d
+          assert d['virtual_espresso_and_milk_workflow_stages']==11
+          assert d['video_camera_view']=='follow'
+          assert d['over_shoulder_follow_with_overview_inset']
+          assert d['calibrated_apriltag_rgbd_cameras_unchanged']
+          assert not d['true_machine_docking_completed']
+          assert (out/'coffee_workflow.mp4').stat().st_size>10000
+          print(d)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RoboBarista-Arm-POV-Preview
+          path: |
+            runs/pov_preview/coffee_workflow.mp4
+            runs/pov_preview/summary.json
+            runs/pov_preview/recipe.json
+          if-no-files-found: warn
