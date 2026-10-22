@@ -34,6 +34,12 @@ jobs:
           PYOPENGL_PLATFORM: osmesa
         run: |
           python -u -m robobarista.precision_pour --output runs/precision_large_ci --amplitude-mm 10 --angle-deg .75 --duration-s 3 --seed 14 --video-fps 8
+      - name: Model-mismatch robustness test with external unknown wrist torque
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.precision_pour --output runs/precision_disturbed_ci --amplitude-mm 4 --angle-deg .75 --duration-s 3 --disturbance-nm .5 --seed 14 --video-fps 8
       - name: Validate safety, independent spout measurement and produce comparison
         run: |
           python - <<'PY'
@@ -54,6 +60,13 @@ jobs:
           larger=json.loads(Path('runs/precision_large_ci/summary.json').read_text())
           assert larger['status']=='PASS'
           assert larger['amplitude_x_mm']==10.0
+          stress=json.loads(Path('runs/precision_disturbed_ci/summary.json').read_text())
+          assert stress['status']=='PASS'
+          assert stress['unmodelled_external_wrist_torque_nm']==0.5
+          print('Disturbed 0.5 Nm wrist load vs ideal model:')
+          for name in a['methods']:
+              print(name,'ideal spout max=',a['methods'][name]['max_spout_error_mm'],
+                    'disturbed spout max=',stress['methods'][name]['max_spout_error_mm'])
           assert set(larger['methods'])==set(a['methods'])
           print('SMALL vs LARGE amplitudes, same duration')
           for name in a['methods']:
@@ -71,6 +84,7 @@ jobs:
             runs/precision_ci/precision_controller_comparison.png
             runs/precision_ci/precision_tracking.json
             runs/precision_ci/summary.json
+            runs/precision_disturbed_ci/summary.json
             runs/precision_large_ci/summary.json
             runs/precision_large_ci/precision_controller_comparison.png
           if-no-files-found: warn
