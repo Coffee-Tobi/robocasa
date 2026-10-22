@@ -77,6 +77,7 @@ jobs:
                     'large spout max=',larger['methods'][name]['max_spout_error_mm'])
           assert (p/'precision_pour.mp4').stat().st_size>10000
           assert (p/'precision_controller_comparison.png').stat().st_size>10000
+          assert (p/'precision_spout_path_zoom.png').stat().st_size>10000
           PY
       - uses: actions/upload-artifact@v4
         if: always()
@@ -85,9 +86,11 @@ jobs:
           path: |
             runs/precision_ci/precision_pour.mp4
             runs/precision_ci/precision_controller_comparison.png
+            runs/precision_ci/precision_spout_path_zoom.png
             runs/precision_ci/precision_tracking.json
             runs/precision_ci/summary.json
             runs/precision_disturbed_ci/summary.json
             runs/precision_large_ci/summary.json
             runs/precision_large_ci/precision_controller_comparison.png
+            runs/precision_disturbed_ci/precision_spout_path_zoom.png
           if-no-files-found: warn
