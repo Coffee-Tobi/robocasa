@@ -53,7 +53,8 @@ jobs:
           assert a['ruckig_segments']>=10
           assert not a['pitcher_physically_grasped']
           assert a['motor_simulator'].startswith('MuJoCo')
-          assert set(a['methods'])=={'legacy_pd','velocity_pd','computed_torque'}
+          assert set(a['methods'])=={'legacy_pd','velocity_pd',
+                    'computed_torque','computed_torque_robust'}
           assert all(v['status']=='PASS' for v in a['methods'].values())
           assert all(v['max_spout_error_mm']>=0 for v in a['methods'].values())
           assert all(v['first_safety_violation'] is None for v in a['methods'].values())
@@ -63,6 +64,8 @@ jobs:
           stress=json.loads(Path('runs/precision_disturbed_ci/summary.json').read_text())
           assert stress['status']=='PASS'
           assert stress['unmodelled_external_wrist_torque_nm']==0.5
+          assert stress['methods']['computed_torque_robust']['max_spout_error_mm'] > 0
+          assert stress['methods']['computed_torque_robust']['max_spout_error_mm'] < stress['methods']['computed_torque']['max_spout_error_mm'], 'Robust inverse-dynamics controller did not improve model mismatch'
           print('Disturbed 0.5 Nm wrist load vs ideal model:')
           for name in a['methods']:
               print(name,'ideal spout max=',a['methods'][name]['max_spout_error_mm'],
