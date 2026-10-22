@@ -87,19 +87,39 @@ def metrics(samples,prefix):
 
 
 def write_plot(rows,title,path):
+    """Same axes: true 3D spatial paths, Cartesian errors, and one scalar mm."""
     t=np.array([o["time_s"] for o in rows])
     coords=np.array([o["delta_xyz_mm"] for o in rows],float)
     errors=np.array([o["error_3d_mm"] for o in rows],float)
-    fig,axes=plt.subplots(2,1,figsize=(11,6.6),sharex=True)
+    source=np.array([o["original_tip_xyz_m"] for o in rows],float)*1000.
+    measured_key=("tracked_tip_xyz_m" if "tracked_tip_xyz_m" in rows[0]
+                  else "simulated_arm_tip_xyz_m")
+    measured=np.array([o[measured_key] for o in rows],float)*1000.
+    baseline=source[0].copy()
+    source-=baseline
+    measured-=baseline
+    fig=plt.figure(figsize=(15,5.5))
+    spatial=fig.add_subplot(131,projection="3d")
+    spatial.plot(source[:,0],source[:,1],source[:,2],lw=2,
+                 label="ORIGINAL",color="tab:blue")
+    spatial.plot(measured[:,0],measured[:,1],measured[:,2],ls="--",lw=1.5,
+                 label="TRACKING / FR5",color="tab:orange")
+    spatial.set(xlabel="X [mm]",ylabel="Y [mm]",zlabel="Z [mm]",
+                title="Beide Ausgiesserpfade in 3D")
+    spatial.legend(fontsize=8)
+    cart=fig.add_subplot(132)
     for i,letter in enumerate("XYZ"):
-        axes[0].plot(t,coords[:,i],label=f"Delta {letter} [mm]")
-    axes[0].set(ylabel="Koordinatendifferenz [mm]",title=title+" - X/Y/Z")
-    axes[0].legend()
-    axes[1].plot(t,errors,label="3D-Abstand Soll/Ist [mm]")
-    axes[1].set(xlabel="Zeit [s]",ylabel="Euklidischer 3D-Fehler [mm]",
-                title="Einzelner Abweichungswert")
-    axes[1].legend()
-    for ax in axes:ax.grid(alpha=.23)
+        cart.plot(t,coords[:,i],label=f"Delta {letter} [mm]")
+    cart.set(xlabel="Zeit [s]",ylabel="Differenz [mm]",
+             title="Koordinatenfehler X/Y/Z")
+    cart.legend(fontsize=8)
+    scalar=fig.add_subplot(133)
+    scalar.plot(t,errors,label="Euklidischer 3D-Abstand",color="tab:orange")
+    scalar.set(xlabel="Zeit [s]",ylabel="Fehlerbetrag [mm]",
+               title="Einfacher Abweichungswert")
+    scalar.legend(fontsize=8)
+    for ax in (cart,scalar):ax.grid(alpha=.23)
+    fig.suptitle(title+" gegen dieselbe virtuelle Originalbewegung")
     fig.tight_layout();fig.savefig(path,dpi=150);plt.close(fig)
 
 
