@@ -529,7 +529,7 @@ def run(args):
         _write_q(model,data,qids,q0)
         replay=[]
         q_prev=q0.copy()
-        if no_pose==0:
+        if no_pose==0 and not getattr(args,'capture_only',False):
             for i,cam in enumerate(camera_records):
                 p=np.asarray(cam['position_m'],float)
                 R=Rotation.from_quat(cam['rotation_xyzw']).as_matrix()
@@ -593,7 +593,9 @@ def run(args):
     paired_video=_paired_comparison_video(frames,args.frames,out,args.fps)
     _comparison_chart(truth,camera_records,replay,out)
     report={
-        'status':'PASS' if len(replay)==args.frames and no_pose==0 else 'INCOMPLETE',
+        'status':'PASS' if no_pose==0 and (getattr(args,'capture_only',False) or len(replay)==args.frames) else 'INCOMPLETE',
+        'camera_capture_only':bool(getattr(args,'capture_only',False)),
+        'native_fairino_motion_plan_is_separate_step':bool(getattr(args,'capture_only',False)),
         'robot_arm_moves_through_6_real_hinge_qpos':len(replay)==args.frames,
         'replay_inputs_camera_estimates_only':True,
         'human_demonstration':False,
@@ -618,7 +620,7 @@ def run(args):
         'max_interpolated_joint_step_rad':.018,
         'mp4_created':mp4,
         'side_by_side_video_created':paired_video,
-        'note':'6D camera poses inferred from rendered AprilTag RGB-D ONLY. Kinematic joint replay with conservative collision-envelope checks, not motor physics, physical grip or demonstrated real-world performance.'
+        'note':('6D pose inferred from 3 rendered AprilTag RGB-D cameras; NO legacy motor replay. Next stage is FAIRINO NewSpline.' if getattr(args,'capture_only',False) else '6D camera poses inferred from rendered AprilTag RGB-D ONLY. Kinematic joint replay with conservative collision-envelope checks, not motor physics, physical grip or demonstrated real-world performance.')
     }
     (out/'summary.json').write_text(json.dumps(to_json(report),indent=2))
     print('FINAL REPORT:',json.dumps(to_json(report),indent=2),flush=True)
@@ -628,6 +630,7 @@ def run(args):
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--output',default='runs/allowed_camera_replay')
+    parser.add_argument('--capture-only',action='store_true',help='Measure 3-camera AprilTag poses without running legacy joint replay')
     parser.add_argument('--vendor-dir',default='vendor')
     parser.add_argument('--frames',type=int,default=13)
     parser.add_argument('--fps',type=float,default=5)
