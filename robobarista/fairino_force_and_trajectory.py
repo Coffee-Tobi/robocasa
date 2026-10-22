@@ -58,7 +58,8 @@ def lookahead_sequence(robot,cfg:LookaheadConfig,uploaded_verified=False):
     # Motion stays DISABLED until start pose, tool calibration, safety and
     # true joint log are verified on an actual supported FAIRINO controller.
     return {"api":"LoadTrajectoryLA","args":list(args),
-            "uploaded_vendor_joint_trajectory":True,
+            "mock_upload_gate_exercised":True,
+            "actual_vendor_trajectory_format_validated":False,
             "real_motion_executed":False,
             "move_trajectory_la_not_called":True,
             "NOTE":"0.5mm is the REQUESTED planning parameter, not measured path error"}
