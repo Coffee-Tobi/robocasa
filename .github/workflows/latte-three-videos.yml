@@ -28,7 +28,7 @@ jobs:
           MUJOCO_GL: osmesa
           PYOPENGL_PLATFORM: osmesa
         run: |
-          python -u -m robobarista.camera_joint_replay --latte-art-source --capture-only --seed 14 --frames 61 --fps 3 --width 640 --height 480 --output runs/latte_capture
+          python -u -m robobarista.camera_joint_replay --latte-art-source --capture-only --seed 14 --frames 61 --fps 3 --width 960 --height 720 --output runs/latte_capture
       - name: Render three independent same-perspective 20-second videos and measure error
         env:
           MUJOCO_GL: osmesa
