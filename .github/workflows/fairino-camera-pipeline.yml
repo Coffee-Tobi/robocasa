@@ -110,6 +110,7 @@ jobs:
           assert a['status']=='PASS',a
           assert a['camera_capture_only']
           assert a['replayed_frames']==0
+          assert (Path('runs/camera_capture_only/camera_capture.mp4')).stat().st_size>10000
           assert a['camera_valid_frames']==11
           assert a['camera_two_view_frames']==11
           assert b['source_camera_frames']==11
