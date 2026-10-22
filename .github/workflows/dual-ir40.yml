@@ -1,0 +1,32 @@
+name: Dual IR40 Contact Bench
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'robobarista/dual_ir40_physics.py'
+      - '.github/workflows/dual-ir40.yml'
+jobs:
+  simulate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install mujoco==3.3.7 numpy
+      - name: Simulate two closing grippers
+        run: python -m robobarista.dual_ir40_physics --output runs/dual_ir40
+      - name: Check contact results
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('runs/dual_ir40/summary.json'))
+          assert d['handle_contact_samples']>0, d
+          assert d['cup_contact_samples']>0, d
+          print(d)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dual-ir40-contact-bench
+          path: runs/dual_ir40/
