@@ -28,6 +28,12 @@ jobs:
           PYOPENGL_PLATFORM: osmesa
         run: |
           python -u -m robobarista.precision_pour --output runs/precision_ci --amplitude-mm 4 --angle-deg .75 --duration-s 3 --seed 14 --video-fps 8
+      - name: Larger amplitude control experiment on same 3s duration
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.precision_pour --output runs/precision_large_ci --amplitude-mm 10 --angle-deg .75 --duration-s 3 --seed 14 --video-fps 8
       - name: Validate safety, independent spout measurement and produce comparison
         run: |
           python - <<'PY'
@@ -45,6 +51,14 @@ jobs:
           assert all(v['status']=='PASS' for v in a['methods'].values())
           assert all(v['max_spout_error_mm']>=0 for v in a['methods'].values())
           assert all(v['first_safety_violation'] is None for v in a['methods'].values())
+          larger=json.loads(Path('runs/precision_large_ci/summary.json').read_text())
+          assert larger['status']=='PASS'
+          assert larger['amplitude_x_mm']==10.0
+          assert set(larger['methods'])==set(a['methods'])
+          print('SMALL vs LARGE amplitudes, same duration')
+          for name in a['methods']:
+              print(name,'small spout max=',a['methods'][name]['max_spout_error_mm'],
+                    'large spout max=',larger['methods'][name]['max_spout_error_mm'])
           assert (p/'precision_pour.mp4').stat().st_size>10000
           assert (p/'precision_controller_comparison.png').stat().st_size>10000
           PY
@@ -57,4 +71,6 @@ jobs:
             runs/precision_ci/precision_controller_comparison.png
             runs/precision_ci/precision_tracking.json
             runs/precision_ci/summary.json
+            runs/precision_large_ci/summary.json
+            runs/precision_large_ci/precision_controller_comparison.png
           if-no-files-found: warn
