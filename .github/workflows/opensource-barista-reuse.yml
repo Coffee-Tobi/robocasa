@@ -1,0 +1,53 @@
+name: RoboBarista Open Source Fixture and FAIRINO Readiness Gates
+on:
+  pull_request:
+    paths:
+      - 'robobarista/robocasa_coffee_adapter.py'
+      - 'robobarista/barista_cell.py'
+      - 'robobarista/coffee_workflow.py'
+      - 'robobarista/fairino_sdk_preflight.py'
+      - 'robobarista/external_asset_validator.py'
+      - 'robobarista/latte_dataset_bridge.py'
+      - 'tests/test_reused_coffee_and_fairino_preflight.py'
+      - 'tests/test_external_espresso_assets.py'
+      - '.github/workflows/opensource-barista-reuse.yml'
+  workflow_dispatch:
+jobs:
+  verify-source-reuse-and-hardware-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install small test dependency only
+        run: python -m pip install 'pytest>=8'
+      - name: Pure-Python source reuse and fail-closed checks
+        run: |
+          python -m pytest -q tests/test_reused_coffee_and_fairino_preflight.py tests/test_external_espresso_assets.py
+          python -m py_compile robobarista/robocasa_coffee_adapter.py robobarista/fairino_sdk_preflight.py robobarista/latte_dataset_bridge.py robobarista/external_asset_validator.py
+      - name: Publish readiness summary, never claim hardware qualification
+        run: |
+          mkdir -p runs/opensource_audit
+          python - <<'PY'
+          from robobarista.robocasa_coffee_adapter import CoffeeMachineState
+          from robobarista.fairino_sdk_preflight import hardware_readiness_gate
+          from pathlib import Path
+          import json
+          cup=CoffeeMachineState().demo_brew_step((.440,.205,.882))
+          report={"source":"RoboCasa MIT coffee_machine.py logic adapted, plus FAIRINO SDK documented getters/IK",
+              "espresso_cup_alignment":cup,
+              "hardware_readiness":hardware_readiness_gate(),
+              "espresso_geometry_source":"Our existing test-workcell model; 3D CAD NOT replaced",
+              "cad_stub_rejected":True,
+              "firmware_contact_replay_tested":False,
+              "geometry_collision_safety_verified":False}
+          p=Path('runs/opensource_audit/integration.json')
+          p.write_text(json.dumps(report,indent=2))
+          assert not report['hardware_readiness']['hardware_ready_for_autonomous_espresso_latte_art']
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RoboBarista-OSS-Reuse-Readiness-Checks
+          path: runs/opensource_audit/integration.json
