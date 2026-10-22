@@ -18,7 +18,7 @@ from PIL import Image,ImageDraw
 import numpy as np
 import mujoco
 
-from .coffee_workflow import _story_scene,_alpha,RECIPE,_random_pour_gesture
+from .coffee_workflow import _story_scene,_alpha,_place_cup,RECIPE,_random_pour_gesture
 from .robot_replay import robot_qpos_addresses,compute_ik
 from .camera_joint_replay import _find_start
 from .safe_staging import plan_staging,_check_route,_valid_state
@@ -142,6 +142,10 @@ def run(args):
             if not valid:raise RuntimeError(f"Blocked station: {action}/{reason}")
             seq=sequence(home,stage,action,pour_ctrls,args.fps,
                          args.max_joint_speed_rad_s)
+            if action=="place_cup":
+                _place_cup(model,data,DOCKS["espresso_cup"].position_m)
+            if action=="cup_to_pour":
+                _place_cup(model,data,DOCKS["pour_cup"].position_m)
             if action=="brew":espresso=True
             if action=="steam":milk=True
             _alpha(model,tool if tool!="bare_tcp" else "none")
