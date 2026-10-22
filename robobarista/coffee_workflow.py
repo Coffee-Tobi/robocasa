@@ -18,7 +18,7 @@ from PIL import Image,ImageDraw
 
 from .camera_joint_replay import _add_held_pitcher_robot_variant,_find_start
 from .safe_staging import plan_staging,_check_route,_valid_state
-from .robot_replay import robot_qpos_addresses
+from .robot_replay import robot_qpos_addresses,compute_ik
 from .cell_demo import _set_free_pose
 from .workcell_constraints import DOCKS, PAYLOAD_SPHERES
 from .demo import render_pair
@@ -255,6 +255,7 @@ def run(args):
     cup_at_espresso=False
     espresso_visual=False
     pitcher_foam=False
+    level_stats={"attempts":0,"success":0,"blocked":0,"worst_observed_tilt_deg":0.0}
     try:
         for idx,step in enumerate(recipe):
             action=step['action'];tool=step['tool']
@@ -292,10 +293,44 @@ def run(args):
                             leg+=list(_interp(a,b,5))[1:]
                         leg+=list(_interp(pour_ctrls[-1],pour_ctrls[0],5))[1:]
                         leg+=list(_interp(pour_ctrls[0],home,args.frames_leg))[1:]
+            previous_display_q=None
             for seq_index,q in enumerate(leg):
-                # Re-run collision check for displayed q, with actual tool
-                # (even during animated stage hold).
+                # Transport: solve the 6D TCP for the current Cartesian
+                # position while constraining the upright pitcher/cup frame.
+                # Changing the tool pose is NOT permitted if it introduces
+                # contact or violates the checked joint route.
+                if tool in ("pitcher","plastic_cup") and action!="pour":
+                    data.qpos[qids]=q
+                    mujoco.mj_forward(model,data)
+                    tcp_id=model.body("rb_cell_tcp").id
+                    xyz=data.xpos[tcp_id].copy()
+                    current_Z=data.xmat[tcp_id].reshape(3,3)[:,2]
+                    tilt=float(np.rad2deg(np.arccos(np.clip(current_Z[2],-1,1))))
+                    if tilt>3.0:
+                        level_stats["attempts"]+=1
+                        seed=q if previous_display_q is None else previous_display_q
+                        lev=compute_ik(model,data,tcp_id,qids,limits,xyz,
+                                       np.eye(3),seed,max_evals=80)
+                        if lev["solved"]:
+                            okay_level,why_level=_valid_state(
+                                model,data,qids,limits,lev["q"],tool)
+                            route_level=True
+                            if okay_level and previous_display_q is not None:
+                                route_level,_,_=_check_route(
+                                   model,data,qids,limits,previous_display_q,lev["q"],tool)
+                            if okay_level and route_level:
+                                q=lev["q"].copy()
+                                level_stats["success"]+=1
+                            else:level_stats["blocked"]+=1
+                        else:level_stats["blocked"]+=1
+                # Re-run collision check for displayed q, with actual tool.
                 okay,why=_valid_state(model,data,qids,limits,q,tool)
+                if tool in ("pitcher","plastic_cup") and action!="pour":
+                    z=data.xmat[model.body("rb_cell_tcp").id].reshape(3,3)[:,2]
+                    level_stats["worst_observed_tilt_deg"]=max(
+                        level_stats["worst_observed_tilt_deg"],
+                        float(np.rad2deg(np.arccos(np.clip(z[2],-1,1)))))
+                previous_display_q=np.asarray(q).copy()
                 if not okay:
                     raise RuntimeError(f'Recipe render unsafe {action}: {why}')
                 if follow is not None:
@@ -363,6 +398,11 @@ def run(args):
         'tool_objects_attached_to_gripper_frames':True,
         'old_tcp_attached_tool_clones_hidden':True,
         'actual_finger_contact_force_simulated':False,
+        'transport_upright_ik_attempts':level_stats['attempts'],
+        'transport_upright_ik_successes':level_stats['success'],
+        'transport_upright_ik_blocked':level_stats['blocked'],
+        'transport_worst_tilt_deg':level_stats['worst_observed_tilt_deg'],
+        'strict_upright_guarantee':level_stats['worst_observed_tilt_deg']<=3.,
         'mp4_created':mp4,
         'no_mechanical_contact_or_liquid_physics':True,
         'limitations':'Full logical kinematic espresso/milk/latte choreography with explicit no-contact machine pre-docks; simulated processes are labels and proxy object poses only. No portafilter insertion, safe-contact modelling, espresso fluid, froth texture or actual latte art.'
