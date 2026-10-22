@@ -42,12 +42,12 @@ class ArmFollowCamera:
         radial=radial/length if length>0.08 else np.array([0.,-1.])
         side=np.array([-radial[1],radial[0]])
         # Free-space view behind robot arm with a small side offset.
-        eye=np.array([tcp[0]-.68*radial[0]+.22*side[0],
-                      tcp[1]-.68*radial[1]+.22*side[1],
-                      max(1.39,tcp[2]+.34)])
+        eye=np.array([tcp[0]-1.06*radial[0]+.44*side[0],
+                      tcp[1]-1.06*radial[1]+.44*side[1],
+                      max(1.60,tcp[2]+.51)])
         focus=tcp.copy()
-        focus[:2]+=.13*radial
-        focus[2]-=.075
+        focus[:2]+=.26*radial
+        focus[2]-=.11
         alpha=self.smoothing
         if self.eye is None:
             self.eye=eye
