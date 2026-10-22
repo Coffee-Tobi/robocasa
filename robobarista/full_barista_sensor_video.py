@@ -75,7 +75,7 @@ def font(size):
         except OSError:continue
     return ImageFont.load_default()
 
-def draw_contact_schematic(draw,x,y,action,progress):
+def draw_contact_schematic(draw,x,y,action,progress,tamper_depth_mm=None):
     # Concept sketch, NOT part of 3D MuJoCo contact solver.
     if action=="insert_grouphead":
         draw.ellipse((x+22,y+17,x+120,y+115),outline=(169,193,210),width=5)
@@ -86,6 +86,16 @@ def draw_contact_schematic(draw,x,y,action,progress):
         draw.ellipse((px-5,py-5,px+5,py+5),fill=(253,197,102))
         draw.text((x+147,y+43),"VERDREHEN",font=font(14),fill="white")
         draw.text((x+147,y+67),"virtuell",font=font(13),fill=(177,204,218))
+    elif action=="grind_tamp":
+        # Tamper belongs to the STATION: vertical piston, never rotating
+        # with the robot wrist or flying around the workspace.
+        mm=float(tamper_depth_mm or 0.)
+        draw.rectangle((x+29,y+20,x+131,y+111),outline=(130,164,180),width=3)
+        draw.rectangle((x+62,y+40+mm,x+96,y+52+mm),fill=(247,209,144))
+        draw.line((x+79,y+3,x+79,y+40+mm),fill=(232,232,239),width=7)
+        draw.text((x+148,y+44),"FESTE MUEHLE",font=font(14),fill="white")
+        draw.text((x+148,y+67),f"HUB {mm:.1f} mm",font=font(14),
+                  fill=(249,211,148))
     elif action=="steam":
         draw.line((x+89,y+15,x+89,y+118),fill=(170,190,204),width=8)
         pos=x+25+38*progress
@@ -96,7 +106,7 @@ def draw_contact_schematic(draw,x,y,action,progress):
         draw.text((x+30,y+52),"ABLAUF IM 3D-MODELL",font=font(16),fill=(164,209,227))
 
 def draw_panel(frame,action,stage_i,progress,wrench,ft_result,signal_history,
-               trajectory_supported):
+               trajectory_supported,tamper_depth_mm=None):
     output=Image.new("RGB",(1340,806),(18,30,40))
     output.paste(frame,(0,0))
     d=ImageDraw.Draw(output)
@@ -117,7 +127,7 @@ def draw_panel(frame,action,stage_i,progress,wrench,ft_result,signal_history,
     for n,ln in enumerate(wrap(b,36)):
         d.text((x,263+n*20),ln,font=font(14),fill="white")
     d.text((x,339),"KONTAKTSKIZZE",font=font(13),fill=(157,208,224))
-    draw_contact_schematic(d,x,360,action,progress)
+    draw_contact_schematic(d,x,360,action,progress,tamper_depth_mm)
     d.text((x,510),"F/T-SENSORKONZEPT",font=font(13),fill=(157,208,224))
     if action=="insert_grouphead":
         d.text((x,534),"Drehmoment: %.2f Nm"%abs(wrench.tz),font=font(18),fill=(255,203,133))
