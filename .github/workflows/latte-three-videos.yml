@@ -1,0 +1,122 @@
+name: Three Camera Latte Art Original Tracking FR5 Videos
+on:
+  pull_request:
+    paths:
+      - 'robobarista/dual_ir40_concept.py'
+      - 'robobarista/follow_camera.py'
+      - 'robobarista/camera_joint_replay.py'
+      - 'robobarista/latte_art_three_videos.py'
+      - 'robobarista/full_barista_sensor_video.py'
+      - '.github/workflows/latte-three-videos.yml'
+  workflow_dispatch:
+jobs:
+  three-actual-visuals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 43
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install physics vision and FFmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 libglx-mesa0 libgl1-mesa-dri ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Capture 20-second virtual art pouring with 3 actual rendered AprilTag cameras
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.camera_joint_replay --latte-art-source --capture-only --seed 14 --frames 61 --fps 3 --width 640 --height 480 --output runs/latte_capture
+      - name: Render three independent same-perspective 20-second videos and measure error
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.latte_art_three_videos --capture runs/latte_capture --output runs/latte_three --fps 8 --width 640 --height 480
+      - name: Validate original/tracking/FR5 videos and actual independent errors
+        run: |
+          python - <<'PY'
+          import json,subprocess,numpy as np
+          from pathlib import Path
+          p=Path("runs/latte_three")
+          s=json.loads((p/"summary.json").read_text())
+          assert s["status"]=="PASS",s
+          assert s["camera_measurement_frames"]==61
+          assert s["three_rendered_rgbd_apriltag_cameras"]
+          assert s["frames_per_video"]==160
+          assert 1<s["tip_target_max_excursion_mm"]<25
+          for mode in ("tracking","robot"):
+              assert s[mode][mode+"_max_mm"] < 10,s
+              assert 0<=s[mode][mode+"_mean_mm"]<s[mode][mode+"_max_mm"]
+              e=json.loads((p/(mode+"_errors.json")).read_text())
+              assert len(e)==160
+              for x in e:
+                  assert np.isclose(float(np.linalg.norm(x["delta_xyz_mm"])),
+                                    x["error_3d_mm"],atol=1e-8)
+              assert (p/(mode+"_xyz_and_3d_error.png")).stat().st_size > 20000
+          for mode in ("original","tracking","robot"):
+              vid=p/(mode+"_20s.mp4")
+              assert vid.stat().st_size>30000
+              d=float(subprocess.check_output(["ffprobe","-v","error","-show_entries",
+                  "format=duration","-of","default=nw=1:nk=1",str(vid)]))
+              assert abs(d-20)<.05
+          print(json.dumps(s,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RoboBarista-Three-Latte-Art-Matched-Camera-Videos
+          path: |
+            runs/latte_three/original_20s.mp4
+            runs/latte_three/tracking_20s.mp4
+            runs/latte_three/robot_20s.mp4
+            runs/latte_three/tracking_xyz_and_3d_error.png
+            runs/latte_three/robot_xyz_and_3d_error.png
+            runs/latte_three/tracking_errors.json
+            runs/latte_three/robot_errors.json
+            runs/latte_three/summary.json
+            runs/latte_capture/summary.json
+          if-no-files-found: warn
+  slower-whole-coffee:
+    runs-on: ubuntu-latest
+    timeout-minutes: 29
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install render dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 libglx-mesa0 libgl1-mesa-dri ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Render slower front-grip 11-step coffee process
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.full_barista_sensor_video --width 640 --height 480 --frames-leg 9 --capture-fps 6 --repeat 2 --playback-fps 6 --output runs/slow_barista
+      - name: Verify slower playback
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("runs/slow_barista")
+          s=json.loads((p/"summary.json").read_text())
+          assert s["status"]=="PASS"
+          assert s["stages"]==11
+          assert 60<s["duration_s"]<95
+          assert s["slowed_time_only"]
+          assert (p/"complete_barista_with_sensor_concepts.mp4").stat().st_size>100000
+          print(s)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RoboBarista-Slower-Front-Grip-Whole-Coffee
+          path: |
+            runs/slow_barista/complete_barista_with_sensor_concepts.mp4
+            runs/slow_barista/summary.json
+          if-no-files-found: warn
