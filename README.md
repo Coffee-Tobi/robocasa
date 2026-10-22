@@ -1,5 +1,22 @@
 # RoboBarista – FAIRINO FR5 / Camera-Based Pitcher Motion Capture
 
+## ☕ NEU: eigener Latte-Art-Präzisionsmodus (22.10.2026)
+
+**[Gemeinsames Colab mit vier Motorreglern und 0,5-Nm-Belastungstest](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_ROBOBARISTA.ipynb)** · **[Motor- und Ausgießer-Code](robobarista/precision_pour.py)** · **[Auswertung und Bibliotheksvergleich](planning/LATTE_ART_PRECISION_MODE.md)**
+
+Der FR5 führt erstmals eine **gezielt kleine virtuelle Ausgießerbewegung** in einer kollisionsgeprüften **freien Becher-Vorposition** aus, statt große Stationsfahrten als Latte Art zu bewerten. Bei gleichem dreisekündigen Ruckig-Sollweg mit **4 mm** Seitenauslenkung und **0,75°** Neigung wurden die **maximalen Fehler an der Ausgießerspitze** bei vier echten MuJoCo-`mj_step`-Drehmomentreglern gemessen:
+
+| Regler | ohne Laststörung | mit unbekanntem 0,5-Nm-Handgelenksdrehmoment |
+|---|---:|---:|
+| Position PD | 2,630 mm | 4,130 mm |
+| Position + Geschwindigkeit PD | 1,531 mm | 3,630 mm |
+| Computed Torque, vollständiges virtuelles Dynamikmodell | 0,0238 mm | 5,609 mm |
+| **Robustes Computed Torque + begrenzte Integralkorrektur** | **0,0105 mm** | **1,238 mm** |
+
+**10-mm-Kontrolle bei gleicher 3-s-Dauer:** 4,760 mm / 2,427 mm / 0,0244 mm / 0,0106 mm für die oben stehenden vier Regler. Das kleinere Bewegungsprofil hilft somit den einfachen Reglern; die größte Verbesserung entsteht in diesem Modell allerdings durch dynamische Vorsteuerung und robuste Rückführung. Diese Regelung enthält noch **keine gefüllte/gegriffene Kanne, kein realistisch deformierbares Fingersystem, keine echte Kameramessung dieser neuen 4-mm-Geste und keine Milchphysik.** Die extrem geringen ungestörten Zahlen sind **reine Idealmodell-Fehler** und nicht reale Hardware-Präzision. Der vereinfachte 0,5-Nm-Stresstest ist ebenfalls kein vollständiger Lasttest.
+
+**Warum die Bibliotheken?** Wir nutzen bereits MuJoCos `mj_inverse`-Dynamik und lokale `Ruckig`-Jerk-Planung; [Mink](https://github.com/kevinzakka/mink) wäre künftig für MuJoCo-native differenzielle IK mit Geschwindigkeits- und Kollisionsgrenzen sinnvoll; [Crocoddyl](https://github.com/loco-3d/crocoddyl) wäre eine erheblich größere DDP-/Optimal-Control-Option. Letztere zwei sind **noch nicht integriert**.
+
 ## ▶️ Aktueller Einstieg: RoboBarista komplett in **einem Colab** (21.10.2026)
 
 **[☕ COLAB_ROBOBARISTA.ipynb – die gesamte Artly-inspirierte 7-Modul-Simulation öffnen](https://colab.research.google.com/github/Coffee-Tobi/robocasa/blob/main/COLAB_ROBOBARISTA.ipynb)**
