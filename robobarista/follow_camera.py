@@ -14,7 +14,7 @@ CAMERA_NAME="rb_arm_follow"
 def insert_camera(world):
     rig=ET.SubElement(world,"body",{"name":RIG_BODY,"mocap":"true",
                                    "pos":"0 -1.2 1.6"})
-    ET.SubElement(rig,"camera",{"name":CAMERA_NAME,"fovy":"62",
+    ET.SubElement(rig,"camera",{"name":CAMERA_NAME,"fovy":"72",
                                "pos":"0 0 0","quat":"1 0 0 0"})
     return rig
 
@@ -34,20 +34,37 @@ class ArmFollowCamera:
         self.eye=None
         self.focus=None
 
-    def update(self,data):
+    def update(self,data,target_xyz=None):
+        """Shoulder view from the side: expose TCP, gripper and held object.
+
+        For demonstration/tracking target_xyz is the free pitcher reference.
+        Only changes the cinematic mocap camera, never calibrated RGB-D rigs.
+        """
         tcp=np.asarray(data.xpos[self.tcp_id],dtype=float).copy()
         base=np.asarray(data.xpos[self.base_id],dtype=float).copy()
-        radial=tcp[:2]-base[:2]
+        target=(np.asarray(target_xyz,float).copy()
+                if target_xyz is not None else tcp.copy())
+        if target_xyz is None:
+            for name in ("rb_gripped_pitcher_body","rb_gripped_portafilter_basket",
+                         "rb_gripped_cup_body"):
+                try:
+                    geom=self.model.geom(name).id
+                    if self.model.geom_rgba[geom,3]>.15:
+                        target=np.asarray(data.geom_xpos[geom]).copy()
+                        break
+                except KeyError:
+                    pass
+        radial=target[:2]-base[:2]
         length=float(np.linalg.norm(radial))
         radial=radial/length if length>0.08 else np.array([0.,-1.])
         side=np.array([-radial[1],radial[0]])
-        # Free-space view behind robot arm with a small side offset.
-        eye=np.array([tcp[0]-1.06*radial[0]+.44*side[0],
-                      tcp[1]-1.06*radial[1]+.44*side[1],
-                      max(1.60,tcp[2]+.51)])
-        focus=tcp.copy()
-        focus[:2]+=.26*radial
-        focus[2]-=.11
+        # Side-dominant three-quarter view: robot does not hide the payload.
+        framing=.57*target+.43*tcp
+        eye=np.array([framing[0]-.92*radial[0]+1.14*side[0],
+                      framing[1]-.92*radial[1]+1.14*side[1],
+                      max(1.60,framing[2]+.61)])
+        focus=framing.copy()
+        focus[2]-=.10
         alpha=self.smoothing
         if self.eye is None:
             self.eye=eye
