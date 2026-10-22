@@ -157,6 +157,14 @@ def build_cell_scene(vendor_dir: Path) -> Path:
           [-.050,-.280,.061],[.043,.0015],'.1 .75 .75 1')
     _geom(espresso,'rb_brew_head','cylinder',[-.05,-.18,.27],
           [.033,.028],'.18 .19 .2 1')
+    # Named process locators (RoboCasa CoffeeMachine fixture pattern), not
+    # fake contact / button actuation. Fixed frame relative to espresso shell.
+    ET.SubElement(espresso,'site',name='rb_brew_outlet_site',
+                  pos='-.05 -.18 .27',size='.004',
+                  rgba='.1 .8 1 1',type='sphere')
+    ET.SubElement(espresso,'site',name='rb_brew_start_button_site',
+                  pos='.14 -.132 .29',size='.009',
+                  rgba='1 .66 .20 1',type='sphere')
     _geom(espresso,'rb_steam_wand','capsule',[.15,-.172,.143],
           [.009,.075],'.8 .8 .82 1',extra={'euler':'0 1.2 0'})
     # Grinder includes the automatic tamper; ONE portafilter docking interface.
