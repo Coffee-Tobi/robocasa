@@ -151,17 +151,23 @@ def _interpolator(rows):
 
 
 def _torque(model,actual,inverse,qids,dofs,act_ids,ranges,method,
-            target_pos,target_vel,target_acc):
+            target_pos,target_vel,target_acc,error_integral=None):
     """Physical torque reference on true FR5 joints; simulation-only gains."""
     actual_q=np.asarray(actual.qpos[qids],float)
     actual_v=np.asarray(actual.qvel[dofs],float)
     error=target_pos-actual_q
     gravity_vel=np.zeros(6) if method=="legacy_pd" else target_vel
-    if method=="computed_torque":
-        # Joint-space acceleration feedback target, computed with MuJoCo's
-        # inverse dynamics at CURRENT qpos and qvel (full M(q), C(q,qd)).
-        # Differentiate from merely adding torque of gravity to PD errors.
-        acmd=target_acc+90.0*error+18.0*(target_vel-actual_v)
+    if method in ("computed_torque","computed_torque_robust"):
+        # Full inverse dynamics at current state and specified acceleration.
+        # The robust variant raises damping/stiffness and uses bounded
+        # integral compensation for constant unknown external wrench.
+        if method=="computed_torque_robust":
+            integral=(np.asarray(error_integral,float)
+                      if error_integral is not None else np.zeros(6))
+            acmd=(target_acc+320.0*error
+                  +36.0*(target_vel-actual_v)+180.0*integral)
+        else:
+            acmd=target_acc+90.0*error+18.0*(target_vel-actual_v)
         inverse.qpos[:]=actual.qpos
         inverse.qvel[:]=actual.qvel
         inverse.qacc[:]=0
@@ -172,7 +178,7 @@ def _torque(model,actual,inverse,qids,dofs,act_ids,ranges,method,
         inverse.qacc[:]=0
     mujoco.mj_inverse(model,inverse)
     nominal=np.asarray(inverse.qfrc_inverse[dofs],float).copy()
-    if method=="computed_torque":
+    if method in ("computed_torque","computed_torque_robust"):
         raw=nominal
     else:
         raw=nominal+POSITION_KP*error+VELOCITY_KD*(gravity_vel-actual_v)
@@ -210,14 +216,19 @@ def _run_one(model,qids,limits,dofs,act_ids,ranges,start_q,
     tracking=[]
     video=[]
     max_torque=0.
+    error_integral=np.zeros(6,float)
     sat_n=0
     fail=None
     while elapsed<=t_end+.18:
         source_time=min(elapsed,t_end)
         q,qd,qdd=reference(source_time)
         if elapsed-controller_last>=CTRL_STEP-1e-8:
+            if method=="computed_torque_robust":
+                error_integral=np.clip(
+                    error_integral+CTRL_STEP*(q-data.qpos[qids]),
+                    -.06,.06)
             sat,val=_torque(model,data,inv,qids,dofs,act_ids,ranges,
-                            method,q,qd,qdd)
+                            method,q,qd,qdd,error_integral)
             sat_n+=int(sat)
             max_torque=max(max_torque,val)
             controller_last=elapsed
@@ -312,15 +323,16 @@ def run(args):
     film_frames=[]
     renderer=mujoco.Renderer(model,width=640,height=480)
     try:
-        for method in ("legacy_pd","velocity_pd","computed_torque"):
+        for method in ("legacy_pd","velocity_pd",
+                       "computed_torque","computed_torque_robust"):
             result,track,video=_run_one(model,qids,limits,dofs,act_ids,
                      ranges,start_q,reference,duration,method,
                      fps=args.video_fps,
                      disturbance_nm=args.disturbance_nm,
-                     renderer=renderer if method=="computed_torque" else None)
+                     renderer=renderer if method=="computed_torque_robust" else None)
             comparison[method]=result
             samples[method]=track
-            if method=="computed_torque":film_frames=video
+            if method=="computed_torque_robust":film_frames=video
             print("PRECISION",method,json.dumps(result),flush=True)
     finally:
         renderer.close()
