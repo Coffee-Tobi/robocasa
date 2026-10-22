@@ -590,6 +590,8 @@ def run(args):
     finally:
         renderer.close()
     mp4=_encode_video(frames,out,args.fps)
+    if getattr(args,'capture_only',False) and mp4:
+        (out/'demo_and_replay.mp4').replace(out/'camera_capture.mp4')
     paired_video=_paired_comparison_video(frames,args.frames,out,args.fps)
     _comparison_chart(truth,camera_records,replay,out)
     report={
