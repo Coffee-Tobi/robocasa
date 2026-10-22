@@ -30,7 +30,7 @@ in FR5-Werkzeugkoordinaten umgerechnet und als
 | FAIRINO-NewSpline-Befehlsgenerierung | Offline-Mock: offizielle Methodennamen und Parameter getestet |
 | Herstellerinterne Spline-Interpolationsbahn | **NICHT getestet** (keine echte Controller- oder SimMachine-Ausführung) |
 | Echte FAIRINO-Nachfahrgenauigkeit | **NICHT gemessen** |
-| Tatsächlicher Abstand der Ausgießerspitze zur Crema | Noch nicht kalibriert; 18-mm-Grenze betrifft bisher den Kannenmittelpunkt |
+| Tatsächlicher Abstand der Ausgießerspitze zur Crema | Noch nicht kalibriert; 18-mm-Grenze betrifft die Kannenmitte; die Ausgießerspitze wird nur mit einem explizit angegebenen virtuellen Offset mitgeprüft |
 | Simulierte Milchdynamik, Kräfte an Greifbacken und Latte-Art-Muster | Noch nicht physikalisch validiert |
 
 ## Neue Pipeline reproduzieren
@@ -48,7 +48,8 @@ python -m robobarista.camera_joint_replay \
 python -m robobarista.fairino_barista_pipeline \
   --input runs/fairino_camera_capture/camera_measurements.json \
   --output runs/fairino_standard \
-  --target-mm 18 --duration-s 20 --stride 2
+  --target-mm 18 --duration-s 20 --stride 2 \
+  --virtual-spout-offset-m -.073 0 .117
 ```
 
 Erzeugt `runs/fairino_standard/fairino_new_spline_commands.json`,
