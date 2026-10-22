@@ -22,6 +22,8 @@ from .robot_replay import robot_qpos_addresses
 from .cell_demo import _set_free_pose
 from .workcell_constraints import DOCKS, PAYLOAD_SPHERES
 from .demo import render_pair
+from .follow_camera import insert_camera,ArmFollowCamera,CAMERA_NAME
+from .dual_ir40_concept import add_visual_dual_ir40_50
 
 
 POUR_PHASES=('Approach','Base-fill','Lower','Sway','Cut-through')
@@ -49,6 +51,8 @@ def _story_scene(vendor_dir):
     root=ET.parse(fr/'rb_fr5_safe_cell_robot.xml')
     tcp=root.getroot().find(".//body[@name='rb_cell_tcp']")
     if tcp is None:raise RuntimeError('Missing FR5 wrist TCP')
+    # Conceptual non-contact dual IR40-50 equipment. Not a physical pickup.
+    add_visual_dual_ir40_50(tcp)
     for tool in ('portafilter','plastic_cup'):
         b=ET.SubElement(tcp,'body',{'name':'rb_story_'+tool,'pos':'0 0 0'})
         if tool=='portafilter':
@@ -73,6 +77,7 @@ def _story_scene(vendor_dir):
     env=ET.parse(built)
     env.getroot().find('include').set('file','rb_fr5_story_robot.xml')
     world=env.getroot().find('worldbody')
+    insert_camera(world)
     cup=world.find(".//body[@name='rb_plastic_cup']")
     if cup is None:raise RuntimeError('Cannot find plastic cup')
     ET.SubElement(cup,'geom',{'name':'rb_story_espresso_disc',
@@ -117,10 +122,17 @@ def _interp(qa,qb,n):
         yield (1-s)*qa+s*qb
 
 
-def _frame(rgb,label,action,phase,idx,n,total_clear,notes):
+def _frame(rgb,label,action,phase,idx,n,total_clear,notes,overview=None):
     im=Image.fromarray(rgb).resize((960,720),Image.Resampling.BILINEAR)
     pic=Image.new('RGB',(960,806),(20,31,39))
     pic.paste(im,(0,59))
+    if overview is not None:
+        inset=Image.fromarray(overview).resize((276,207),Image.Resampling.BILINEAR)
+        pic.paste(inset,(670,70))
+        d0=ImageDraw.Draw(pic)
+        d0.rectangle((667,67,948,280),outline=(239,243,246),width=3)
+        d0.rectangle((670,70,946,89),fill=(18,30,41))
+        d0.text((676,74),'GESAMTANSICHT',fill=(250,250,250))
     d=ImageDraw.Draw(pic)
     d.text((12,8),label,fill=(235,247,250))
     d.text((12,30),f'Phase: {action} | {idx+1}/{n} | '
@@ -223,6 +235,8 @@ def run(args):
                            action=action,checked_joint_substeps=checked,
                            q=q))
     renderer=mujoco.Renderer(model,width=args.width,height=args.height)
+    camera_mode=getattr(args,'camera_view','follow')
+    follow=ArmFollowCamera(model) if camera_mode=='follow' else None
     frames=[]
     events=[]
     cup_at_espresso=False
@@ -270,7 +284,13 @@ def run(args):
                 okay,why=_valid_state(model,data,qids,limits,q,tool)
                 if not okay:
                     raise RuntimeError(f'Recipe render unsafe {action}: {why}')
-                rgb,_=render_pair(renderer,data,'cell_overview')
+                if follow is not None:
+                    follow.update(data)
+                    rgb,_=render_pair(renderer,data,CAMERA_NAME)
+                    overview,_=render_pair(renderer,data,'cell_overview')
+                else:
+                    rgb,_=render_pair(renderer,data,'cell_overview')
+                    overview=None
                 desc=('coffee-coloured flow symbolic' if espresso_visual
                       else 'no espresso extracted')
                 if pitcher_foam:desc+=' | milk foam SYMBOLIC'
@@ -280,7 +300,7 @@ def run(args):
                 frames.append(_frame(rgb,step['label'],action,
                     'predock',seq_index,len(leg),
                     step['checked_joint_substeps'],
-                    desc+' | real docking NOT executed'))
+                    desc+' | real docking NOT executed',overview=overview))
             events.append(dict(label=step['label'],action=action,
                 tool=tool,target_dock=step['dock'],
                 requires_mechanical_contact=action in (
@@ -322,6 +342,10 @@ def run(args):
         'latte_art_five_phase_structure':list(POUR_PHASES),
         'pour_motion_is_demonstrative_not_cdmp_learned':True,
         'video_frames':len(frames),
+        'video_camera_view':camera_mode,
+        'over_shoulder_follow_with_overview_inset':camera_mode=='follow',
+        'calibrated_apriltag_rgbd_cameras_unchanged':True,
+        'two_IR40_grippers_visible_only':True,
         'mp4_created':mp4,
         'no_mechanical_contact_or_liquid_physics':True,
         'limitations':'Full logical kinematic espresso/milk/latte choreography with explicit no-contact machine pre-docks; simulated processes are labels and proxy object poses only. No portafilter insertion, safe-contact modelling, espresso fluid, froth texture or actual latte art.'
@@ -339,6 +363,7 @@ def main():
     p.add_argument('--width',type=int,default=760)
     p.add_argument('--height',type=int,default=570)
     p.add_argument('--fps',type=float,default=8)
+    p.add_argument('--camera-view',choices=('follow','overview'),default='follow')
     p.add_argument('--frames-leg',type=int,default=4)
     args=p.parse_args()
     report=run(args)
