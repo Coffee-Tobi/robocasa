@@ -39,6 +39,7 @@ from .camera_joint_replay import _find_start
 from .continuous_motion import _ruckig_sections,MAX_VEL,MAX_ACC,MAX_JERK
 from .motor_follow import _actuators,POSITION_KP,VELOCITY_KD
 from .demo import render_pair
+from .mpc_control import JointMPC
 
 # Idealized geometric nozzle on the visually attached pitcher; the massless
 # visual tip in camera_joint_replay is at (-.053,0,.117) relative to TCP.
@@ -217,6 +218,10 @@ def _run_one(model,qids,limits,dofs,act_ids,ranges,start_q,
     video=[]
     max_torque=0.
     error_integral=np.zeros(6,float)
+    mpc=JointMPC(n=6) if method=='joint_mpc' else None
+    mpc_acc=np.zeros(6)
+    last_mpc_s=-1.
+    mpc_solver_failures=0
     sat_n=0
     fail=None
     while elapsed<=t_end+.18:
@@ -227,8 +232,25 @@ def _run_one(model,qids,limits,dofs,act_ids,ranges,start_q,
                 error_integral=np.clip(
                     error_integral+CTRL_STEP*(q-data.qpos[qids]),
                     -.06,.06)
-            sat,val=_torque(model,data,inv,qids,dofs,act_ids,ranges,
-                            method,q,qd,qdd,error_integral)
+            if method=='joint_mpc':
+                # 50-Hz MPC preview; 250-Hz inverse-dynamics torque updates.
+                if last_mpc_s<0 or elapsed-last_mpc_s>=.02-1e-8:
+                    future=np.array([reference(min(elapsed+(k+1)*.02,t_end))[0]
+                        for k in range(mpc.cfg.horizon)])
+                    future_v=np.array([reference(min(elapsed+(k+1)*.02,t_end))[1]
+                        for k in range(mpc.cfg.horizon)])
+                    future_a=np.array([reference(min(elapsed+(k+1)*.02,t_end))[2]
+                        for k in range(mpc.cfg.horizon)])
+                    mpc_acc,info=mpc.solve(data.qpos[qids],data.qvel[dofs],
+                                            future,future_v,future_a)
+                    mpc_solver_failures+=int(not info['success'])
+                    last_mpc_s=elapsed
+                sat,val=_torque(model,data,inv,qids,dofs,act_ids,ranges,
+                    'computed_torque',data.qpos[qids].copy(),
+                    data.qvel[dofs].copy(),mpc_acc)
+            else:
+                sat,val=_torque(model,data,inv,qids,dofs,act_ids,ranges,
+                                method,q,qd,qdd,error_integral)
             sat_n+=int(sat)
             max_torque=max(max_torque,val)
             controller_last=elapsed
@@ -289,6 +311,7 @@ def _run_one(model,qids,limits,dofs,act_ids,ranges,start_q,
         "max_tcp_error_mm":float(max(wrist)) if len(wrist) else None,
         "mean_tcp_error_mm":float(np.mean(wrist)) if len(wrist) else None,
         "saturated_control_intervals":sat_n,
+        "mpc_solver_nonconverged_updates":mpc_solver_failures,
         "max_unclipped_torque_nm":max_torque,
         "samples":len(tracking),
         "first_safety_violation":fail}
@@ -323,8 +346,10 @@ def run(args):
     film_frames=[]
     renderer=mujoco.Renderer(model,width=640,height=480)
     try:
-        for method in ("legacy_pd","velocity_pd",
-                       "computed_torque","computed_torque_robust"):
+        controllers=["legacy_pd","velocity_pd",
+                       "computed_torque","computed_torque_robust"]
+        if getattr(args,"include_mpc",False): controllers.append("joint_mpc")
+        for method in controllers:
             result,track,video=_run_one(model,qids,limits,dofs,act_ids,
                      ranges,start_q,reference,duration,method,
                      fps=args.video_fps,
@@ -421,6 +446,7 @@ def main():
     p.add_argument("--duration-s",type=float,default=3.)
     p.add_argument("--seed",type=int,default=14)
     p.add_argument("--video-fps",type=int,default=8)
+    p.add_argument("--include-mpc",action="store_true")
     p.add_argument("--disturbance-nm",type=float,default=0.0,
                    help="Model mismatch stress: apply unknown wrist torque to plant, not to inverse model")
     args=p.parse_args()
