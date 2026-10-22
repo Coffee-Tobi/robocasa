@@ -36,7 +36,7 @@ jobs:
         run: |
           python -m robobarista.fairino_barista_pipeline \
             --input validated_camera.zip --output runs/fairino_default \
-            --target-mm 18 --duration-s 20 --stride 2
+            --target-mm 18 --duration-s 20 --stride 2 --virtual-spout-offset-m -.073 0 .117
           python - <<'PY'
           import json
           from pathlib import Path
@@ -48,6 +48,7 @@ jobs:
           assert s['new_spline_waypoints']==16
           assert s['new_spline_mock_api_calls']==18
           assert 0<s['rescaled_pitcher_center_excursion_mm']<=20
+          assert 0 < s['spout_tip_excursion_mm'] < 20
           assert s['real_fairino_controller_invoked'] is False
           assert s['real_fairino_tracking_error_mm'] is None
           commands=json.loads((p/'fairino_new_spline_commands.json').read_text())
