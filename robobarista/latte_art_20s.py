@@ -10,6 +10,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import xml.etree.ElementTree as ET
 import subprocess
 import shutil
 
@@ -25,6 +26,7 @@ from .cell_demo import _set_free_pose
 from .workcell_constraints import DOCKS
 from .demo import render_pair
 from .follow_camera import ArmFollowCamera,CAMERA_NAME
+from .geometry import look_at_quat
 
 
 DURATION_S=20.0
@@ -93,7 +95,17 @@ def run(args):
     out=Path(args.output).resolve()
     out.mkdir(parents=True,exist_ok=True)
     scene=_story_scene(Path(args.vendor_dir))
-    model=mujoco.MjModel.from_xml_path(str(scene))
+    # Independent mocap camera for a detailed view of jaws and handle adapter.
+    # It never enters the calibrated 3-camera AprilTag measurement pipeline.
+    tree=ET.parse(scene)
+    rig=ET.SubElement(tree.getroot().find("worldbody"),"body",
+                      name="rb_grip_detail_rig",mocap="true",
+                      pos="0 -0.8 1.7")
+    ET.SubElement(rig,"camera",name="rb_grip_detail",fovy="51",
+                  pos="0 0 0",quat="1 0 0 0")
+    scene_detail=Path(scene).with_name("rb_latte_20s_detail_scene.xml")
+    tree.write(scene_detail,encoding="unicode")
+    model=mujoco.MjModel.from_xml_path(str(scene_detail))
     data=mujoco.MjData(model)
     _set_free_pose(model,data,"rb_pitcher_free",[-10,-10,-10],0)
     _set_free_pose(model,data,"rb_plastic_cup_free",[-10,-10,-10],0)
@@ -115,6 +127,7 @@ def run(args):
                    DOCKS["pour_cup"].position_m,0)
     renderer=mujoco.Renderer(model,width=args.width,height=args.height)
     follow=ArmFollowCamera(model,smoothing=.34)
+    detail_mocap=int(model.body_mocapid[model.body('rb_grip_detail_rig').id])
     frames_dir=out/"frames"
     frames_dir.mkdir(exist_ok=True)
     spouts=[]
@@ -140,13 +153,31 @@ def run(args):
             spouts.append(spout.tolist())
             wrists.append(data.xpos[grip_body].tolist())
             follow.update(data)
-            rgb,_=render_pair(renderer,data,CAMERA_NAME)
-            overview,_=render_pair(renderer,data,"cell_overview")
+            pitcher_R=data.xmat[grip_body].reshape(3,3)
+            handle_pos=np.asarray(data.xpos[grip_body],float)
+            look=handle_pos+pitcher_R@np.array([0,.057,-.006])
+            close_eye=handle_pos+pitcher_R@np.array([.33,-.16,.23])
+            data.mocap_pos[detail_mocap]=close_eye
+            data.mocap_quat[detail_mocap]=look_at_quat(close_eye,look)
+            mujoco.mj_forward(model,data)
+            def render_rgb(camera):
+                renderer.disable_depth_rendering()
+                renderer.update_scene(data,camera=camera)
+                return renderer.render().copy()
+            rgb=render_rgb(CAMERA_NAME)
+            detail=render_rgb("rb_grip_detail")
+            overview=render_rgb("cell_overview")
             pic=Image.fromarray(rgb).resize((960,720),Image.Resampling.BILINEAR)
             frame=Image.new("RGB",(960,790),(15,26,32))
             frame.paste(pic,(0,38))
             inset=Image.fromarray(overview).resize((262,197),Image.Resampling.BILINEAR)
             frame.paste(inset,(682,51))
+            close=Image.fromarray(detail).resize((306,230),Image.Resampling.BILINEAR)
+            frame.paste(close,(15,51))
+            draw=ImageDraw.Draw(frame)
+            draw.rectangle((12,48,324,284),outline=(239,244,247),width=3)
+            draw.rectangle((15,51,321,74),fill=(17,27,35))
+            draw.text((22,56),"GRIPPER + HANDLE CLOSE-UP",fill="white")
             draw=ImageDraw.Draw(frame)
             draw.rectangle((679,48,947,252),outline=(240,240,240),width=3)
             draw.rectangle((682,51,943,72),fill=(17,27,35))
@@ -165,7 +196,7 @@ def run(args):
         "status":"PASS","duration_s":20., "fps":args.fps,
         "frames":len(timestamps),
         "simulator":"MuJoCo forward-kinematics with checked poses, not mj_step motor control",
-        "view":"wrist-follow POV + whole scene inset",
+        "view":"wrist-follow POV + gripper close-up + whole scene inset",
         "gripper":"two conceptual IR40-50; handle between first gripper fingers",
         "rigid_kinematic_handle_fixture":True,
         "physical_grasp_force_verified":False,
