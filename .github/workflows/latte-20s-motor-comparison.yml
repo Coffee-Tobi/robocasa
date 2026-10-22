@@ -1,0 +1,58 @@
+name: Latte 20s Reference vs Motor
+on:
+  pull_request:
+    paths:
+      - 'robobarista/compare_latte_20s.py'
+      - '.github/workflows/latte-20s-motor-comparison.yml'
+  workflow_dispatch:
+jobs:
+  motor-vs-generated:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - name: Install MuJoCo and ffmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 libglx-mesa0 libgl1-mesa-dri ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Reference vs torque-actuated FR5
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.compare_latte_20s --duration 20 --fps 12 --output runs/compare_20s
+      - name: Verify video and independent simulated dynamic motion
+        run: |
+          python - <<'PY'
+          import json,subprocess
+          from pathlib import Path
+          p=Path('runs/compare_20s')
+          s=json.loads((p/'summary.json').read_text())
+          assert s['status']=='PASS',s
+          assert s['frames']==240 and s['duration_s']==20
+          assert s['actual_joint_states_from_motor_dynamics']
+          assert s['max_spout_tracking_error_mm']>0
+          assert s['max_spout_tracking_error_mm']<50
+          assert 10 <= s['reference_spout_max_displacement_mm'] <= 20
+          assert (p/'spout_soll_ist_plot.png').stat().st_size > 10000
+          video=p/'generated_vs_fr5_motor_20s.mp4'
+          assert video.stat().st_size>50000
+          d=float(subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','default=nw=1:nk=1',str(video)]))
+          assert abs(d-20)<.05,(s,d)
+          print(json.dumps(s,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Latte-Art-20s-Generated-vs-Real-Simulated-FR5
+          path: |
+            runs/compare_20s/generated_vs_fr5_motor_20s.mp4
+            runs/compare_20s/summary.json
+            runs/compare_20s/spout_tracking.json
+            runs/compare_20s/spout_soll_ist_plot.png
+          if-no-files-found: warn

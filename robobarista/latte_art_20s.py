@@ -87,6 +87,50 @@ def preflight(model,data,qids,limits,origin,frames):
     raise RuntimeError("No collision-screened small gesture possible: "+str(errors))
 
 
+def build_latte_path(model,data,qids,limits,origin,timestamps,
+                     target_spout_mm=18.,maximum_spout_mm=20.):
+    """Enlarge the *measured tip motion* to ~18 mm, enforcing <=20 mm.
+
+    No blind joint multiplication: calibrate against the MuJoCo spout geom,
+    preflight collisions, and independently re-measure accepted positions.
+    Returns (joint_paths, effective_joint_scale, max_tip_displacement_mm).
+    All units are simulated and rely on ideal rigid tool fixtures.
+    """
+    if not (2.<=target_spout_mm<maximum_spout_mm<=30.):
+        raise ValueError("target_spout_mm must be below maximum_spout_mm")
+    tip=model.geom("rb_gripped_pitcher_spout").id
+    offsets=np.asarray([gesture(t) for t in timestamps],float)
+    def tip_excursion(paths):
+        tips=[]
+        for q in paths:
+            data.qpos[qids]=q
+            mujoco.mj_forward(model,data)
+            tips.append(data.geom_xpos[tip].copy())
+        tips=np.asarray(tips)
+        return float(np.linalg.norm((tips-tips[0])*1000,axis=1).max())
+
+    baseline=tip_excursion(origin[None,:]+offsets)
+    if baseline<=1e-8:
+        raise RuntimeError("No tip motion to amplify")
+    gain=target_spout_mm/baseline
+    # Conservative gain search: reject unsafe joint/fixture collisions and
+    # avoid slipping above 20mm due to non-linear arm kinematics.
+    failures=[]
+    for factor in (1.,.95,.9,.85,.8,.75,.7,.65,.6,.5,.4,.3):
+        multiplier=gain*factor
+        try:
+            paths,safe_scale=preflight(model,data,qids,limits,origin,
+                                      offsets*multiplier)
+        except RuntimeError as exc:
+            failures.append(str(exc))
+            continue
+        displacement=tip_excursion(paths)
+        if 10.<=displacement<=maximum_spout_mm+1e-6:
+            return paths,float(multiplier*safe_scale),displacement
+    raise RuntimeError("No 10-20mm collision-screened spout path available; "+
+                       "; ".join(failures[:2]))
+
+
 def run(args):
     if args.duration!=20:
         raise ValueError("This demonstrator is designed for exactly 20 seconds")
@@ -118,8 +162,9 @@ def run(args):
         raise RuntimeError("No collision-safe pour station predock")
     origin=np.array(item["stage"]["q_rad"],float)
     timestamps=np.arange(args.duration*args.fps)/args.fps
-    offsets=np.array([gesture(t) for t in timestamps])
-    paths,scale=preflight(model,data,qids,limits,origin,offsets)
+    paths,scale,target_excursion=build_latte_path(
+        model,data,qids,limits,origin,timestamps,
+        target_spout_mm=args.target_spout_mm,maximum_spout_mm=20.)
 
     _alpha(model,"pitcher")
     model.geom("rb_gripped_pitcher_foam").rgba[3]=.88
@@ -204,6 +249,9 @@ def run(args):
         "milk_pouring_onto_cup_surface":False,
         "predock_not_actual_cup_surface":True,
         "gesture_scale":scale,
+        "configured_target_spout_excursion_mm":args.target_spout_mm,
+        "calibrated_spout_excursion_mm":target_excursion,
+        "configured_maximum_spout_excursion_mm":20.,
         "spout_max_displacement_from_start_mm":float(np.max(movement_mm)),
         "spout_rms_displacement_from_start_mm":float(np.sqrt(np.mean(movement_mm**2))),
         "phases":[x[0] for x in STAGES],
@@ -232,6 +280,7 @@ def main():
     parser.add_argument("--seed",type=int,default=14)
     parser.add_argument("--duration",type=int,default=20)
     parser.add_argument("--fps",type=int,default=15)
+    parser.add_argument("--target-spout-mm",type=float,default=18.)
     parser.add_argument("--width",type=int,default=640)
     parser.add_argument("--height",type=int,default=480)
     args=parser.parse_args()
