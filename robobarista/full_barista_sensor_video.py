@@ -216,13 +216,13 @@ def run(args):
     if not shutil.which("ffmpeg"):raise RuntimeError("ffmpeg missing")
     video=out/"complete_barista_with_sensor_concepts.mp4"
     subprocess.run(["ffmpeg","-y","-loglevel","error","-framerate",
-        str(args.capture_fps*args.repeat),"-i",str(frames_dir/"frame_%04d.jpg"),
+        str(args.playback_fps),"-i",str(frames_dir/"frame_%04d.jpg"),
         "-c:v","libx264","-pix_fmt","yuv420p","-movflags","+faststart",
         str(video)],check=True)
     result={
         "status":"PASS","stages":len(detailed),
-        "frames":picture_index,"fps":args.capture_fps*args.repeat,
-        "duration_s":picture_index/(args.capture_fps*args.repeat),
+        "frames":picture_index,"fps":args.playback_fps,
+        "duration_s":picture_index/args.playback_fps,
         "video_created":video.stat().st_size>10000,
         "both_IR40_gripper_concepts_visible":True,
         "portafilter_bayonet_test":detailed[2]["mock_ft"],
@@ -233,6 +233,8 @@ def run(args):
         "portafilter_lock_mechanically_verified":False,
         "real_milk_steaming":False,"real_espresso_extraction":False,
         "actual_robot_sdk_invoked":False,
+        "slowed_time_only":True,
+        "intermediate_trajectory_time_and_acceleration_not_physically_replanned":True,
         "scene_limitation":"11 collision-screened pre-docks with symbolic machine actions; separate synthetic F/T training curves; no physical insertion or steam-wand contact."
     }
     (out/"summary.json").write_text(json.dumps(result,indent=2))
@@ -249,8 +251,12 @@ def main():
     p.add_argument("--height",type=int,default=480)
     p.add_argument("--capture-fps",type=int,default=6)
     p.add_argument("--repeat",type=int,default=2)
+    p.add_argument("--playback-fps",type=int,default=6,
+                   help="Slower playback: 6 FPS produces ~69s instead of 34.5s")
     p.add_argument("--frames-leg",type=int,default=9)
     a=p.parse_args()
+    if a.playback_fps<3 or a.capture_fps*a.repeat<a.playback_fps:
+        raise ValueError("Keep playback FPS between 3 and the generated frame rate")
     r=run(a)
     import sys
     sys.stdout.flush()
