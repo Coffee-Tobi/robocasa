@@ -19,10 +19,10 @@
 | FR5 stations + collision-aware safe predocks | Seven staging targets checked, **real contacts are not performed** | `safe_staging.py` |
 | 11-stage espresso/milk/latte visual sequence | Kinematic video and symbolic liquids, **no real flow / gripping** | `coffee_workflow.py` |
 | Arm POV movie + small fixed overview | Implemented in branch; dedicated CI validation pending | `follow_camera.py` |
-| Two Inlux IR40-50 grippers | Separate visual concept and isolated stationary contact bench (bench test PASS); **not yet mass/torque-certified or coupled to moving FR5** | `dual_ir40_concept.py`, `dual_ir40_physics.py` |
+| Two Inlux IR40-50 grippers | **Visual concept only** on this branch; isolated physical contact prototype is in the [experimental PR](https://github.com/Coffee-Tobi/robocasa/pull/1) | `dual_ir40_concept.py` |
 | Robust computed torque | Separate 3-second mm-scale simulation baseline PASS; 0.0105 mm ideal max and 1.238 mm max with 0.5 Nm artificial torque; no real payload | `precision_pour.py` |
-| MPC | Experimental joint-space MPC implemented; full MuJoCo benchmark not verified | `mpc_control.py` |
-| Steam-wand contact sensor | Isolated contact-force prototype only, **actual wand/pitcher grasp geometry missing** | `contact_sensing.py` |
+| MPC | Not on this stable branch; still undergoing full MuJoCo verification in [experimental PR #1](https://github.com/Coffee-Tobi/robocasa/pull/1) | Separate experimental branch |
+| Steam-wand contact sensor | Isolated prototype under development in experimental branch, not part of current stable workcell | Separate experimental branch |
 | Real 20 s latte art / milk dynamics | **Not yet implemented** | — |
 
 ## Reproduce a coffee video
@@ -47,8 +47,8 @@ To switch back to the old overview: `--camera-view overview`.
 - `robobarista/barista_cell.py` and `workcell_constraints.py`: machines, stations, robot geometry, clearance rules.
 - `robobarista/coffee_workflow.py` and `follow_camera.py`: recipe/video and movable virtual viewpoint.
 - `robobarista/camera_joint_replay.py`, `geometry.py`, `room_reconstruction.py`: pixel-based AprilTag/point cloud tests.
-- `robobarista/robot_replay.py`, `continuous_motion.py`, `motor_follow.py`, `precision_pour.py`, `mpc_control.py`: IK, jerk-limited path, motor control and experimental MPC.
-- `robobarista/dual_ir40_concept.py`, `dual_ir40_physics.py`, `contact_sensing.py`: optional hardware mock-ups and contact experiments.
+- `robobarista/robot_replay.py`, `continuous_motion.py`, `motor_follow.py`, `precision_pour.py`: IK, jerk-limited path and tested motor-control baselines.
+- `robobarista/dual_ir40_concept.py`: two **non-physical visual** IR40-50 examples; actual gripping and force feedback are still separate experiments.
 - `planning/`: historical test assumptions, measured virtual benchmarks, CAD/material decisions. Use with caution; not all experiments were performed on the current branch.
 - `.github/workflows/`: independent reproducible regression and video artifact jobs; these modules import other parts of the project.
 
