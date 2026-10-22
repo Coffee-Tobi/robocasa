@@ -1,0 +1,66 @@
+name: RoboBarista Full Espresso Milk Gripper F/T Storyboard
+on:
+  pull_request:
+    paths:
+      - 'robobarista/full_barista_sensor_video.py'
+      - 'robobarista/fairino_force_and_trajectory.py'
+      - 'tests/test_fairino_force_and_trajectory.py'
+      - '.github/workflows/full-barista-contacts.yml'
+  workflow_dispatch:
+jobs:
+  full-coffee-render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install MuJoCo and video dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 libglx-mesa0 libgl1-mesa-dri ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Unit test FAIRINO LoadTrajectoryLA and synthetic FT guards
+        run: |
+          python -m pytest -q tests/test_fairino_force_and_trajectory.py
+          python -m pytest -q tests/test_fairino_native_spline.py
+      - name: Render complete barista workstation video
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.full_barista_sensor_video --output runs/full_barista_sensors --frames-leg 9 --capture-fps 6 --repeat 2 --width 640 --height 480
+      - name: Validate all 11 steps and that mock contacts are never reported as real
+        run: |
+          python - <<'PY'
+          import json,subprocess
+          from pathlib import Path
+          p=Path('runs/full_barista_sensors')
+          s=json.loads((p/'summary.json').read_text())
+          e=json.loads((p/'step_events.json').read_text())
+          assert s['status']=='PASS'
+          assert len(e)==11
+          assert s['frames'] > 160
+          assert s['both_IR40_gripper_concepts_visible']
+          assert s['portafilter_bayonet_test']['state']=='RESISTANCE_SEEN_NOT_LOCK_PROVEN'
+          assert s['steam_side_contact_test']['state']=='LIGHT_CONTACT_DETECTED'
+          assert not s['hardware_ft_measured']
+          assert not s['mujoco_contact_at_portafilter_or_steam_wand']
+          assert not s['actual_robot_sdk_invoked']
+          vid=p/'complete_barista_with_sensor_concepts.mp4'
+          assert vid.stat().st_size>100000
+          duration=float(subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','default=nw=1:nk=1',str(vid)]))
+          assert duration > 20 and abs(duration-s['duration_s'])<.1
+          print(json.dumps(s,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RoboBarista-Complete-Coffee-IR40-FT-Storyboard
+          path: |
+            runs/full_barista_sensors/complete_barista_with_sensor_concepts.mp4
+            runs/full_barista_sensors/summary.json
+            runs/full_barista_sensors/step_events.json
+          if-no-files-found: warn
