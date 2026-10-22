@@ -22,6 +22,7 @@ class CoffeeMachineGeometry:
     outlet_xyz_m: tuple[float,float,float]=(.440,.250,1.090)
     cup_radius_m: float=.040
     allowable_xy_offset_m: float=.055
+    # The existing rb_plastic_cup free body is anchored at its BASE, with rim +0.107m.
     # An empty cup rim must be below the brew spout without an excessive gap.
     min_nozzle_to_rim_m: float=.035
     max_nozzle_to_rim_m: float=.230
@@ -36,7 +37,7 @@ class CoffeeMachineState:
     extraction_seconds: float=0.
     flags: list[str]=field(default_factory=list)
 
-    def check_cup(self,cup_centre_xyz_m,cup_half_height_m=.047):
+    def check_cup(self,cup_centre_xyz_m,cup_half_height_m=.107):
         if cup_centre_xyz_m is None:
             return False,"CUP_MISSING"
         pos=tuple(float(x) for x in cup_centre_xyz_m)
