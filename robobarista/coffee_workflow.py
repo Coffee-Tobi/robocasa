@@ -23,6 +23,7 @@ from .cell_demo import _set_free_pose
 from .workcell_constraints import DOCKS, PAYLOAD_SPHERES
 from .demo import render_pair
 from .follow_camera import insert_camera,ArmFollowCamera,CAMERA_NAME
+from .robocasa_coffee_adapter import CoffeeMachineState
 from .dual_ir40_concept import add_visual_dual_ir40_50
 
 
@@ -254,6 +255,8 @@ def run(args):
     events=[]
     cup_at_espresso=False
     espresso_visual=False
+    espresso_fixture=CoffeeMachineState()
+    espresso_demo_gate=None
     pitcher_foam=False
     try:
         for idx,step in enumerate(recipe):
@@ -263,7 +266,13 @@ def run(args):
                 _place_cup(model,data,DOCKS['espresso_cup'].position_m)
                 cup_at_espresso=True
             if action=='brew':
-                espresso_visual=True
+                # MIT RoboCasa-inspired fixture state gate: cup MUST really
+                # be under the outlet. No false switch/portafilter lock:
+                # demo animation stays explicitly symbolic.
+                mujoco.mj_forward(model,data)
+                cup_xyz=data.xpos[model.body("rb_plastic_cup").id].copy()
+                espresso_demo_gate=espresso_fixture.demo_brew_step(cup_xyz)
+                espresso_visual=bool(espresso_demo_gate["virtual_coffee_disc_may_be_drawn"])
             if action=='cup_to_pour':
                 _place_cup(model,data,DOCKS['pour_cup'].position_m)
                 cup_at_espresso=False
@@ -351,6 +360,9 @@ def run(args):
         'true_machine_docking_completed':False,
         'true_portafilter_grasp_completed':False,
         'true_milk_frothing_or_espresso_flow':False,
+        'robocasa_inspired_coffee_fixture_state_gate':espresso_demo_gate,
+        'brew_animation_requires_cup_under_nozzle':True,
+        'real_button_and_portafilter_lock_proven':False,
         'assumed_synthetic_wrist_latte_pattern':
             pour_ctrls is not None,
         'latte_art_five_phase_structure':list(POUR_PHASES),
