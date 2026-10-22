@@ -70,7 +70,7 @@ def test_read_only_vendor_state_fails_safe():
     result=read_only_snapshot(mock)
     assert result["motion_done"]==1
     assert len(result["joint_deg"])==6
-    assert result["actual_fairino_sdk_read"] is False
+    assert result["hardware_provenance_verified"] is False
     assert result["motion_authorizable_from_this_snapshot_alone"] is False
     assert not result["stop_or_hold"]
     assert all(name.startswith(("Get","FT_")) for name in mock.calls)
