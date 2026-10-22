@@ -117,8 +117,9 @@ def make_plan(samples,calibration,mode="new_spline",duration_s=20.,
             "camera_samples":len(samples),"waypoints":len(poses),
             "reference_waypoint_timestamps_s":[float(x["time_s"]) for x in picked],
             "commands":instructions,
-            "camera_to_robot_extrinsics_calibrated":True,
-            "tool_and_gripper_offsets_calibrated":True}
+            "camera_to_robot_extrinsics_calibrated":False,
+            "tool_and_gripper_offsets_calibrated":False,
+            "calibration_required_before_hardware":True}
 
 
 class RecordingRobot:
