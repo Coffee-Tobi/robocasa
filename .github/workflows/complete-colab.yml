@@ -7,6 +7,7 @@ on:
       - 'robobarista/continuous_motion.py'
       - 'robobarista/coffee_workflow.py'
       - 'robobarista/room_reconstruction.py'
+      - 'robobarista/room_reconstruction_video.py'
       - 'robobarista/camera_joint_replay.py'
       - 'robobarista/safe_staging.py'
       - 'robobarista/safe_station_staging_demo.py'
@@ -42,6 +43,9 @@ jobs:
           PYOPENGL_PLATFORM: osmesa
         run: |
           python -u -m robobarista.room_reconstruction --width 960 --height 720 --stride 6 --output runs/full/room
+      - name: NEW - Animate progressive 3-camera RGB-D reconstruction
+        run: |
+          python -u -m robobarista.room_reconstruction_video --input runs/full/room --output runs/full/room --frames 24 --fps 6 --max-points-per-camera 1200
       - name: 2 - Seven verified collision-checked FR5 staging routes
         env:
           MUJOCO_GL: osmesa
@@ -94,6 +98,7 @@ jobs:
           assert g['max_fixed_tag_position_error_mm']<8
           assert g['rgbd_points']>8000
           assert (root/'room/rgbd_room_3d_cloud.png').stat().st_size>10000
+          assert (root/'room/rgbd_room_reconstruction.mp4').stat().st_size>10000
           assert a['tamper_integrated_in_grinder']
           assert not a['separate_tamper_station']
           assert len(a['docking_targets'])==7
@@ -132,6 +137,8 @@ jobs:
           path: |
             runs/full/room/rgbd_room_vs_truth.png
             runs/full/room/rgbd_room_3d_cloud.png
+            runs/full/room/rgbd_room_reconstruction.mp4
+            runs/full/room/rgbd_reconstruction_video_summary.json
             runs/full/room/reconstructed_xyz_cloud.npz
             runs/full/room/summary.json
             runs/full/coffee/coffee_workflow.mp4
