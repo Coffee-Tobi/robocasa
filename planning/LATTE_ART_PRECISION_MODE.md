@@ -25,11 +25,12 @@ Robotertoolpose geführt; ihr Fehler wird separat zum TCP-Fehler gemessen.
 Die identische Ruckig-geplante 6-Gelenk-Sollbahn wurde in MuJoCo mit
 `mujoco.mj_step` und den sechs Drehmomentantrieben ausgeführt:
 
-| Regler | Ø Fehler an Ausgießerspitze | Maximaler Fehler |
-|---|---:|---:|
-| Legacy Positions-PD + Schwerkraftausgleich | 1,207 mm | 2,630 mm |
-| Positions-PD + Geschwindigkeitssollwert | 0,732 mm | 1,531 mm |
-| **Computed Torque**: dynamische Vorsteuerung mit `mj_inverse` | **0,0035 mm** | **0,0238 mm** |
+| Regler | Ø Ausgießerspitzenfehler ohne Störung | Maximaler Fehler ohne Störung | Maximaler Fehler **mit unbekannter 0,5-Nm-Handgelenkskraft** |
+|---|---:|---:|---:|
+| Legacy Positions-PD + Schwerkraftausgleich | 1,207 mm | 2,630 mm | 4,130 mm |
+| Positions-PD + Geschwindigkeitssollwert | 0,732 mm | 1,531 mm | 3,630 mm |
+| Computed Torque: Vorsteuerung mit `mj_inverse` | 0,0035 mm | 0,0238 mm | **5,609 mm** |
+| **Robustes Computed Torque**: höheres PD und begrenzter Integralterm | **0,0017 mm** | **0,0105 mm** | **1,238 mm** |
 
 Test: 4 mm, 3 s, 3181 Zeitpunkte mit 1 ms MuJoCo-Schritten. Alle drei
 Regler liefen ohne im Modell erkannte Maschinen-/Armkollisionen oder
@@ -56,8 +57,19 @@ Daher darf **0,024 mm niemals als echte Roboterpräzision behauptet werden**.
   vereinfachten *Modellmismatch*, nicht die realistische Kraft einer
   gefüllten Milchkanne.
 
-Die zwei Zusatzversuche müssen separat erfolgreich durchlaufen, bevor
-hier konkrete gemessene Resultate daraus eingetragen werden.
+**Beide Zusatzexperimente sind in der MuJoCo-Simulation bereits als
+einzelne Motorläufe vollständig ausgeführt worden.** Im 10-mm-Versuch
+(identische drei Sekunden und 0,75° Winkel) lag der maximale
+Ausgießerfehler bei **4,760 mm** (Positions-PD), **2,427 mm**
+(Positions-/Geschwindigkeits-PD), **0,0244 mm** (Computed Torque)
+und **0,0106 mm** (robustes Computed Torque).
+
+Die **0,5-Nm-Laststörung** zeigt den Hauptbefund: der herkömmliche
+Computed-Torque-Regler leidet unter Modellabweichungen, während die
+zusätzliche Fehler-/Integralkorrektur den Maximalfehler in genau diesem
+virtuellen Versuch von 5,609 auf 1,238 mm senken konnte.
+**Keine garantierte Verbesserung für unbekannte reale Lasten,
+Gerätekontakt oder echten Milchschaum.**
 
 ## Libraries, die das wirklich verbessern können
 
