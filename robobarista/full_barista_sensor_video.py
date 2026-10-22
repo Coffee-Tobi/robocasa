@@ -228,6 +228,9 @@ def run(args):
         "transport_upright_ik_attempts":summary.get("transport_upright_ik_attempts",0),
         "transport_upright_ik_successes":summary.get("transport_upright_ik_successes",0),
         "transport_upright_ik_blocked":summary.get("transport_upright_ik_blocked",0),
+        "transport_level_fail_closed_hold_frames":summary.get("transport_level_fail_closed_hold_frames",0),
+        "transport_station_targets_not_guaranteed_if_holds":summary.get(
+            "transport_station_targets_not_guaranteed_if_holds",False),
         "transport_worst_tilt_deg":summary.get("transport_worst_tilt_deg"),
         "strict_upright_guarantee":summary.get("strict_upright_guarantee",False),
         "portafilter_bayonet_test":detailed[2]["mock_ft"],
