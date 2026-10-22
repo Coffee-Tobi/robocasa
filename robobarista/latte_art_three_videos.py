@@ -180,6 +180,8 @@ def render(args):
             nearest=int(np.argmin(np.abs(np.array([s["time_s"] for s in seen])-t)))
             raw_path=frame_capture/f"frame_{nearest:04d}.png"
             raw_img=Image.open(raw_path).convert("RGB") if raw_path.exists() else None
+            shared_eye=None
+            shared_quat=None
             for phase in ("original","tracking","robot"):
                 if phase=="robot":
                     _set_free_pose(model,data,"rb_pitcher_free",[-10,-10,-10],0)
@@ -213,7 +215,10 @@ def render(args):
                         "original_tip_xyz_m":truth_tip.tolist(),
                         "simulated_arm_tip_xyz_m":measured.tolist(),
                         "joint_q_rad":current.tolist()})
-                    cam.update(data)
+                    # EXACT SAME cinema camera as demonstrator at this t.
+                    data.mocap_pos[cam.mocap_id]=shared_eye.copy()
+                    data.mocap_quat[cam.mocap_id]=shared_quat.copy()
+                    mujoco.mj_forward(model,data)
                     extra="FR5: 6 echte Gelenke, IK auf Kameradaten"
                     raw=None
                 else:
@@ -221,7 +226,14 @@ def render(args):
                     data.qpos[qids]=q0
                     pp,RR=(p0,R0) if phase=="original" else (po,Ro)
                     pose(data,model,"rb_pitcher_free",pp,RR)
-                    cam.update(data,target_xyz=pp)
+                    if phase=="original":
+                        cam.update(data,target_xyz=pp)
+                        shared_eye=data.mocap_pos[cam.mocap_id].copy()
+                        shared_quat=data.mocap_quat[cam.mocap_id].copy()
+                    else:
+                        data.mocap_pos[cam.mocap_id]=shared_eye.copy()
+                        data.mocap_quat[cam.mocap_id]=shared_quat.copy()
+                        mujoco.mj_forward(model,data)
                     err=None if phase=="original" else track_error
                     difference=None if phase=="original" else delta
                     extra="VIRTUELLE MENSCHEN-DEMONSTRATION" if phase=="original" else "AprilTag-3D-Rekonstruktion"
