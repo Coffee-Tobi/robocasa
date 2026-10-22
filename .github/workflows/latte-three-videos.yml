@@ -109,6 +109,8 @@ jobs:
           assert s["stages"]==11
           assert 60<s["duration_s"]<95
           assert s["slowed_time_only"]
+          assert s["strict_upright_guarantee"],s
+          assert s["transport_worst_tilt_deg"]<=3.01,s
           assert (p/"complete_barista_with_sensor_concepts.mp4").stat().st_size>100000
           print(s)
           PY
