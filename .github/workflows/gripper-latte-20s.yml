@@ -1,0 +1,58 @@
+name: Gripper-Held Latte 20s
+on:
+  pull_request:
+    paths:
+      - 'robobarista/dual_ir40_concept.py'
+      - 'robobarista/coffee_workflow.py'
+      - 'robobarista/latte_art_20s.py'
+      - '.github/workflows/gripper-latte-20s.yml'
+  workflow_dispatch:
+jobs:
+  simulate-gripper-latte:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - name: Install MuJoCo and FFmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 libglx-mesa0 libgl1-mesa-dri ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Render 20-second hand-held pitcher
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.latte_art_20s --fps 15 --duration 20 --output runs/gripper_latte
+      - name: Validate geometry, duration, and spout motion
+        run: |
+          python - <<'PY'
+          import json,subprocess
+          from pathlib import Path
+          p=Path('runs/gripper_latte')
+          d=json.loads((p/'summary.json').read_text())
+          assert d['status']=='PASS',d
+          assert d['frames']==300
+          assert d['duration_s']==20.
+          assert d['video_created']
+          assert d['rigid_kinematic_handle_fixture']
+          assert not d['physical_grasp_force_verified']
+          assert 0<d['spout_max_displacement_from_start_mm']<40
+          video=p/'latte_art_20s.mp4'
+          duration=float(subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','default=nw=1:nk=1',str(video)]))
+          assert abs(duration-20)<.05,duration
+          print('Validated 20s gripped conceptual pour:',d)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RoboBarista-20s-Latte-Art-Gripped
+          path: |
+            runs/gripper_latte/latte_art_20s.mp4
+            runs/gripper_latte/summary.json
+            runs/gripper_latte/spout_positions.json
+          if-no-files-found: warn
