@@ -38,6 +38,8 @@ jobs:
           assert s['actual_joint_states_from_motor_dynamics']
           assert s['max_spout_tracking_error_mm']>0
           assert s['max_spout_tracking_error_mm']<50
+          assert 10 <= s['reference_spout_max_displacement_mm'] <= 20
+          assert (p/'spout_soll_ist_plot.png').stat().st_size > 10000
           video=p/'generated_vs_fr5_motor_20s.mp4'
           assert video.stat().st_size>50000
           d=float(subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','default=nw=1:nk=1',str(video)]))
@@ -52,4 +54,5 @@ jobs:
             runs/compare_20s/generated_vs_fr5_motor_20s.mp4
             runs/compare_20s/summary.json
             runs/compare_20s/spout_tracking.json
+            runs/compare_20s/spout_soll_ist_plot.png
           if-no-files-found: warn
