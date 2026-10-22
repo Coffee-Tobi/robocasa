@@ -25,6 +25,7 @@ from .safe_staging import plan_staging,_check_route,_valid_state
 from .cell_demo import _set_free_pose
 from .workcell_constraints import DOCKS
 from .follow_camera import ArmFollowCamera,CAMERA_NAME
+from .geometry import Calibration
 from .demo import render_pair
 from .full_barista_sensor_video import (
     draw_panel,font,STEP_TEXT,illustrative_contact_curve,
@@ -205,7 +206,30 @@ def run(args):
                 base=Image.new("RGB",(960,806),(18,30,40))
                 base.paste(Image.fromarray(rgb).resize((960,720),Image.Resampling.BILINEAR),(0,59))
                 d=ImageDraw.Draw(base)
-                d.text((14,61),f"{label}   {phase}",font=font(17),fill=(248,231,186))
+                d.rectangle((0,60,669,92),fill=(14,26,37))
+                d.text((14,65),f"{label}   {phase}",font=font(17),fill=(248,231,186))
+                # Project ACTUAL MuJoCo geometry onto the moving camera and
+                # mark the held object and next stationary target distinctly.
+                view=Calibration.from_mujoco(model,data,CAMERA_NAME,args.width,args.height)
+                held_names={"portafilter":"rb_gripped_portafilter_basket",
+                            "pitcher":"rb_gripped_pitcher_body",
+                            "plastic_cup":"rb_gripped_cup_body"}
+                def mark(xyz,color,label):
+                    uv=view.project(xyz)
+                    if uv is None:return
+                    px=float(uv[0])*960/args.width
+                    py=59+float(uv[1])*720/args.height
+                    if not (14<px<945 and 107<py<759):return
+                    d.ellipse((px-17,py-17,px+17,py+17),
+                              outline=color,width=4)
+                    d.line((px+14,py-14,px+34,py-37),
+                           fill=color,width=3)
+                    d.text((px+38,py-49),label,font=font(14),fill=color)
+                if tool in held_names:
+                    held_gid=model.geom(held_names[tool]).id
+                    mark(data.geom_xpos[held_gid],(112,235,242),"IN DER HAND")
+                mark(np.asarray(DOCKS[dock].position_m,float),
+                     (255,210,131),"ZIEL (VORPOSITION)")
                 inset=Image.fromarray(overview).resize((276,207),Image.Resampling.BILINEAR)
                 base.paste(inset,(670,91))
                 d.rectangle((668,89,948,300),outline=(224,238,242),width=3)
