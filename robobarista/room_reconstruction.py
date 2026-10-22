@@ -68,10 +68,15 @@ def run(args):
                         break
     finally:
         renderer.close()
+    source_camera_indices=np.concatenate(
+        [np.full(len(points),i,dtype=np.uint8)
+         for i,points in enumerate(cloud)])
     cloud=np.concatenate(cloud,axis=0)
     # The observed cloud is independent of the true body geometry. Full
     # room cannot be inferred outside the sensor frusta / behind occlusion.
-    cloud=cloud[np.isfinite(cloud).all(axis=1)]
+    finite=np.isfinite(cloud).all(axis=1)
+    cloud=cloud[finite]
+    source_camera_indices=source_camera_indices[finite]
     rows=[]
     for station,obs in observations.items():
         if obs:
@@ -156,7 +161,11 @@ def run(args):
     fig.savefig(out/'rgbd_room_3d_cloud.png',dpi=135)
     plt.close(fig)
     (out/'reconstructed_xyz_cloud.npz').parent.mkdir(exist_ok=True,parents=True)
-    np.savez_compressed(out/'reconstructed_xyz_cloud.npz',xyz=cloud.astype('float32'))
+    np.savez_compressed(
+        out/'reconstructed_xyz_cloud.npz',
+        xyz=cloud.astype('float32'),
+        camera_index=source_camera_indices,
+        camera_names=np.asarray(list(CAMERAS)))
     report={
         'status':'PASS' if len(errors)==len(STATIC) else 'PARTIAL',
         'camera_count':len(CAMERAS),
