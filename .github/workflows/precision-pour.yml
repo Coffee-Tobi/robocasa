@@ -3,6 +3,9 @@ on:
   push:
     paths:
       - 'robobarista/precision_pour.py'
+      - 'robobarista/mpc_control.py'
+      - 'robobarista/contact_sensing.py'
+      - 'tests/test_mpc_control.py'
       - 'tests/test_precision_pour.py'
       - '.github/workflows/precision-pour.yml'
       - 'robobarista/continuous_motion.py'
@@ -22,12 +25,14 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq libosmesa6-dev libgl1 libglx-mesa0 libgl1-mesa-dri ffmpeg
           python -m pip install -r requirements.txt
+      - name: Test MPC numerical optimization
+        run: python -m unittest discover -s tests -p test_mpc_control.py -v
       - name: Test small Cartesian task and three dynamic controllers on one Ruckig path
         env:
           MUJOCO_GL: osmesa
           PYOPENGL_PLATFORM: osmesa
         run: |
-          python -u -m robobarista.precision_pour --output runs/precision_ci --amplitude-mm 4 --angle-deg .75 --duration-s 3 --seed 14 --video-fps 8
+          python -u -m robobarista.precision_pour --output runs/precision_ci --amplitude-mm 4 --angle-deg .75 --duration-s 3 --seed 14 --video-fps 8 --include-mpc
       - name: Larger amplitude control experiment on same 3s duration
         env:
           MUJOCO_GL: osmesa
@@ -39,7 +44,7 @@ jobs:
           MUJOCO_GL: osmesa
           PYOPENGL_PLATFORM: osmesa
         run: |
-          python -u -m robobarista.precision_pour --output runs/precision_disturbed_ci --amplitude-mm 4 --angle-deg .75 --duration-s 3 --disturbance-nm .5 --seed 14 --video-fps 8
+          python -u -m robobarista.precision_pour --output runs/precision_disturbed_ci --amplitude-mm 4 --angle-deg .75 --duration-s 3 --disturbance-nm .5 --seed 14 --video-fps 8 --include-mpc
       - name: Validate safety, independent spout measurement and produce comparison
         run: |
           python - <<'PY'
@@ -54,7 +59,7 @@ jobs:
           assert not a['pitcher_physically_grasped']
           assert a['motor_simulator'].startswith('MuJoCo')
           assert set(a['methods'])=={'legacy_pd','velocity_pd',
-                    'computed_torque','computed_torque_robust'}
+                    'computed_torque','computed_torque_robust','joint_mpc'}
           assert all(v['status']=='PASS' for v in a['methods'].values())
           assert all(v['max_spout_error_mm']>=0 for v in a['methods'].values())
           assert all(v['first_safety_violation'] is None for v in a['methods'].values())
@@ -66,6 +71,7 @@ jobs:
           assert stress['unmodelled_external_wrist_torque_nm']==0.5
           assert stress['methods']['computed_torque_robust']['max_spout_error_mm'] > 0
           assert stress['methods']['computed_torque_robust']['max_spout_error_mm'] < stress['methods']['computed_torque']['max_spout_error_mm'], 'Robust inverse-dynamics controller did not improve model mismatch'
+          print('MPC 0.5Nm disturbance: ',stress['methods']['joint_mpc'])
           print('Disturbed 0.5 Nm wrist load vs ideal model:')
           for name in a['methods']:
               print(name,'ideal spout max=',a['methods'][name]['max_spout_error_mm'],
