@@ -88,11 +88,22 @@ def target_motion(rows,max_displacement_mm=20.,target_displacement_mm=18.,
     return shifted,scale,float(excursion*1000),actual_excursion
 
 def run(input_path,output,calibration_path=None,stride=2,target_mm=18.,
-        duration_s=20.,blend_radius_mm=.5):
+        duration_s=20.,blend_radius_mm=.5,tip_offset_pitcher_m=None):
     rows=load_camera(input_path)
     transformed,scale,original_mm,capped_mm=target_motion(
         rows,target_displacement_mm=target_mm,duration_s=duration_s)
     cal,verified=read_calibration(calibration_path)
+    tip_excursion=None
+    if tip_offset_pitcher_m is not None:
+        offset=np.asarray(tip_offset_pitcher_m,float)
+        if offset.shape!=(3,) or not np.isfinite(offset).all():
+            raise ValueError("Spout offset must be 3 finite local metres")
+        tips=np.array([np.asarray(x["position_m"],float)
+                  +Rotation.from_quat(x["rotation_xyzw"]).apply(offset)
+                  for x in transformed])
+        tip_excursion=float(np.linalg.norm((tips-tips[0])*1000,axis=1).max())
+        if tip_excursion>20.+1e-6:
+            raise ValueError(f"Virtual spout excursion {tip_excursion:.3f}mm exceeds 20mm")
     if stride<1:raise ValueError("stride >=1")
     out=Path(output)
     out.mkdir(parents=True,exist_ok=True)
@@ -107,7 +118,9 @@ def run(input_path,output,calibration_path=None,stride=2,target_mm=18.,
         "original_pitcher_center_excursion_mm":original_mm,
         "rescaled_pitcher_center_excursion_mm":capped_mm,
         "translation_scale_applied":scale,
-        "NOTE":"20mm applies to pitcher CENTER, not yet validated actual spout tip. A measured rigid tip offset is required.",
+        "spout_tip_excursion_mm":tip_excursion,
+        "measured_tip_offset_for_real_tool":False,
+        "NOTE":"20mm always applies to pitcher CENTER; optional spout check uses a supplied virtual tool offset, not a calibrated real spout.",
         "camera_world_to_robot_base_calibrated":verified,
         "gripper_tool_offset_calibrated":verified,
         "real_fairino_controller_invoked":False,
@@ -140,7 +153,9 @@ def main():
     p.add_argument("--target-mm",type=float,default=18.)
     p.add_argument("--duration-s",type=float,default=20.)
     p.add_argument("--blend-radius-mm",type=float,default=.5)
+    p.add_argument("--virtual-spout-offset-m",type=float,nargs=3,default=None,
+                   help="Only if measured in the same camera-object frame; reports and checks spout excursion")
     a=p.parse_args()
-    run(a.input,a.output,a.calibration,a.stride,a.target_mm,a.duration_s,a.blend_radius_mm)
+    run(a.input,a.output,a.calibration,a.stride,a.target_mm,a.duration_s,a.blend_radius_mm,a.virtual_spout_offset_m)
 
 if __name__=="__main__":main()
