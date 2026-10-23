@@ -163,7 +163,7 @@ def reconstruct_pitches(rows,chain,*,arm,joint_unit,flange_to_pitcher,
 
 
 def convert(*,input_joints,urdf,flange,joints,arm,unit,mount_file,
-            output_dir,assume_identity_tool=False):
+            output_dir,assume_identity_tool=False,start_s=None,end_s=None):
     if len(joints)!=6:
         raise ValueError("Provide six URDF joint names in correct dataset order")
     if bool(mount_file) == bool(assume_identity_tool):
@@ -173,10 +173,22 @@ def convert(*,input_joints,urdf,flange,joints,arm,unit,mount_file,
            json.loads(Path(mount_file).read_text())["T_flange_pitcher"],
            "flange_to_pitcher"))
     rows=json.loads(Path(input_joints).read_text())
+    original_count=len(rows)
+    if start_s is not None or end_s is not None:
+        if start_s is None or end_s is None or not 0<=start_s<end_s:
+            raise ValueError("For a pour-only crop, provide valid start_s < end_s")
+        rows=[r for r in rows if start_s<=float(r["time_s"])<=end_s]
+        if len(rows)<8:
+            raise ValueError("Chosen pour-only interval has fewer than 8 samples")
+        t0=float(rows[0]["time_s"])
+        rows=[{**r,"time_s":float(r["time_s"])-t0} for r in rows]
     chain=parse_urdf_chain(urdf,flange,joints)
     poses,report=reconstruct_pitches(
         rows,chain,arm=arm,joint_unit=unit,flange_to_pitcher=M,
         tool_calibrated=not assume_identity_tool)
+    report["crop_applied"]=start_s is not None
+    report["chosen_source_time_window_s"]=[start_s,end_s] if start_s is not None else None
+    report["uncropped_episode_samples"]=original_count
     output=Path(output_dir)
     output.mkdir(parents=True,exist_ok=True)
     (output/"source_pitcher_6d_URDF_FK.json").write_text(
@@ -195,6 +207,10 @@ def main():
     p.add_argument("--arm",choices=["left","right"],required=True)
     p.add_argument("--joint-unit",choices=["deg","rad"],required=True)
     p.add_argument("--mount-json",default=None)
+    p.add_argument("--start-s",type=float,default=None,
+                   help="Start of a visually confirmed pour-only segment")
+    p.add_argument("--end-s",type=float,default=None,
+                   help="End of a visually confirmed pour-only segment")
     p.add_argument("--assume-identity-tool",action="store_true",
                    help="For uncalibrated geometric testing only")
     p.add_argument("--output",required=True)
@@ -203,7 +219,7 @@ def main():
                    flange=a.flange,joints=a.joint_names,arm=a.arm,
                    unit=a.joint_unit,mount_file=a.mount_json,
                    assume_identity_tool=a.assume_identity_tool,
-                   output_dir=a.output)
+                   output_dir=a.output,start_s=a.start_s,end_s=a.end_s)
     print(json.dumps(result,indent=2))
 
 
