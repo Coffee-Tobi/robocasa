@@ -5,7 +5,6 @@ on:
       - 'robobarista/camera_joint_replay.py'
       - 'robobarista/barista_cell.py'
       - 'robobarista/workcell_constraints.py'
-      - 'COLAB_SAFE_REPLAY.ipynb'
       - '.github/workflows/safe-camera-replay.yml'
   workflow_dispatch:
 jobs:
