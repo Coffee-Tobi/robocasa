@@ -123,16 +123,49 @@ def make_plan(samples,calibration,mode="new_spline",duration_s=20.,
 
 
 class RecordingRobot:
-    """API-compatible mock: runs and checks SDK command syntax, not firmware."""
-    def __init__(self):self.calls=[]
-    def NewSplineStart(self,*args,**kwargs):
-        self.calls.append(("NewSplineStart",args,kwargs));return 0
-    def NewSplinePoint(self,*args,**kwargs):
-        self.calls.append(("NewSplinePoint",args,kwargs));return 0
-    def NewSplineEnd(self,*args,**kwargs):
-        self.calls.append(("NewSplineEnd",args,kwargs));return 0
-    def MoveL(self,*args,**kwargs):
-        self.calls.append(("MoveL",args,kwargs));return 0
+    """Strict OFFLINE command-signature recorder; NEVER a firmware emulator.
+
+    Validate our own generated API shape, not manufacturer interpolation.
+    A real installed SDK/controller still needs independent integration tests.
+    """
+    def __init__(self):
+        self.calls=[]
+
+    @staticmethod
+    def _pose(desc_pos, tool, user):
+        values=np.asarray(desc_pos,dtype=float)
+        if values.shape != (6,) or not np.isfinite(values).all():
+            raise ValueError("FAIRINO desc_pos must have six finite mm/degree values")
+        if not (isinstance(tool,int) and isinstance(user,int)
+                and 0<=tool<=14 and 0<=user<=14):
+            raise ValueError("Invalid configured tool/user ID")
+
+    def NewSplineStart(self, type, averageTime):
+        if type not in (0,1) or not isinstance(averageTime,int) or averageTime<10:
+            raise ValueError("Invalid spline interpolation type or averageTime")
+        self.calls.append(("NewSplineStart",(type,averageTime),{}))
+        return 0
+
+    def NewSplinePoint(self, *, desc_pos, tool, user, lastFlag, blendR=0.0):
+        self._pose(desc_pos,tool,user)
+        if lastFlag not in (0,1) or not 0<=float(blendR)<=5:
+            raise ValueError("Invalid NewSplinePoint lastFlag or blendR")
+        self.calls.append(("NewSplinePoint",(),dict(
+            desc_pos=desc_pos,tool=tool,user=user,lastFlag=lastFlag,blendR=blendR)))
+        return 0
+
+    def NewSplineEnd(self):
+        self.calls.append(("NewSplineEnd",(),{}))
+        return 0
+
+    def MoveL(self, *, desc_pos, tool, user, vel=10.0, blendR=-1.0, blendMode=0):
+        self._pose(desc_pos,tool,user)
+        if not 0<float(vel)<=100 or blendMode!=0 or not (-1<=float(blendR)<=5):
+            raise ValueError("Invalid dry-run MoveL velocity/blending arguments")
+        self.calls.append(("MoveL",(),dict(
+            desc_pos=desc_pos,tool=tool,user=user,vel=vel,
+            blendR=blendR,blendMode=blendMode)))
+        return 0
 
 
 def replay_commands(robot,plan):
