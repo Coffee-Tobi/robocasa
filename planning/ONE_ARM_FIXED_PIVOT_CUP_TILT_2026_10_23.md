@@ -48,6 +48,26 @@ nicht, ob der Ausgießer nahe genug an der Tasse ist.
 Die JSON-Berichte messen explizit Abstand Spout-Mitte zu Tassenrand,
 aber ohne Kalibrierung ist das noch kein gießfähiger Abstand.
 
+## Erster realdatenbasierter Einarm-MuJoCo-Render
+
+GitHub Actions bestätigte mit Originalepisode 0 im 8–12-Sekunden-Ausschnitt:
+- **13/13** links-als-Kanne angenommene 6D-IK-Posen (unter dem
+  ausdrücklich unkalibrierten Original-FK-Mock).
+- **13/13** tatsächliche MuJoCo-Frames mit einem einzigen
+  mechanischen Tassen-Drehgelenk, keinem translatorischen Stellglied.
+- Zwei MP4-Clips erfolgreich gerendert: ein programmiertes sanftes
+  Neigen (+12°→0°) und eine optionale Projektion des hypothetischen
+  rechten RealMan-Arms auf die eine Tassen-Drehachse.
+- **Kritischer Abstand:** virtuelle Ausgießer-Geometrie zu Tassenrand
+  zu Beginn ca. **990 mm**. Deshalb ist das KEINE Gießsimulation, kein
+  valides Latte-Art-Ergebnis. Die Halterung funktioniert kinematisch,
+  aber der Arm fährt aktuell noch weit entfernt von der Tasse.
+
+**Zwingender nächster Entwicklungsschritt:** nicht Tassenhalterung XY/Z
+verschieben (das wäre unerwünscht), sondern den **FR5 mit Kanne**
+separat kollisionsfrei an die fest installierte Tasse bringen und die
+beobachtete relative Quellbewegung dort korrekt als Sollpfad verankern.
+
 ## Dateien
 
 - `robobarista/one_arm_fixed_cup_hinge.py` — MuJoCo-1D-Hinge,
