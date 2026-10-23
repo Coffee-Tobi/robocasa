@@ -1,0 +1,70 @@
+name: FAIRINO NewSpline Waypoints to MuJoCo FR5 Video
+on:
+  pull_request:
+    paths:
+      - 'robobarista/fairino_mujoco_replay.py'
+      - '.github/workflows/fairino-new-spline-fr5-video.yml'
+  workflow_dispatch:
+jobs:
+  new-spline-waypoints-fr5-fk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install physics and render dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 libglx-mesa0 libgl1-mesa-dri ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Retrieve verified 3-camera AprilTag pose measurements
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api /repos/Coffee-Tobi/robocasa/actions/artifacts/12365696486/zip > validated_camera.zip
+          python - <<'PY'
+          import zipfile,json
+          with zipfile.ZipFile('validated_camera.zip') as f:
+              rec=json.loads(f.read('camera/camera_measurements.json'))
+          assert len(rec)==31
+          assert all(x['valid'] and x['visible_views']>=2 for x in rec)
+          print("31 independently rendered virtual AprilTag RGB-D camera poses confirmed")
+          PY
+      - name: Actually move the virtual six-joint FR5 through interpolated FAIRINO waypoints
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.fairino_mujoco_replay --input validated_camera.zip --output runs/actual_virtual_fr5 --fps 8 --duration 20 --target-mm 18 --stride 2
+      - name: Verify kinematic replay and measured spout displacement
+        run: |
+          python - <<'PY'
+          import json,subprocess
+          from pathlib import Path
+          p=Path("runs/actual_virtual_fr5")
+          s=json.loads((p/"summary.json").read_text())
+          assert s["status"]=="PASS",s
+          assert s["frames"]==160 and s["duration_s"]==20
+          assert s["fairino_new_spline_waypoints"]==16
+          assert 0<s["realized_target_tip_excursion_mm"]<25
+          assert s["max_spout_geometric_replay_error_mm"]<3
+          assert s["no_actual_fairino_firmware_run"] and s["no_mujoco_motor_torque_dynamics"]
+          movie=p/"fairino_waypoints_fr5_mujoco_20s.mp4"
+          assert movie.stat().st_size>50000
+          duration=float(subprocess.check_output(["ffprobe","-v","error","-show_entries","format=duration","-of","default=nw=1:nk=1",str(movie)]))
+          assert abs(duration-20)<0.05,duration
+          print(json.dumps(s,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: FAIRINO-Camera-NewSpline-Virtual-FR5-Actually-Follows
+          path: |
+            runs/actual_virtual_fr5/fairino_waypoints_fr5_mujoco_20s.mp4
+            runs/actual_virtual_fr5/soll_ist_ausgiesser.json
+            runs/actual_virtual_fr5/summary.json
+            runs/actual_virtual_fr5/fairino_new_spline_commands.json
+          if-no-files-found: warn
