@@ -67,6 +67,31 @@ jobs:
             --seed 14 --width 960 --height 720 \
             --external-pitcher-trajectory runs/real_video_fk/source_pitcher_6d_URDF_FK.json \
             --output runs/real_video_fr5_cameras
+      - name: Replay newly camera-measured real-demo path on articulated virtual FR5
+        continue-on-error: true
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.camera_joint_replay \
+            --marker-profile legacy --frames 13 --fps 3 \
+            --seed 14 --width 960 --height 720 \
+            --external-pitcher-trajectory runs/real_video_fk/source_pitcher_6d_URDF_FK.json \
+            --output runs/real_video_fr5_replay
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          p=Path('runs/real_video_fr5_replay')
+          summary=json.loads((p/'summary.json').read_text())
+          print('Camera-measured source -> constrained 6-joint FR5 replay:',summary['status'])
+          print('Frames executed kinematically:',summary['replayed_frames'])
+          print('Maximum tracked-camera-to-FR5 FK error [mm]:',
+                summary['max_camera_to_executed_fr5_error_mm'])
+          assert summary['replayed_frames']==13
+          assert summary['status']=='PASS'
+          assert summary['robot_arm_moves_through_6_real_hinge_qpos']
+          assert (p/'demo_and_replay.mp4').stat().st_size>10000
+          PY
       - name: Summarize what actually passed
         if: always()
         run: |
@@ -95,4 +120,8 @@ jobs:
             runs/real_video_fr5_cameras/camera_vs_truth_EVAL_ONLY.json
             runs/real_video_fr5_cameras/summary.json
             runs/real_video_fr5_cameras/external_pose_alignment_report.json
+            runs/real_video_fr5_replay/demo_and_replay.mp4
+            runs/real_video_fr5_replay/robot_replay.json
+            runs/real_video_fr5_replay/summary.json
+            runs/real_video_fr5_replay/camera_vs_truth_EVAL_ONLY.json
           if-no-files-found: error
