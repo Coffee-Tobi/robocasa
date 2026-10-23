@@ -1,5 +1,31 @@
 # RoboBarista — 3-Kamera-Aufnahme → FAIRINO FR5
 
+## Freigegeben: FAIRINO FR5 mit 90°-Doppelgreifer und F/T-Sensor (23.10.2026)
+
+Die geprüfte **MuJoCo-3D-Vorschau** ist als eigenständiges Modul in `main`
+verfügbar: [`robobarista/dual_tool_90_preview.py`](robobarista/dual_tool_90_preview.py).
+Der Nutzer hat die Darstellung mit **FR5 → angenäherter Inlux-Force-Torque-Sensor →
+90°-Dual-Tool-Adapter → zwei orthogonal montierten IR40-50-Greifern**
+ausdrücklich freigegeben. Dazu verwendet die Vorschau das kompakte
+AprilTag-Arbeitszellenprofil aus `robobarista/compact_tags.py`.
+
+```bash
+export MUJOCO_GL=osmesa PYOPENGL_PLATFORM=osmesa
+python -m pytest -q tests/test_dual_tool_90_preview.py tests/test_compact_apriltags.py
+python -m robobarista.dual_tool_90_preview --output runs/dual90_preview
+# Screenshot: runs/dual90_preview/RoboBarista_FR5_90deg_DualTool_MuJoCo.png
+```
+
+**Geltungsbereich der Freigabe:** Kinematisch echtes FR5-MuJoCo-Modell
+mit visuell angenähertem Sensor, Adapter und Greifern – **kein**
+eingelesenes Adapter-STEP, keine F/T-Messung, Greifkräfte oder
+Kollisionsvalidierung des Doppelwerkzeugs. Die bestehende
+11-Schritte-Kaffee-Choreografie und die noch unveröffentlichte,
+komplexere Entwicklungs-PR #18 werden **nicht** durch diesen
+gezielten Merge umgestellt. Vor deren Freigabe müssen die Toolframes,
+die Zweigreifer-Kollisionen und der Griff am Tassenhenkel getestet werden.
+
+
 ## Open-Source-Zubehör und FAIRINO-Check (Oktober 2026)
 
 **Neu: tatsächliche, getestete Wiederverwendung statt bloßer eigener Geräteattrappen.**

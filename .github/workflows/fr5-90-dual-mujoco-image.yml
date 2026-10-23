@@ -1,0 +1,66 @@
+name: FAIRINO FR5 90-Degree Dual Tool Actual MuJoCo Render
+on:
+  pull_request:
+    paths:
+      - 'robobarista/compact_tags.py'
+      - 'robobarista/dual_tool_90_preview.py'
+      - 'tests/test_compact_apriltags.py'
+      - 'tests/test_dual_tool_90_preview.py'
+      - '.github/workflows/fr5-90-dual-mujoco-image.yml'
+  workflow_dispatch:
+
+jobs:
+  orthogonal-grippers-mujoco-scene:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install real MuJoCo software renderer and robotics dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Verify actual scene hierarchy / 90-degree mounting / 3-camera compact tags
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -m pytest -q tests/test_dual_tool_90_preview.py tests/test_compact_apriltags.py
+      - name: Render actual FAIRINO FR5 scene, NOT generated illustration
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.dual_tool_90_preview \
+            --vendor-dir vendor --output runs/dual90_preview \
+            --width 960 --height 630
+      - name: Verify simulation screenshot and accuracy claims
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          out=Path('runs/dual90_preview')
+          x=json.loads((out/'summary.json').read_text())
+          assert x['status']=='PASS'
+          assert x['render_engine'].startswith('mujoco.Renderer')
+          assert abs(x['dual_tool_angle_deg']-90)<0.001
+          assert x['force_sensor_before_adapter']
+          assert x['uses_existing_compact_on_object_apriltags']
+          assert not x['real_adapter_step_imported']
+          assert not x['real_ft_sensor_simulation']
+          assert not x['collision_checked_for_extra_tool_envelopes']
+          for file in x['files']:
+            assert (out/file).stat().st_size>10000,file
+          print('Verified actual MuJoCo FRONT, SIDE, OVERVIEW and composition.')
+          PY
+      - name: Upload actual MuJoCo preview for user approval; DO NOT merge
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: FR5-Actual-MuJoCo-90deg-Dual-IR40-Sensor-Preview
+          path: |
+            runs/dual90_preview/*.png
+            runs/dual90_preview/summary.json
