@@ -84,7 +84,8 @@ def _assets(fr):
     robot=ET.parse(fr/'rb_fr5_robot.xml')
     root=robot.getroot()
     assets=root.find('asset')
-    for label,tid in TAG_ID.items():
+    for label,tid in {**TAG_ID, 'held_portafilter':74,
+                      'held_pitcher':75,'held_cup':76}.items():
         # All new markers use a single AprilTag36h11 family (not ArUco).
         name='rb_tags/tag_%d.png'%tid
         file=fr/name
