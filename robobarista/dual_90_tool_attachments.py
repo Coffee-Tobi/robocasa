@@ -34,14 +34,14 @@ def attach_90_held_tools(robot: ET.ElementTree, cup_style="handle_mug"):
         old=a.find(f"body[@name='{name}']")
         if old is None:raise RuntimeError(name)
         prop=copy.deepcopy(old)
-        # Jaws of the 90-degree gripper are at z=.111, not the old .080.
-        prop.set("pos","0 0 .111")
+        # Actual 90° IR40 jaw centrelines are at z=.101, not the old .080.
+        prop.set("pos","0 0 .101")
         handle.append(prop)
 
     old=b.find("body[@name='rb_gripped_cup']")
     if old is None:raise RuntimeError("rb_gripped_cup")
     prop=copy.deepcopy(old)
-    prop.set("pos","0 0 .111")
+    prop.set("pos","0 0 .101")
     if cup_style=="handle_mug":
         # 90-degree side flange axis points +X; compensate cup's own
         # axial orientation so the vessel remains vertical at a level TCP.
