@@ -133,3 +133,27 @@ def test_upstream_lerobot_import_one_episode_no_video_is_strict(tmp_path,monkeyp
     assert not report["data_license_verified"]
     assert not report["hardware_execution_authorized"]
     assert (tmp_path/"import"/"recorded_realman_joints.json").is_file()
+
+
+def test_explicit_pour_only_time_window_before_fk(tmp_path):
+    from robobarista.realman_fk_bridge import convert
+    urdf=fake_urdf(tmp_path/"arm.urdf")
+    raw=tmp_path/"joints.json"
+    raw.write_text(json.dumps(fake_joint_rows(21)))
+    output=tmp_path/"cropped"
+    report=convert(
+        input_joints=raw,urdf=urdf,flange="link6",
+        joints=[f"joint{i}" for i in range(1,7)],
+        arm="right",unit="rad",mount_file=None,
+        assume_identity_tool=True,
+        output_dir=output,start_s=.4,end_s=2.4)
+    assert report["crop_applied"]
+    assert report["uncropped_episode_samples"]==21
+    assert report["source_pitcher_pose_frames"]<21
+    assert (output/"source_pitcher_6d_URDF_FK.json").is_file()
+    with pytest.raises(ValueError,match="start_s"):
+        convert(input_joints=raw,urdf=urdf,flange="link6",
+                joints=[f"joint{i}" for i in range(1,7)],
+                arm="right",unit="rad",mount_file=None,
+                assume_identity_tool=True,output_dir=tmp_path/"bad",
+                start_s=3,end_s=1)
