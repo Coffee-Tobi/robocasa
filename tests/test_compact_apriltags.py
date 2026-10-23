@@ -82,3 +82,17 @@ def test_movie_props_also_carry_small_tags_not_just_stand_tags():
         assert model.geom('rb_tag_backing_'+part).id>=0
     assert model.geom('rb_small_clip_held_pitcher').id>=0
     assert model.geom('rb_small_clip_held_cup').id>=0
+
+
+def test_optional_fourth_camera_compiles_separately_from_three_cam_rig():
+    from robobarista.compact_tags import build_compact_tag_cell
+    three=build_compact_tag_cell(Path('vendor'),camera_count=3)
+    four=build_compact_tag_cell(Path('vendor'),camera_count=4)
+    m3=mujoco.MjModel.from_xml_path(str(three))
+    m4=mujoco.MjModel.from_xml_path(str(four))
+    assert m4.ncam == m3.ncam + 1
+    assert m4.camera('cell_overhead_aux').id >= 0
+    with pytest.raises(KeyError):
+        m3.camera('cell_overhead_aux')
+    with pytest.raises(ValueError):
+        build_compact_tag_cell(Path('vendor'),camera_count=5)
