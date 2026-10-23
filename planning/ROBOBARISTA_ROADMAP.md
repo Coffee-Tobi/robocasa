@@ -1,5 +1,14 @@
 # RoboBarista – Projekttracker und Roadmap
 
+> **Historischer Forschungs-/MVP-Tracker vom 21.10.2026, nicht mehr die gültige Endeffektor-/Workflow-Entscheidung.**
+> Neue maßgebliche Referenz: [aktueller Projektstand vom 23.10.2026](./CURRENT_STATUS_NEXT_CHAT_2026_10_23.md)
+> und [gemeinsame PR-Entscheidungen](./PR_REVIEW_DECISIONS.md).
+> Inzwischen hat der Nutzer FR5 + **Inlux-6D-F/T-Visualisierungsproxy + 90°-Dual-Cobot-Adapter + zwei IR40-50**
+> sowie **seitlichen Griff statt von unten** in MuJoCo freigegeben.
+> Espresso/Siebträger und Latte-Art-Forschung sind beide Projektumfang;
+> der 11-Schritte-Ablauf ist bislang nur kinematisches Storyboard ohne echte Kontakt-/Flüssigkeitsphysik.
+
+
 > **Stand:** 21.10.2026 · **Verbindliche aktuelle Strategie:** (1) Drei Kameras + **ein seitlicher AprilTag 3** am Kännchen + `pupil-apriltags` + eigene Mehrkamera-Optimierung; danach zeitgestempeltes 6D-Kännchen-Motion-Capture, (2) FR5-Dry-Run anhand der Demonstration ohne Live-Nachregelung, (3) echte Latte Art.  
 > **Projektcode:** [Coffee-Tobi/robocasa, Branch main](https://github.com/Coffee-Tobi/robocasa/tree/main) · **Tracker:** Markdown und CSV, da GitHub Issues im Repository deaktiviert sind.  
 > **Herstellerentscheidung:** FAIRINO FR5 **als Planungsbasis, noch kein Hardwarekauf**. Ein Arm verwendet mögliche Greifaufsätze **nacheinander, nicht gleichzeitig**.
