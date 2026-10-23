@@ -35,6 +35,45 @@ RS485-/M12-Verbindung ist erst nach Abklärung von Busadressierung,
 24-V-Strombudget und ggf. getrennter Sensorleitung zulässig.
 https://inluxrobotics.eu/collections/grippers/products/gripper-splitter-cable
 
+## 3D-CAD-Dateien – geprüfte Downloadverfügbarkeit (nicht importiert)
+
+**Nicht behaupten, dass sie bereits eingebaut sind.** Der Nutzer wünscht
+für alle Hauptteile das originale maßhaltige CAD; im bisherigen MuJoCo-Video
+sind Sensor, 90°-Adapter und IR40-50 weiterhin selbst erstellte
+Visualisierungsgeometrie. Der aktuelle Doppelhalter sitzt fälschlich
+parallel nebeneinander.
+
+| Modell | Verifizierte URL | Status |
+|---|---|---|
+| FR5 | https://manual.fairino.support/latest/download.html – `FRCobots-V6.0 STEP Models` | Offizieller Download ZIP vorhanden, CAD noch nicht pro Gelenk zugeordnet/importiert |
+| Inlux Force Torque Sensor ITOSX1000FTS | https://cdn.shopify.com/s/files/1/0864/4024/7632/files/Force_Torque_Sensor.step?v=1772283373 | Originale .step-Datei direkt verlinkt, noch nicht importiert |
+| Inlux IR40-50 IGRIX1000IR4050 (2× identisches Modell) | https://cdn.shopify.com/s/files/1/0864/4024/7632/files/IR40_50.step?v=1772283384 | Originale .step-Datei direkt verlinkt, noch nicht importiert |
+| Inlux Dual Cobot Tool Adapter ICACX1210XDUAL | https://inluxrobotics.eu/products/dual-tool-adapter | Auf Produktseite **kein STEP- oder bemaßter Download** nachgewiesen; direkt bei sales@inluxrobotics.nl (Artikelnummer nennen) anfordern |
+
+Die STEP-URLs sind direkte Hersteller-/Shopify-Downloads; ob die
+CAD-Dateien vollständig (Teile getrennt, richtige Version) sind,
+muss nach tatsächlichem Herunterladen per CAD-Leser, Bounding-Box
+und Volumen geprüft werden. Der Modell-Download war aus der
+aktuellen Laufzeitumgebung aufgrund fehlenden externen Netzwerkzugangs
+nicht möglich. Keine Binärdateien ohne rechtlich geklärte CAD-Nutzungsrechte
+ins öffentliche GitHub committen.
+
+**Verbindlicher CAD→MuJoCo-Prozess**:
+(1) STEP-Dateien per Hersteller/CI beziehen und Prüfsumme/Version erfassen;
+(2) in FreeCAD/OpenCascade pro Körper triangulieren, Gelenk- und
+Montagekoordinaten bestimmen und mm→m verifizieren;
+(3) Detailmeshes nur als `visual`, vereinfachte konvexe oder zerlegte
+`collision`-Geometrien separat, passende `mass`/`inertia` mit
+Herstellerdaten statt willkürlichem CAD-Material berechnen;
+(4) beide IR40-50 einschließlich beweglicher Finger als modellierte
+Gelenke/Mimic-Mechanik mit 0–40-mm-Hub und Kontakt/Reibung abbilden;
+(5) genaue 90°-Werkzeugrahmen nach Adapter-Montage-CAD ausrichten,
+getrennte TCPs für Siebträger/Kanne/Tasse und Werkzeugwechsel prüfen;
+(6) gespeicherte Blind-Kollisionstests einschließlich **inaktiven**
+Greifers an Brühgruppe, Maschine, Tisch und Dampflanze; Last-/CG,
+Schwerkraft/FT-Nullung und Abgleich mit echten Sensorversuchen.
+STEP allein ermöglicht keine automatisch physikalisch genaue Simulation.
+
 ## Abweichung des aktuellen MuJoCo-Entwurfs
 
 In `robobarista/dual_ir40_concept.py` wurde bisher
