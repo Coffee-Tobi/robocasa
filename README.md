@@ -1,5 +1,33 @@
 # RoboBarista — 3-Kamera-Aufnahme → FAIRINO FR5
 
+## NEU im Experiment-Branch: Originale Latte-Art-Demonstrationen (23.10.2026)
+
+[Draft-PR #17](https://github.com/Coffee-Tobi/robocasa/pull/17) auf dem
+bisherigen Integrationsbranch – bewusst NICHT direkt auf `main`.
+
+- [Echte, publizierte 20-Hz-Gelenkaufnahmen importieren](robobarista/real_latte_dataset.py):
+  Episode 0 wurde mit **400 Originaldatenpunkten / 19,95 Sekunden / 14D**
+  über GitHub Actions gelesen. Schneller Parquet-Import ohne Torch oder Videos.
+- [RM65-URDF-Vorwärtskinematik](robobarista/realman_fk_bridge.py):
+  Zwei Arme à sechs Gelenke **mit** je einem Greifersignal
+  `[L6,L_gripper,R6,R_gripper]`, nicht einfach 12 Gelenkkommandos an FR5.
+  Erfordert passende Hersteller-URDF und Flansch-Kannen-Kalibrierung.
+- [Kinematischer sicherer Relativreplay](robobarista/external_pose_replay.py)
+  als Quelle für [unsere drei/vier NEU gerenderten virtuellen
+  AprilTag-Kameras](robobarista/camera_joint_replay.py).
+  Externe JSON-Bewegungsdateien werden nicht automatisch als echte
+  Demonstration authentifiziert.
+- [Original-Kamera-AprilTag-Check](robobarista/original_camera_tags.py)
+  bei optional lokal geladenen MP4-Bildern. Die Original-Kameras sind
+  nicht als kalibrierte 3D-AprilTag-Stereokameras belegt.
+- **[Alle Befehle, sicherer Testablauf und Grenzen](planning/REAL_LATTE_DEMOS_TO_FR5_CAMERAS.md)**
+
+**Noch nicht bewiesen:** visuelle 6D-Bahn aus den Originalvideos, tatsächlich
+identische Kannenkinematik (Griff-Offset unbekannt), reale FR5-Firmware,
+Milchfluss-/Crema-Physik oder physischer Erfolg. Das externe GitHub-Projekt
+enthält keine nachgewiesene physikalische Milchsimulation.
+
+
 ## Integrationszweig (23.10.2026): Kameraqualität, DMP, MoveIt2, FAIRINO
 
 > **Entwicklungsstatus:** Branch `feature/robobarista-integration-review-2026-10-23`,
