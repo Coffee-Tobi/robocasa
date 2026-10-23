@@ -4,6 +4,7 @@ on:
     paths:
       - 'robobarista/dual_tool_90_preview.py'
       - 'robobarista/dual_90_tool_attachments.py'
+      - 'robobarista/side_grasp_preview.py'
       - 'tests/test_pr11_side_grip.py'
       - 'tests/test_pr4_90deg_tool_attachments.py'
       - '.github/workflows/pr11-side-handle-grip.yml'
@@ -32,3 +33,41 @@ jobs:
             tests/test_pr11_side_grip.py \
             tests/test_pr4_90deg_tool_attachments.py \
             tests/test_dual_tool_90_preview.py
+
+      - name: Render actual 6-axis FR5 horizontal-side approach to both handles
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.side_grasp_preview \
+            --vendor-dir vendor --output runs/front_side_grasp \
+            --frames-per-tool 9 --fps 5 --width 760 --height 570
+      - name: Independently inspect the side approach and movie gates
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          d=Path('runs/front_side_grasp')
+          x=json.loads((d/'summary.json').read_text())
+          assert x['status']=='PASS'
+          assert len(x['side_approaches'])==2
+          assert {z['mode'] for z in x['side_approaches']}=={'cup','pitcher'}
+          for item in x['side_approaches']:
+              assert item['horizontal_approach_height_component']<.035
+              assert item['horizontal_finger_closing_height_component']<.035
+              assert item['horizontal_approach_distance_mm']>=24
+          assert not x['robot_gripper_closure_simulated']
+          assert not x['swept_unused_gripper_envelope_safe']
+          for p in ('cup_side_grasp_mujoco.png','pitcher_side_grasp_mujoco.png',
+                    'front_side_grasp_mujoco.mp4'):
+              assert (d/p).stat().st_size>10000,p
+          print('Side grasp pose & actual MuJoCo IK path PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RoboBarista-PR11-Actual-MuJoCo-Side-Grip
+          path: |
+            runs/front_side_grasp/*.png
+            runs/front_side_grasp/*.mp4
+            runs/front_side_grasp/summary.json
