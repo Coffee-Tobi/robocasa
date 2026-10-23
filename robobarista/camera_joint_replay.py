@@ -690,12 +690,13 @@ def run(args):
         'status':'PASS' if no_pose==0 and (getattr(args,'capture_only',False) or len(replay)==args.frames) else 'INCOMPLETE',
         'camera_capture_only':bool(getattr(args,'capture_only',False)),
         'virtual_latte_art_source':bool(getattr(args,'latte_art_source',False)),
-        'imported_real_robot_joint_demonstration':bool(imported_source_path),
+        'imported_external_pose_source':bool(imported_source_path),
+        'external_source_original_human_provenance_verified':False,
         'camera_images_newly_rendered_in_mujoco':True,
         'original_realman_videos_used_as_apriltag_measurements':False,
         'unknown_realman_to_fr5_absolute_base_alignment':bool(imported_source_path),
         'imported_source_alignment_metadata':external_source_stats,
-        'human_demonstration':bool(imported_source_path),
+        'human_demonstration':False,  # Unknown provenance from an arbitrary JSON filename
         'tag_profile':marker_profile,
         'pitcher_outer_tag_sizes_mm':([36,32,30] if marker_profile=='compact' else [90,90,82]),
         'cup_outer_tag_size_mm':28 if marker_profile=='compact' else 90,
@@ -707,7 +708,7 @@ def run(args):
         'robot_arm_moves_through_6_real_hinge_qpos':len(replay)==args.frames,
         'replay_inputs_camera_estimates_only':True,
         'source_motion':(
-            'Realman recorded joints -> manufacturer RM65 URDF FK -> virtual FR5; NOT original camera 6D measurements'
+            'External source poses (expected RM65 URDF FK) -> virtual FR5; dataset provenance NOT authenticated'
             if imported_source_path else
             ('collision-screened synthetic latte-art-like source'
              if getattr(args,'latte_art_source',False) else
