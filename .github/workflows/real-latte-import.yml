@@ -29,6 +29,56 @@ jobs:
         run: |
           python -m compileall -q robobarista/real_latte_dataset.py robobarista/realman_fk_bridge.py robobarista/external_pose_replay.py robobarista/camera_joint_replay.py
 
+  virtual-foreign-pose-camera-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install MuJoCo, Pupil AprilTags and OSMesa CPU
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Generate a strictly SYNTHETIC external pose fixture for software testing
+        run: |
+          python - <<'PY'
+          import json,math
+          from pathlib import Path
+          d=Path('runs/synthetic_source');d.mkdir(parents=True,exist_ok=True)
+          frames=[{'time_s':i/5.0,
+                   'position_m':[.4 + .002*math.sin(i/3),-.2,.95],
+                   'rotation_xyzw':[0,0,0,1]}
+                  for i in range(11)]
+          (d/'source_pose_DO_NOT_LABEL_HUMAN.json').write_text(json.dumps(frames))
+          PY
+      - name: Camera remeasurement of imported poses via actual rendered AprilTags
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.camera_joint_replay \
+             --capture-only --marker-profile legacy \
+             --frames 11 --fps 5 --width 960 --height 720 \
+             --external-pitcher-trajectory runs/synthetic_source/source_pose_DO_NOT_LABEL_HUMAN.json \
+             --output runs/external_pose_camera_smoke
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          p=Path('runs/external_pose_camera_smoke')
+          d=json.loads((p/'summary.json').read_text())
+          assert d['status']=='PASS',d
+          assert d['imported_external_pose_source']
+          assert not d['human_demonstration']
+          assert not d['external_source_original_human_provenance_verified']
+          assert not d['original_realman_videos_used_as_apriltag_measurements']
+          assert d['camera_valid_frames']==11
+          assert (p/'camera_capture.mp4').stat().st_size>10000
+          print('External 6D source -> virtual FR5 IK -> actual rendered RGB-D AprilTag image-based remeasurement: PASS')
+          PY
+
   public-metadata-probe:
     runs-on: ubuntu-latest
     timeout-minutes: 7
