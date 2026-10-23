@@ -1,6 +1,12 @@
 # RoboBarista – Ein Projekt, klare Varianten, sauberer Entwicklungsstand
 
-**Stand: 23. Oktober 2026. Einzige aktive Integrations-PR: #18**
+**Stand: 23. Oktober 2026. Einzige aktive Integrations-PR: #18; freigegebene 90°-Vorschau liegt bereits in main.**
+
+### Entscheidung 3/18: PR #3 – KAMERA/REFACTOR BEHALTEN; PARALLELHALTERUNG ERSETZEN
+
+Der Nutzer hat das maßlich vereinfachte MuJoCo-Bild mit FR5 → Inlux Force Torque Sensor (ITOSX1000FTS, derzeit visuelles Proxy) → 90° Dual Cobot Tool Adapter (ICACX1210XDUAL, derzeit visuelles Proxy) → zwei orthogonal montierte IR40-50-Fingergreifer **freigegeben** und explizit nach `main` übernehmen lassen.
+
+Dazu wurde der **gezielte** [PR #19](https://github.com/Coffee-Tobi/robocasa/pull/19) mit bestandenem MuJoCo-Scene-/Screenshot-/POV-CI auf `main` zusammengeführt. Enthält `robobarista/dual_tool_90_preview.py`, `robobarista/compact_tags.py`, Tests und eigenständige Rendering-Workflow. Der ursprüngliche PR #3 war bereits auf main und seine Kamerafunktionen bleiben. **WICHTIG:** Der Haupt-Kaffeeablauf verwendet bis zu gesonderten 90°-Kollisionstests noch den älteren parallelen Greiferkonzept-Zweig; nicht als bereits umgestellt ausgeben. Das Bild bestätigt nur optische Werkzeugorientierung, nicht realen Griff, Lasten oder elektrischen Anschluss.
 
 ### Entscheidung 2/18: PR #2 – VERWORFEN / bereits ersetzt (Nutzerentscheidung)
 
@@ -22,7 +28,7 @@ https://github.com/Coffee-Tobi/robocasa/pull/18
 
 GitHub vergibt fortlaufende Nummern; die Zahl 18 bedeutet NICHT
 18 gleichzeitig offene Änderungen. Bei diesem Cleanup:
-- 9 ältere PRs sind bereits in `main` **gemergt**.
+- 10 PRs sind inzwischen in `main` **gemergt** (einschließlich gezieltem freigegebenen #19).
 - 7 sind **geschlossen, nicht gemergt**, darunter die überholten
   Entwurfs-PRs #11, #13, #14, #16 und #17. Sie sind weiterhin
   über GitHub verlinkt, und ihre Branches wurden NICHT gelöscht.
