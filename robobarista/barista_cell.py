@@ -17,6 +17,7 @@ import cv2
 import numpy as np
 from PIL import Image
 from .scene import generate_scene, _nums, _tag, SIDE_PITCHER_TAG_IDS
+from .tag_mounts import profile, moving_jug_markers, cup_marker, COMPACT_JUG, COMPACT_CUP
 from .geometry import look_at_quat
 from .workcell_constraints import DOCKS,KEEP_OUTS,TRAVEL_CLEARANCE_M
 
@@ -225,21 +226,36 @@ def build_cell_scene(vendor_dir: Path) -> Path:
           [.020,.018,.006],'.76 .82 .84 1')
     _geom(pitcher,'rb_pitcher_handle','capsule',[.079,0,.07],
           [.012,.043],'.28 .30 .31 1',extra={'euler':'0 1.5708 0'})
-    # Pitcher top tab + one side tag, redundant view angles while moving.
-    top=_body(pitcher,'rb_pitcher_top_marker',[-.065,0,.135])
-    _tag(top,'cell_pitcher_top',TAG_ID['pitcher_top'],[0,0,0],tag_outer_side=.090)
-    # Second raised marker on a separate bracket, tilted toward the front
-    # low camera; provides another independent camera-visible fixture when
-    # the original upward marker is foreshortened/occluded.
-    secondary=_body(pitcher,'rb_pitcher_top_secondary_marker',[.085,0,.145])
-    secondary.set('euler','0.436332 0 0')
-    _tag(secondary,'cell_pitcher_top_secondary',
-         TAG_ID['pitcher_top_secondary'],[0,0,0],tag_outer_side=.090)
-    # Apriltag side with marker-local Z normal toward camera left/front.
-    side=_body(pitcher,'rb_pitcher_side_marker',[0,-.058,.083])
-    side.set('euler','1.570796 0 0')
-    _tag(side,'cell_pitcher_side',SIDE_PITCHER_TAG_IDS['pitcher_near'],
-         [0,0,0],tag_outer_side=.082)
+    # 3 optical markers on a *moving rigid pitcher*; compact mode mounts
+    # flat plaques to a handle clip plus two tangent side brackets. These
+    # explicitly model attachment, rather than floating 9-cm marker sheets.
+    optical_ids={
+        71:("rb_pitcher_top_marker","cell_pitcher_top"),
+        72:("rb_pitcher_top_secondary_marker","cell_pitcher_top_secondary"),
+        SIDE_PITCHER_TAG_IDS['pitcher_near']:
+            ("rb_pitcher_side_marker","cell_pitcher_side"),
+    }
+    for tid,mount in moving_jug_markers().items():
+        mount_name,face_name=optical_ids[tid]
+        anchor=_body(pitcher,mount_name,mount.centre_m)
+        anchor.set("euler",_nums(np.deg2rad(mount.euler_xyz_deg)))
+        if profile()=="compact":
+            face=mount.printed_outer_m
+            _box(anchor,face_name+"_physical_plaque",(0,0,-.0018),
+                 (face/2+.002,face/2+.002,.0016),'.21 .23 .26 1')
+            if tid==71:
+                # 17 mm clip rising from the top of the handle at x=+79mm.
+                _geom(anchor,face_name+"_handle_clip",'cylinder',
+                      (0,0,-.012),(.003,.012),'.18 .20 .22 1')
+            else:
+                # Two thin standoffs bridge the cylindrical side curvature;
+                # there is NO fake flat tag wrapped around the metal.
+                for k,x in enumerate((-.018,.018)):
+                    _geom(anchor,face_name+"_side_spacer_"+str(k),
+                         'cylinder',(x,0,-.006),(.003,.006),
+                         '.21 .22 .24 1')
+        _tag(anchor,face_name,tid,[0,0,0],
+             tag_outer_side=mount.printed_outer_m)
     # Clear/lightweight practice cup, not a ceramic mug. Moving free body.
     pour=_body(world,'rb_plastic_cup',[.35,-.37,TABLE_TOP+.003])
     ET.SubElement(pour,'freejoint',{'name':'rb_plastic_cup_free'})
@@ -252,10 +268,20 @@ def build_cell_scene(vendor_dir: Path) -> Path:
               [radius,half],'.88 .94 .98 .30')
     _geom(pour,'rb_plastic_rim','cylinder',[0,0,.107],
           [.045,.003],'.9 .95 .98 .68')
-    # Corner tab at cup rim, with explicit marker; cup is movable.
-    cup_tag=_body(pour,'rb_cup_marker',[0,-.091,.118])
+    # AprilTag mounted on a small rigid side clip ON the disposable cup;
+    # never a floating 90mm flag protruding away from the wall.
+    cc=cup_marker()
+    cup_tag=_body(pour,'rb_cup_marker',cc.centre_m)
+    cup_tag.set("euler",_nums(np.deg2rad(cc.euler_xyz_deg)))
+    if profile()=="compact":
+        _box(cup_tag,'rb_cup_tag_clip_plate',(0,0,-.002),
+             (cc.printed_outer_m/2+.002,cc.printed_outer_m/2+.002,.0017),
+             '.27 .28 .30 1')
+        for k,x in enumerate((-.012,.012)):
+            _geom(cup_tag,'rb_cup_tag_rim_clip_'+str(k),'cylinder',
+                  (x,0,-.006),(.0018,.006),'.31 .34 .36 1')
     _tag(cup_tag,'cell_plastic_cup',TAG_ID['plastic_cup'],[0,0,0],
-         tag_outer_side=.090)
+         tag_outer_side=cc.printed_outer_m)
     rinser=_body(world,'rb_rinser',[.07,.59,TABLE_TOP])
     _box(rinser,'rb_rinser_tray',[0,0,.025],
          [.135,.095,.02],'.35 .36 .37 1',collide=True)
