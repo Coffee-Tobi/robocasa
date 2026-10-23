@@ -1,5 +1,39 @@
 # RoboBarista — 3-Kamera-Aufnahme → FAIRINO FR5
 
+## Integrationszweig (23.10.2026): Kameraqualität, DMP, MoveIt2, FAIRINO
+
+> **Entwicklungsstatus:** Branch `feature/robobarista-integration-review-2026-10-23`,
+> [Draft-PR #16](https://github.com/Coffee-Tobi/robocasa/pull/16).
+> Der Hauptbranch bleibt bewusst unverändert. Keine reale Hardware- oder
+> Heißgetränke-Freigabe.
+
+- [Funktionierende Kamera vs. 0,5mm-Praezision unterscheiden](robobarista/vision_quality.py):
+  überprüft separat den virtuellen Kannen-Positionsfehler und die Erkennbarkeit
+  von 8 stationären Referenzen. Noch keine reale Ausgießer-Präzisionsmessung.
+- [DFKI Movement Primitives für Latte Art](robobarista/latte_dmp.py):
+  lernt nur eine 3D-Spitzenbahn aus AprilTag-Kameraposen, optionale
+  Zielverschiebung bis 20mm. Kein Orientierungs-/Milchflusslernen,
+  keine Roboteransteuerung. Optional: `pip install 'movement_primitives>=0.9,<1'`.
+- [MoveIt2 Planungs-Szene](robobarista/moveit_scene_bridge.py):
+  nominale Kaffeemaschinen-Quader als `CollisionObject`; offline JSON
+  als Standard, optionale ROS2-Planungsszenen-Publikation ohne Bewegung.
+- [FAIRINO SimMachine / ROS2 Readiness](robobarista/vendor_runtime_preflight.py):
+  findet lokale Voraussetzungen ohne Controllerverbindung;
+  Hersteller-SimMachine und MoveIt2 müssen separat eingerichtet werden.
+- [Drei Latte-Art-Vergleichsvideos](robobarista/latte_art_three_videos.py):
+  simulierte Originalbewegung, AprilTag-Rekonstruktion und virtueller
+  MuJoCo-FR5 auf derselben Zeitachse; **nicht** FAIRINO-Firmware.
+- [Praktische Ausführungs- und Installationsanleitung](planning/INTEGRATION_CHECKPOINT_2026_10_23.md).
+  Das zentrale [Google-Colab-Notebook](COLAB_ROBOBARISTA.ipynb)
+  bietet optionale Zellen für Qualitätsanalyse, DMP und 3 Videos.
+
+**CI:** FAIRINO-Kamerapipeline verwendet frische Bilder aus demselben
+Workflow; alte AprilTag-Konfigurationen bleiben reproduzierbar.
+Zusätzliche Kompaktmarkerkamera 4 ist über
+`--marker-profile compact --camera-count 4` als Experiment verfügbar,
+ohne die 3-Kamera-Standardaufnahme zu überschreiben.
+
+
 ## Open-Source-Zubehör und FAIRINO-Check (Oktober 2026)
 
 **Neu: tatsächliche, getestete Wiederverwendung statt bloßer eigener Geräteattrappen.**
