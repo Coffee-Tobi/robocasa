@@ -43,6 +43,7 @@ from .workcell_constraints import (
 )
 from .demo import render_pair,to_json
 from .scene import SIDE_PITCHER_TAG_IDS
+from .tag_mounts import profile, moving_jug_markers, active_edge_m
 
 
 def _transform(position,rotation):
@@ -54,15 +55,17 @@ def _transform(position,rotation):
 
 # Tag-to-body transforms come from the actual MJCF markers' local fixture
 # dimensions, NOT any hidden observation of body position while moving.
+# The estimator and MJCF MUST share the exact rigid transform and the
+# black-border-to-black-border printed metric size. Never reuse the 90-mm
+# assumption after shrinking tags: that would fabricate scale precision.
 MARKERS={
-    71:(_transform([-.065,0,.135],np.eye(3)),.090*440/512),
-    72:(_transform([.085,0,.145],
-        Rotation.from_euler('x',25,degrees=True).as_matrix()),.090*440/512),
-    SIDE_PITCHER_TAG_IDS['pitcher_near']:(
-        _transform([0,-.058,.083],
-                   Rotation.from_euler('x',90,degrees=True).as_matrix()),
-        .082*440/512),
+    tid:(_transform(mount.centre_m,
+                   Rotation.from_euler('xyz',mount.euler_xyz_deg,
+                                       degrees=True).as_matrix()),
+         active_edge_m(mount))
+    for tid,mount in moving_jug_markers().items()
 }
+
 TAG_DEFINITIONS={
     tid:('pitcher',fixture[0]) for tid,fixture in MARKERS.items()
 }
@@ -605,6 +608,10 @@ def run(args):
         'frames':args.frames,'fps':args.fps,'seed':rng_seed,
         'camera_valid_frames':sum(x['valid'] for x in camera_records),
         'camera_two_view_frames':sum(x['visible_views']>=2 for x in camera_records),
+        'apriltag_profile':profile(),
+        'moving_pitcher_tag_sizes_mm':{str(tid):round(size*1000,2)
+             for tid,size in SIDE_LENGTHS.items()},
+        'camera_captures_not_ground_truth_backfilled':True,
         'fixed_station_tags_recognized_in_initial_render':
             sum(bool(v.get('detected')) for v in fixed_references.values()),
         'fixed_station_reference_count':len(fixed_references),
