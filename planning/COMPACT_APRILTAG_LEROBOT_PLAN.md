@@ -88,8 +88,13 @@ Pixelauflösung**; Kamerapositionen und Blickfelder unterscheiden sich
 absichtlich, weil auch die kleinere Tagmontage ein neues Gesamtrig benötigt.
 Die kompakte Variante ist also **noch unzuverlässiger für die
 Stationskalibrierung**; maximale Spitze überschreitet 0,5mm.
-Die späteren Tests mit auf Gehäuse-Oberseiten verlegten statischen
-Referenzmarkern sind separat und müssen ihre eigene CI bestehen.
+**Nachtest nach Verlegung auf Gehäuseoberseiten:** Die Sensorpose blieb
+13/13 gültig; die festen Markierungen verbesserten sich auf **4 von 8**.
+Erkannt wurden nun Siebträgergriff, Kannenparkplatz, Gießplatz und
+Roboterbasis. Maschinenfront/Mühle/Milchdispenser und Rinser benötigen
+noch bessere Sichtwinkel oder eine ergänzende Kamera bzw. ein separates
+Kalibrierrig. Dieser Nachtest ist erfolgreich durchgelaufen; der
+höchste virtuelle Kannenfehler blieb jedoch 0,593mm.
 Die hier genannte Fehlerzahl ist ein POSITIONSFEHLER des modellierten
 Kannenbezugs, nicht unabhängig kalibrierte echte Ausgießerspitze.
 
