@@ -215,8 +215,8 @@ def render_one_arm_fixed_pivot(*, robot_joint_path, output_dir, mode="scripted",
                 raise AssertionError("Unexpected extra rotation of cup")
             spout=np.asarray(data.geom_xpos[model.geom("rb_gripped_pitcher_spout").id]).copy()
             rim=np.asarray(data.geom_xpos[model.geom("rb_tilt_cup_rim").id]).copy()
-            camera_eye=(spout+rim)/2+np.array([.17,-.65,.23])
-            camera_target=(spout+rim)/2
+            camera_eye=rim+np.array([.20,-.46,.17])
+            camera_target=rim+np.array([0.,0.,-.018])
             cam_id=model.body("rb_fixed_tilt_camera_rig").id
             mc_id=int(model.body_mocapid[cam_id])
             data.mocap_pos[mc_id]=camera_eye
@@ -259,6 +259,9 @@ def render_one_arm_fixed_pivot(*, robot_joint_path, output_dir, mode="scripted",
         "cup_allowed_joint_axis":"local/world Y at fixed pivot",
         "cup_pivot_xyz_m":pivot.tolist(),
         "max_tilt_deg":float(np.max(np.abs(tilt_deg))),
+        "min_tilt_deg":float(np.min(tilt_deg)),
+        "angle_start_deg":float(tilt_deg[0]),
+        "angle_end_deg":float(tilt_deg[-1]),
         "holder_tilt_limits_deg":[-MAX_TILT_DEG,MAX_TILT_DEG],
         "max_speed_deg_s":MAX_TILT_RATE_DEG_S,
         "cup_rim_arc_translation_from_pivot_is_normal_rotation_geometry":True,
@@ -266,6 +269,9 @@ def render_one_arm_fixed_pivot(*, robot_joint_path, output_dir, mode="scripted",
         "physical_contact_or_milk_flow_simulated":False,
         "actual_spout_over_liquid_surface_verified":False,
         "distance_spout_to_rim_first_mm":log[0]["visual_spout_to_cup_rim_mm"],
+        "virtual_spout_start_xyz_m":log[0]["virtual_spout_xyz_m"],
+        "stationary_cup_rim_start_xyz_m":log[0]["cup_rim_xyz_m"],
+        "latte_art_pouring_position_achieved":False,
         "distance_spout_to_rim_last_mm":log[-1]["visual_spout_to_cup_rim_mm"],
         "video":movie.name
     }
