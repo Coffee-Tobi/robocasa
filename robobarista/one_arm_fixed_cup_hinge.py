@@ -42,6 +42,8 @@ def _geom(parent, name, kind, pos, size, rgba, **kw):
     d={"name":name, "type":kind, "pos":pos, "size":size, "rgba":rgba,
        "contype":"0","conaffinity":"0","mass":"0"}
     d.update(kw)
+    if "fromto" in kw:
+        d.pop("pos", None)  # MuJoCo derives the capsule frame from its endpoints
     return ET.SubElement(parent,"geom",d)
 
 
