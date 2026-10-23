@@ -62,11 +62,12 @@ def test_grasped_pitcher_and_cup_are_upright_and_lateral_not_underneath():
        "rb_gripped_pitcher_body",-1)):
         centre=(d.geom_xpos[m.geom(jaw_a).id]+d.geom_xpos[m.geom(jaw_b).id])/2
         diff=rt.T@(d.geom_xpos[m.geom(bowl).id]-centre)
-        # Before the wrist pose compensation, the center may rotate,
-        # so test lateral DISTANCE along XY only via payload frame:
-        assert np.linalg.norm(diff[:2])>.075,held
-        assert abs(diff[2])<.02,held
-        if held=="cup": assert diff[0]>.07
+        # Compare in ACTIVE wrist poses; pitcher requires Ry(-90).
+        active=(pitch_rot@diff if held=="pitcher" else diff)
+        assert np.linalg.norm(active[:2])>.075,held
+        assert abs(active[2])<.02,held
+        if held=="cup": assert active[0]>.07
+        if held=="pitcher": assert active[0]<-.07
         # Jaw closing gap must have horizontal axis in active wrist mode.
 
 
