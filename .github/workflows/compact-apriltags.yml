@@ -5,6 +5,8 @@ on:
       - 'robobarista/compact_tags.py'
       - 'robobarista/camera_joint_replay.py'
       - 'tests/test_compact_apriltags.py'
+      - 'tests/test_lerobot_native_latte.py'
+      - 'robobarista/lerobot_native_latte.py'
       - '.github/workflows/compact-apriltags.yml'
   workflow_dispatch:
 jobs:
@@ -25,7 +27,7 @@ jobs:
           MUJOCO_GL: osmesa
           PYOPENGL_PLATFORM: osmesa
         run: |
-          python -m pytest -q tests/test_compact_apriltags.py
+          python -m pytest -q tests/test_compact_apriltags.py tests/test_lerobot_native_latte.py
       - name: Run real rendered Pupil AprilTag cameras on small mounted markers
         env:
           MUJOCO_GL: osmesa
