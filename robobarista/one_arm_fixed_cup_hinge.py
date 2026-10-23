@@ -61,6 +61,9 @@ def add_fixed_pivot_one_axis_cup(scene_file, output_file):
     ET.SubElement(holder,"joint",name=JOINT,type="hinge",
                   axis="0 1 0",pos="0 0 0",
                   limited="true",range="-18 18",damping="0.1")
+    # The hinge is a proper moving MuJoCo body: nonzero inertia despite visual-only geoms.
+    ET.SubElement(holder,"inertial",pos="0 0 .06",mass=".25",
+                  diaginertia=".00023 .00023 .00015")
     _geom(holder,"rb_tilt_cradle","cylinder","0 0 .014",".046 .008",".24 .44 .52 1")
     _geom(holder,"rb_tilt_cup_body","cylinder","0 0 .064",".041 .045",".86 .84 .79 1")
     _geom(holder,"rb_tilt_cup_rim","cylinder","0 0 .109",".044 .003",".94 .93 .88 1")
