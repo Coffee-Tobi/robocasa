@@ -87,14 +87,14 @@ def marker_config(profile):
     return markers,definitions,sides
 
 
-def _add_held_pitcher_robot_variant(vendor_dir,marker_profile='legacy'):
+def _add_held_pitcher_robot_variant(vendor_dir,marker_profile='legacy',camera_count=3):
     """Return complete MJCF where a VISUAL no-contact pitcher follows TCP.
 
     Distinct from actual moving demonstrator object; this avoids teleporting
     the object during arm replay. Payload contact checks use conservative
     sphere envelopes independent of the visual clone.
     """
-    scene=(build_compact_tag_cell(vendor_dir) if marker_profile=='compact'
+    scene=(build_compact_tag_cell(vendor_dir,camera_count=camera_count) if marker_profile=='compact'
            else build_cell_scene(vendor_dir))
     fr=Path(scene).parent
     tree=ET.parse(fr/'rb_fr5_cell_robot.xml')
@@ -481,7 +481,10 @@ def run(args):
     out.mkdir(parents=True,exist_ok=True)
     marker_profile=getattr(args,'marker_profile','legacy')
     markers,tag_definitions,side_lengths=marker_config(marker_profile)
-    scene=_add_held_pitcher_robot_variant(Path(args.vendor_dir).resolve(),marker_profile)
+    camera_count=getattr(args,'camera_count',3)
+    if camera_count==4 and marker_profile!='compact':
+        raise ValueError('Fourth camera requires compact marker profile')
+    scene=_add_held_pitcher_robot_variant(Path(args.vendor_dir).resolve(),marker_profile,camera_count)
     model=mujoco.MjModel.from_xml_path(str(scene))
     data=mujoco.MjData(model)
     mujoco.mj_forward(model,data)
@@ -516,6 +519,8 @@ def run(args):
     width,height=args.width,args.height
     renderer=mujoco.Renderer(model,width=width,height=height)
     names=list(CAMERAS)
+    if camera_count==4:
+        names.append('cell_overhead_aux')
     cals={name:Calibration.from_mujoco(model,data,name,width,height)
           for name in names}
     camera_records=[]
@@ -678,6 +683,7 @@ def run(args):
         'cup_outer_tag_size_mm':28 if marker_profile=='compact' else 90,
         'portafilter_handle_outer_tag_size_mm':24 if marker_profile=='compact' else None,
         'camera_resolution_px':[args.width,args.height],
+        'measurement_camera_count':camera_count,
         'registered_marker_sizes_include_quiet_zone':True,
         'native_fairino_motion_plan_is_separate_step':bool(getattr(args,'capture_only',False)),
         'robot_arm_moves_through_6_real_hinge_qpos':len(replay)==args.frames,
@@ -721,6 +727,8 @@ def main():
                         help='Save unaltered RGB views for optional native Hugging Face LeRobot video dataset; storage intensive')
     parser.add_argument('--marker-profile',choices=['legacy','compact'],default='legacy',
                         help='compact: rigid 24-42mm real-sized tags; legacy: old large markers')
+    parser.add_argument('--camera-count',type=int,choices=[3,4],default=3,
+                        help='Experimental compact fourth overhead camera; requires compact marker profile')
     parser.add_argument('--vendor-dir',default='vendor')
     parser.add_argument('--frames',type=int,default=13)
     parser.add_argument('--fps',type=float,default=5)
