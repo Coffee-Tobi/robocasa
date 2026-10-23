@@ -7,6 +7,8 @@ on:
       - 'robobarista/realman_fk_bridge.py'
       - 'robobarista/external_pose_replay.py'
       - 'robobarista/camera_joint_replay.py'
+      - 'robobarista/latte_fluid_proxy.py'
+      - 'tests/test_latte_fluid_proxy.py'
   workflow_dispatch:
 
 jobs:
@@ -92,6 +94,24 @@ jobs:
           assert summary['robot_arm_moves_through_6_real_hinge_qpos']
           assert (p/'demo_and_replay.mp4').stat().st_size>10000
           PY
+      - name: Run repeatable CPU milk illustration; NOT physical FluidLab
+        run: |
+          python -m pytest -q tests/test_latte_fluid_proxy.py
+          python -m robobarista.latte_fluid_proxy \
+            --source runs/real_video_fk/source_pitcher_6d_URDF_FK.json \
+            --output runs/real_video_fluid/illustrative_2d_milk.mp4 \
+            --fps 15
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path=Path('runs/real_video_fluid/illustrative_2d_milk.mp4')
+          s=json.loads(Path(str(path)+'.json').read_text())
+          assert path.stat().st_size>5000
+          assert not s['physically_validated_fluidlab_execution']
+          assert not s['real_latte_art_pattern_predicted']
+          assert not s['robot_command_generated']
+          print('Explicit qualitative milk preview created, not FluidLab.')
+          PY
       - name: Summarize what actually passed
         if: always()
         run: |
@@ -124,4 +144,6 @@ jobs:
             runs/real_video_fr5_replay/robot_replay.json
             runs/real_video_fr5_replay/summary.json
             runs/real_video_fr5_replay/camera_vs_truth_EVAL_ONLY.json
+            runs/real_video_fluid/illustrative_2d_milk.mp4
+            runs/real_video_fluid/illustrative_2d_milk.mp4.json
           if-no-files-found: error
