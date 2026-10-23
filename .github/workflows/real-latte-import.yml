@@ -5,6 +5,7 @@ on:
       - 'robobarista/real_latte_dataset.py'
       - 'robobarista/realman_fk_bridge.py'
       - 'robobarista/external_pose_replay.py'
+      - 'robobarista/original_camera_tags.py'
       - 'robobarista/camera_joint_replay.py'
       - 'tests/test_real_latte_import.py'
       - '.github/workflows/real-latte-import.yml'
@@ -118,4 +119,21 @@ jobs:
             'original_video_downloaded':False,
             'original_camera_6d_pose_derived':False}
           print(json.dumps(summary,indent=2))
+          PY
+      - name: Run OUR fast official Parquet importer against real episode 0
+        run: |
+          python -m pip install 'scipy>=1.11'
+          python -m robobarista.real_latte_dataset --parquet-only --episode 0 --output runs/real_original_episode_0
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path('runs/real_original_episode_0/source_and_validity.json').read_text())
+          assert a['frames']==400,a
+          assert 19<a['duration_s']<21,a
+          assert not a['data_license_verified']
+          assert not a['hardware_execution_authorized']
+          assert not a['source_camera_6d_pitcher_pose']
+          print('REAL uploaded data imported by our code:', a['frames'],
+                'frames, source:',a['source_data_path'])
+          print('No original videos or trajectories committed / uploaded.')
           PY
