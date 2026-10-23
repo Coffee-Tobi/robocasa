@@ -46,14 +46,15 @@ RECIPE=[
 ]
 
 
-def _story_scene(vendor_dir):
-    built=_add_held_pitcher_robot_variant(Path(vendor_dir).resolve())
+def _story_scene(vendor_dir,marker_profile='legacy'):
+    built=_add_held_pitcher_robot_variant(Path(vendor_dir).resolve(),marker_profile)
     fr=Path(built).parent
     root=ET.parse(fr/'rb_fr5_safe_cell_robot.xml')
     tcp=root.getroot().find(".//body[@name='rb_cell_tcp']")
     if tcp is None:raise RuntimeError('Missing FR5 wrist TCP')
     # Conceptual non-contact dual IR40-50 equipment. Not a physical pickup.
-    add_visual_dual_ir40_50(tcp,include_props=True)
+    add_visual_dual_ir40_50(tcp,include_props=True,
+                            compact_tags=(marker_profile=='compact'))
     for tool in ('portafilter','plastic_cup'):
         b=ET.SubElement(tcp,'body',{'name':'rb_story_'+tool,'pos':'0 0 0'})
         if tool=='portafilter':
@@ -221,7 +222,7 @@ def _random_pour_gesture(model,data,qids,limits,home,stages,seed):
 def run(args):
     out=Path(args.output).resolve()
     out.mkdir(exist_ok=True,parents=True)
-    scene=_story_scene(Path(args.vendor_dir))
+    scene=_story_scene(Path(args.vendor_dir),getattr(args,'marker_profile','legacy'))
     model=mujoco.MjModel.from_xml_path(str(scene))
     data=mujoco.MjData(model)
     _set_free_pose(model,data,'rb_pitcher_free',[-10,-10,-10],0)
@@ -369,6 +370,8 @@ def run(args):
         'pour_motion_is_demonstrative_not_cdmp_learned':True,
         'video_frames':len(frames),
         'video_camera_view':camera_mode,
+        'tag_profile':getattr(args,'marker_profile','legacy'),
+        'unique_gripped_object_tags':bool(getattr(args,'marker_profile','legacy')=='compact'),
         'over_shoulder_follow_with_overview_inset':camera_mode=='follow',
         'calibrated_apriltag_rgbd_cameras_unchanged':True,
         'two_IR40_grippers_visible_only':True,
@@ -393,6 +396,7 @@ def main():
     p.add_argument('--height',type=int,default=570)
     p.add_argument('--fps',type=float,default=8)
     p.add_argument('--camera-view',choices=('follow','overview'),default='follow')
+    p.add_argument('--marker-profile',choices=('legacy','compact'),default='legacy')
     p.add_argument('--frames-leg',type=int,default=4)
     args=p.parse_args()
     report=run(args)
