@@ -47,6 +47,11 @@ def geom(parent, name, shape, xyz, size, color, **attrs):
 def gripper(mount, name, color):
     """Each arm has one IR40-like body and two opposed jaw geometries."""
     unit = body(mount, name, (0, 0, .020))
+    # Roll each IR40 about its own APPROACH AXIS by 90 degrees.
+    # With the selected front-side wrist orientations, opposed jaws
+    # now close LEFT/RIGHT around the handle, not above/below it.
+    # This leaves the two mounting/approach axes 90 degrees apart.
+    unit.set("euler","0 0 1.5707963267948966")
     geom(unit, name+"_base", "cylinder", (0, 0, .003),
          (.029, .010), ".68 .71 .74 1")
     geom(unit, name+"_housing", "box", (0, 0, .034),
