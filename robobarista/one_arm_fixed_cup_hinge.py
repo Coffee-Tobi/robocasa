@@ -242,7 +242,7 @@ def render_one_arm_fixed_pivot(*, robot_joint_path, output_dir, mode="scripted",
         renderer.close()
     if not shutil.which("ffmpeg"):
         raise RuntimeError("ffmpeg required to produce requested preview")
-    movie=out/"one_arm_fixed_pivot_"+mode+".mp4"
+    movie=out/("one_arm_fixed_pivot_"+mode+".mp4")
     subprocess.run(["ffmpeg","-y","-loglevel","error","-framerate",
                     str(fps),"-i",str(images/"frame_%04d.png"),
                     "-c:v","libx264","-pix_fmt","yuv420p",str(movie)],check=True)
