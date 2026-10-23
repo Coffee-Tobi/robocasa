@@ -278,6 +278,9 @@ def run(args):
     # Stage path screening: check before any rendering.
     recipe=[]
     for label,dock,tool,action in RECIPE:
+        if cup_style=='handle_mug':
+            label=label.replace('Kunststoffbecher','Keramiktasse am Henkel')
+            label=label.replace('Becher zum Giessplatz','Tasse am Henkel zum Giessplatz')
         q=np.asarray(stages[dock]['stage']['q_rad'],float)
         safe,reason,checked=_check_route(
             model,data,qids,limits,home,q,tool)
@@ -411,14 +414,16 @@ def run(args):
         'pour_motion_is_demonstrative_not_cdmp_learned':True,
         'video_frames':len(frames),
         'video_camera_view':camera_mode,
-        'tag_profile':getattr(args,'marker_profile','legacy'),
-        'unique_gripped_object_tags':bool(getattr(args,'marker_profile','legacy')=='compact'),
+        'tag_profile':getattr(args,'marker_profile','compact'),
+        'unique_gripped_object_tags':bool(getattr(args,'marker_profile','compact')=='compact'),
         'over_shoulder_follow_with_overview_inset':camera_mode=='follow',
         'calibrated_apriltag_rgbd_cameras_unchanged':True,
         'two_IR40_grippers_visible_only':True,
         'tool_objects_attached_to_gripper_frames':True,
         'old_tcp_attached_tool_clones_hidden':True,
         'actual_finger_contact_force_simulated':False,
+        'offset_mug_payload_clearance_validated':False if cup_style=='handle_mug' else None,
+        'actual_cup_or_mug_pickup_executed':False,
         'mp4_created':mp4,
         'no_mechanical_contact_or_liquid_physics':True,
         'limitations':'Full logical kinematic espresso/milk/latte choreography with explicit no-contact machine pre-docks; simulated processes are labels and proxy object poses only. No portafilter insertion, safe-contact modelling, espresso fluid, froth texture or actual latte art.'
