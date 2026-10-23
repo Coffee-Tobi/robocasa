@@ -1,66 +1,69 @@
 # RoboBarista — 3-Kamera-Aufnahme → FAIRINO FR5
 
-## NEU im Experiment-Branch: Originale Latte-Art-Demonstrationen (23.10.2026)
+## AKTUELL – EIN RoboBarista-Entwicklungsstand
 
-[Draft-PR #17](https://github.com/Coffee-Tobi/robocasa/pull/17) auf dem
-bisherigen Integrationsbranch – bewusst NICHT direkt auf `main`.
+> **Aktiver Draft-Pull-Request:** [#18 – RoboBarista Integration](https://github.com/Coffee-Tobi/robocasa/pull/18)
+> auf Basis von `main`. **Nicht gemergt und nicht für reale Hardware freigegeben.**
+> Alte #11, #13, #14, #16 und #17 sind als Entwürfe archiviert, deren Branches
+> bleiben erhalten. Neben #18 sind nur die getrennten Forschungs-PRs
+> [#9 – FAIRINO NewSpline](https://github.com/Coffee-Tobi/robocasa/pull/9)
+> und [#1 – MPC-Kontaktsensorik](https://github.com/Coffee-Tobi/robocasa/pull/1) offen.
 
-- [Echte, publizierte 20-Hz-Gelenkaufnahmen importieren](robobarista/real_latte_dataset.py):
-  Episode 0 wurde mit **400 Originaldatenpunkten / 19,95 Sekunden / 14D**
-  über GitHub Actions gelesen. Schneller Parquet-Import ohne Torch oder Videos.
-- [RM65-URDF-Vorwärtskinematik](robobarista/realman_fk_bridge.py):
-  Zwei Arme à sechs Gelenke **mit** je einem Greifersignal
-  `[L6,L_gripper,R6,R_gripper]`, nicht einfach 12 Gelenkkommandos an FR5.
-  Erfordert passende Hersteller-URDF und Flansch-Kannen-Kalibrierung.
-- [Kinematischer sicherer Relativreplay](robobarista/external_pose_replay.py)
-  als Quelle für [unsere drei/vier NEU gerenderten virtuellen
-  AprilTag-Kameras](robobarista/camera_joint_replay.py).
-  Externe JSON-Bewegungsdateien werden nicht automatisch als echte
-  Demonstration authentifiziert.
-- [Original-Kamera-AprilTag-Check](robobarista/original_camera_tags.py)
-  bei optional lokal geladenen MP4-Bildern. Die Original-Kameras sind
-  nicht als kalibrierte 3D-AprilTag-Stereokameras belegt.
-- **[Alle Befehle, sicherer Testablauf und Grenzen](planning/REAL_LATTE_DEMOS_TO_FR5_CAMERAS.md)**
+**Bitte zuerst lesen:** [Projektstatus, Aufräumprotokoll und offene Aufgaben](planning/PROJECT_STATUS_AND_PR_CLEANUP_2026_10_23.md).
 
-**Noch nicht bewiesen:** visuelle 6D-Bahn aus den Originalvideos, tatsächlich
-identische Kannenkinematik (Griff-Offset unbekannt), reale FR5-Firmware,
-Milchfluss-/Crema-Physik oder physischer Erfolg. Das externe GitHub-Projekt
-enthält keine nachgewiesene physikalische Milchsimulation.
+### Aktuelle visuelle Kaffee-Vorführung
 
+- **Keramiktasse am Henkel:** ein expliziter `handle_mug`-Modus mit schmalen
+  IR40-B-Backen am Henkel, Tassenkörper NICHT unter/zwischen Backen.
+  **Einwegbecher** besitzt separat `--cup-style takeaway` für Körpergrip.
+- **Kleine AprilTags direkt befestigt**: `--marker-profile compact` mit
+  24–42 mm großen Tags auf Tasse, Milchkanne, Siebträger und Stationen.
+  Die alten großen Tags bleiben ausschließlich Benchmarkoption `legacy`.
+- **Griff von schräg vorne sichtbar:** `--camera-view handle_close`
+  ist der aktuelle Kino-Kamerawinkel; 3/4 RGB-D-Messkameras sind davon
+  unabhängig.
+- **Keine physische Greifbehauptung:** Die Tasse bleibt ein starr
+  angehängtes MuJoCo-Videomodell, keine reale Finger-Kontaktsimulation.
 
-## Integrationszweig (23.10.2026): Kameraqualität, DMP, MoveIt2, FAIRINO
+```bash
+export MUJOCO_GL=osmesa PYOPENGL_PLATFORM=osmesa
+python -m pytest -q tests/test_handle_mug_compact_video.py tests/test_compact_apriltags.py
+python -m robobarista.coffee_workflow \
+    --marker-profile compact --cup-style handle_mug \
+    --camera-view handle_close --frames-leg 3 \
+    --output runs/handled_mug_compact
+# Video: runs/handled_mug_compact/coffee_workflow.mp4
+```
 
-> **Entwicklungsstatus:** Branch `feature/robobarista-integration-review-2026-10-23`,
-> [Draft-PR #16](https://github.com/Coffee-Tobi/robocasa/pull/16).
-> Der Hauptbranch bleibt bewusst unverändert. Keine reale Hardware- oder
-> Heißgetränke-Freigabe.
+### Reale Gießdemonstrationen und Robotik
 
-- [Funktionierende Kamera vs. 0,5mm-Praezision unterscheiden](robobarista/vision_quality.py):
-  überprüft separat den virtuellen Kannen-Positionsfehler und die Erkennbarkeit
-  von 8 stationären Referenzen. Noch keine reale Ausgießer-Präzisionsmessung.
-- [DFKI Movement Primitives für Latte Art](robobarista/latte_dmp.py):
-  lernt nur eine 3D-Spitzenbahn aus AprilTag-Kameraposen, optionale
-  Zielverschiebung bis 20mm. Kein Orientierungs-/Milchflusslernen,
-  keine Roboteransteuerung. Optional: `pip install 'movement_primitives>=0.9,<1'`.
-- [MoveIt2 Planungs-Szene](robobarista/moveit_scene_bridge.py):
-  nominale Kaffeemaschinen-Quader als `CollisionObject`; offline JSON
-  als Standard, optionale ROS2-Planungsszenen-Publikation ohne Bewegung.
-- [FAIRINO SimMachine / ROS2 Readiness](robobarista/vendor_runtime_preflight.py):
-  findet lokale Voraussetzungen ohne Controllerverbindung;
-  Hersteller-SimMachine und MoveIt2 müssen separat eingerichtet werden.
-- [Drei Latte-Art-Vergleichsvideos](robobarista/latte_art_three_videos.py):
-  simulierte Originalbewegung, AprilTag-Rekonstruktion und virtueller
-  MuJoCo-FR5 auf derselben Zeitachse; **nicht** FAIRINO-Firmware.
-- [Praktische Ausführungs- und Installationsanleitung](planning/INTEGRATION_CHECKPOINT_2026_10_23.md).
-  Das zentrale [Google-Colab-Notebook](COLAB_ROBOBARISTA.ipynb)
-  bietet optionale Zellen für Qualitätsanalyse, DMP und 3 Videos.
+- [40 veröffentlichte LeRobot-Realman-Demonstrationen importieren](robobarista/real_latte_dataset.py):
+  Die echte erste Episode lieferte 400 gültige Messpunkte bei 20 Hz,
+  14D Gelenk+Greifer; keine gegebene 3D-Kannenbahn.
+- [Originales RM65-URDF-FK-Experiment](robobarista/realman_fk_bridge.py):
+  RealMan-Robotergeometrie und Flanschversatz müssen zu den Originaldaten
+  passen; bisher wurde nur eine **nicht kalibrierte RM65-B-Annahme** getestet.
+- [FR5 3D-Kamera-Messung und kinematisches Nachfahren](robobarista/camera_joint_replay.py):
+  13/13 gültige virtuelle Kameraposen im früheren Test mit großen Tags,
+  max. **0,561 mm virtueller Kannenpositionsfehler**;
+  keine reale Ausgießerspitzen-/Servo-Präzisionsgarantie.
+- [DFKI-DMP](robobarista/latte_dmp.py), [MoveIt2-Planungsszene](robobarista/moveit_scene_bridge.py)
+  und [FAIRINO SimMachine-Prüfung](robobarista/vendor_runtime_preflight.py)
+  sind getrennte **Offline-Schnittstellen**, nicht eine erprobte Herstellersteuerung.
+- [MIT-2D-Latte-Flüssigkeitssimulator](robobarista/latte_fluid_adapter.py)
+  wird als bestehender Open-Source-Sidecar verwendet. [Einfacher Python
+  Milch-Oberflächenproxy](robobarista/latte_fluid_proxy.py) ist nur eine
+  CPU-Fallback-Animation. **FluidLab `LatteArt-v0` ist noch nicht eingebaut**;
+  weder 2D-Variante simuliert physikalisch echten Milchschaum.
+- [Google-Colab-Notebook mit optionalen Simulationen](COLAB_ROBOBARISTA.ipynb).
+  [Realman-Demo→FR5](planning/REAL_LATTE_DEMOS_TO_FR5_CAMERAS.md)
+  und [Video-/Milchversuch](planning/REAL_LATTE_VIDEO_AND_FLUID_INTEGRATION.md)
+  dokumentieren genaue Unterschiede.
 
-**CI:** FAIRINO-Kamerapipeline verwendet frische Bilder aus demselben
-Workflow; alte AprilTag-Konfigurationen bleiben reproduzierbar.
-Zusätzliche Kompaktmarkerkamera 4 ist über
-`--marker-profile compact --camera-count 4` als Experiment verfügbar,
-ohne die 3-Kamera-Standardaufnahme zu überschreiben.
-
+**Wichtig:** Espresso-Bezug, Siebträgerverriegelung, Greifkräfte, Dampfkontakt,
+Milchschaum und Latte-Art-Muster werden derzeit nur symbolisch/idealisiert
+visualisiert. Der nächste Schritt muss tatsächliche Werkzeugkontakte,
+kalibrierte Spitzengenauigkeit und echte Motorreaktion prüfen.
 
 ## Open-Source-Zubehör und FAIRINO-Check (Oktober 2026)
 
