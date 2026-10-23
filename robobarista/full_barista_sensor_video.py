@@ -162,7 +162,8 @@ def run(args):
     from types import SimpleNamespace
     p=SimpleNamespace(vendor_dir=args.vendor_dir,output=str(raw),seed=14,
         width=args.width,height=args.height,fps=float(args.capture_fps),
-        camera_view="follow",frames_leg=args.frames_leg)
+        camera_view="follow",frames_leg=args.frames_leg,
+        marker_profile=getattr(args,'marker_profile','legacy'))
     summary=run_coffee(p)
     if summary["status"]!="PASS":raise RuntimeError("Underlying scene did not pass")
     events=json.loads((raw/"recipe.json").read_text())
@@ -225,6 +226,7 @@ def run(args):
         "duration_s":picture_index/(args.capture_fps*args.repeat),
         "video_created":video.stat().st_size>10000,
         "both_IR40_gripper_concepts_visible":True,
+        "tag_profile":getattr(args,"marker_profile","legacy"),
         "portafilter_bayonet_test":detailed[2]["mock_ft"],
         "steam_side_contact_test":detailed[7]["mock_ft"],
         "fairino_trajectory_LA_vendor_method_plan":lookahead,
@@ -250,6 +252,7 @@ def main():
     p.add_argument("--capture-fps",type=int,default=6)
     p.add_argument("--repeat",type=int,default=2)
     p.add_argument("--frames-leg",type=int,default=9)
+    p.add_argument("--marker-profile",choices=('legacy','compact'),default='legacy')
     a=p.parse_args()
     r=run(a)
     import sys
