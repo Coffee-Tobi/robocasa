@@ -74,6 +74,36 @@ Greifers an Brühgruppe, Maschine, Tisch und Dampflanze; Last-/CG,
 Schwerkraft/FT-Nullung und Abgleich mit echten Sensorversuchen.
 STEP allein ermöglicht keine automatisch physikalisch genaue Simulation.
 
+## Exakter Herstellerproduktname (am 23.10.2026 neu verifiziert)
+
+**Inlux Robotics – Dual Cobot Tool Adapter, Artikelcode `ICACX1210XDUAL`.**
+https://inluxrobotics.eu/products/dual-tool-adapter
+
+Verifizierte Fakten: gleicher von Inlux hergestellter Adapter beim deutschen
+Distributor Welectron (`IX1-900013`), volle FAIRINO-FR5-Kompatibilität
+laut Hersteller, zwei simultan verwendbare Werkzeugaufnahmen, CNC
+Aluminium 6061, 335 EUR Herstellerlistenpreis vor länderspezifischer
+Mehrwertsteuer.
+
+**CAD-Status nach Suche mit dem EXAKTEN Produktnamen:** Inlux zeigt
+eine Rubrik „Downloads“, darunter aber **keinen tatsächlichen anklickbaren
+Link auf STEP/STP/IGES, technische Zeichnung oder Montage-CAD**. Auch
+Welectron bietet auf der Produktseite kein solches nachgewiesenes CAD.
+Bitte keinen anderen `Dual Tool Adapter` von TMC/Fairino als denselben
+Inlux-Adapter behandeln: das wäre ein separates Herstellerprodukt.
+Das Ergebnis ist daher weiterhin: **Original-STEP dieses exakten Adapters
+fehlt.** Das ist eine reale Beschaffungssperre für eine maßhaltige
+komplette Montage; weder Maße noch Verbindungswinkel aus Marketingfotos
+als offizielle CAD-Daten ausgeben.
+
+Anfrage an `sales@inluxrobotics.nl`: 
+`Could you please share the STEP CAD and dimensioned drawing for
+ICACX1210XDUAL (Dual Cobot Tool Adapter), including flange coordinate
+frames, 90-degree tool face relationship, mass and mount interfaces?
+We intend to use it between an ITOSX1000FTS force/torque sensor and two
+IR40-50 grippers on a FAIRINO FR5. Please confirm mechanical and RS485/
+power compatibility of all three devices.`
+
 ## Abweichung des aktuellen MuJoCo-Entwurfs
 
 In `robobarista/dual_ir40_concept.py` wurde bisher
