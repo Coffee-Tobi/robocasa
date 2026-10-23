@@ -52,9 +52,13 @@ def test_grip_center_is_between_fingers_and_cup_has_real_rendered_handle():
               "rb_free_mug_handle_lower","rb_free_mug_handle_outer"):
         assert m.geom(g).id>=0
     a=m.body("rb_gripped_cup").id
-    # Orthogonal tool holder rotates its cup frame back to world-upright
-    z=d.xmat[a].reshape(3,3)[:,2]
-    assert z[2]>.99
+    # Orthogonal tool holder rotates cup frame -90 deg about local Y
+    holder=m.body("rb_90_ir40_cup").id
+    z_parent=d.xmat[holder].reshape(3,3)
+    z_body=d.xmat[a].reshape(3,3)
+    from scipy.spatial.transform import Rotation
+    expected=Rotation.from_euler("y",-90,degrees=True).as_matrix()
+    assert np.allclose(z_parent.T@z_body,expected,atol=1e-7)
 
 
 def test_takeaway_has_no_fake_handle_but_reuses_orthogonal_arm():
