@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'robobarista/real_demo_90_ik.py'
+      - 'robobarista/one_arm_fixed_cup_hinge.py'
+      - 'tests/test_one_arm_fixed_cup_hinge.py'
       - 'tests/test_real_demo_90_ik.py'
       - '.github/workflows/real-demo-90-ik-exploratory.yml'
   workflow_dispatch:
@@ -26,7 +28,7 @@ jobs:
           python -m pip install -r requirements.txt 'huggingface_hub>=0.27,<2' 'pyarrow>=16,<23'
       - name: Test source and approved current tool frames
         run: |
-          python -m pytest -q tests/test_real_demo_90_ik.py tests/test_current_90_tool_frames.py tests/test_real_latte_import.py
+          python -m pytest -q tests/test_real_demo_90_ik.py tests/test_current_90_tool_frames.py tests/test_real_latte_import.py tests/test_one_arm_fixed_cup_hinge.py
       - name: Download ONE ACTUAL numerical episode without video
         run: |
           python -m robobarista.real_latte_dataset --parquet-only --episode 0 --output runs/source_episode0_private
@@ -55,6 +57,34 @@ jobs:
               --start-s 8 --end-s 12 --frames 13 --fps 3 --render-virtual-preview \
               --output "runs/real_90_${arm}_8to12" || true
           done
+      - name: Render one FR5 arm + programmable physical 1-DOF fixed-pivot cup
+        run: |
+          test -s runs/real_90_left_8to12/IK_joint_path_ONLY_IF_COMPLETE.json
+          python -m robobarista.one_arm_fixed_cup_hinge \
+            --robot-joint-path runs/real_90_left_8to12/IK_joint_path_ONLY_IF_COMPLETE.json \
+            --mode scripted --duration 4 --fps 3 \
+            --output runs/single_fr5_hinged_cup_scripted
+          python -m robobarista.one_arm_fixed_cup_hinge \
+            --robot-joint-path runs/real_90_left_8to12/IK_joint_path_ONLY_IF_COMPLETE.json \
+            --mode projected-source \
+            --original-joints runs/source_episode0_private/recorded_realman_joints.json \
+            --urdf /tmp/realman_models/RM65/urdf/RM65-B/urdf/RM65-B.urdf \
+            --source-cup-arm right --duration 4 --fps 3 \
+            --output runs/single_fr5_hinged_cup_projected
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for mode, folder in [('scripted','scripted'),('projected-source','projected')]:
+              root=Path('runs/single_fr5_hinged_cup_'+folder)
+              d=json.loads((root/'summary.json').read_text())
+              assert d['status']=='ONE_ARM_HINGE_VIDEO_CREATED'
+              assert d['cup_independent_translation_dofs']==0
+              assert d['cup_independent_rotation_dofs']==1
+              assert abs(d['max_tilt_deg'])<=18
+              assert (root/d['video']).stat().st_size>10000
+              print(mode,'pivot:',d['cup_pivot_xyz_m'],'spout-rim start mm:',
+                    d['distance_spout_to_rim_first_mm'])
+          PY
       - name: Report real versus virtual status without claiming source calibration
         run: |
           python - <<'PY'
@@ -74,7 +104,7 @@ jobs:
                   'actual_pitcher_mount_calibrated'
               )},indent=2))
           PY
-      - name: Artifact contains JSON metrics ONLY, no licensed data or joints
+      - name: Upload our own MuJoCo videos and metrics, not original copyrighted videos/joints
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -82,3 +112,5 @@ jobs:
           path: |
             runs/real_90_*/report.json
             runs/real_90_*/*.mp4
+            runs/single_fr5_hinged_cup_*/summary.json
+            runs/single_fr5_hinged_cup_*/*.mp4
