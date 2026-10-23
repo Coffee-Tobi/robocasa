@@ -43,17 +43,20 @@ CUP_MARKER = ((0.,-.058,.105),(math.pi/2,0.,0.),PLASTIC_CUP_OUTER_M)
 # Station mounts located on actual rigid prop/housing, not long stalks.
 # Local position coordinates follow barista_cell's primitive assets.
 STATION_PLACEMENT={
-    'grinder':('rb_grinder',(-.043,-.095,.205),(math.pi/2,0.,0.),.042),
-    'portafilter':('rb_portafilter_stand',(0.,-.137,.089),
-                    (math.pi/2,0.,0.),PORTAFILTER_OUTER_M),
-    'espresso':('rb_espresso_machine',(.145,-.132,.315),
-                (math.pi/2,0.,0.),.042),
-    'milk_dispenser':('rb_milk_dispenser',(.062,-.099,.250),
-                     (math.pi/2,0.,0.),.042),
+    # Flat on appliance TOPS or on the real handle. No flag above a 20cm pole.
+    # Top-facing tags survive oblique overhead camera views much better than
+    # the short front walls, where the espresso housings occlude corners.
+    'grinder':('rb_grinder',(-.063,-.057,.284),(0.,0.,0.),.042),
+    'portafilter':('rb_portafilter_stand',(0.,-.137,.102),
+                    (0.,0.,0.),PORTAFILTER_OUTER_M),
+    'espresso':('rb_espresso_machine',(-.142,-.010,.465),
+                (0.,0.,0.),.042),
+    'milk_dispenser':('rb_milk_dispenser',(.068,-.023,.323),
+                     (0.,0.,0.),.042),
     'pitcher_stand':('rb_pitcher_stand',(.071,.044,.016),(0.,0.,0.),.036),
     'pour':('worldbody',(.310,-.575,.825),(0.,0.,0.),.036),
     'rinser':('rb_rinser',(.105,-.062,.065),(0.,0.,0.),.036),
-    'robot_base':('worldbody',(.185,.055,.822),(0.,0.,0.),.036),
+    'robot_base':('worldbody',(.285,-.060,.822),(0.,0.,0.),.036),
 }
 
 
