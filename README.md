@@ -19,11 +19,13 @@ python -m robobarista.dual_tool_90_preview --output runs/dual90_preview
 **Geltungsbereich der Freigabe:** Kinematisch echtes FR5-MuJoCo-Modell
 mit visuell angenähertem Sensor, Adapter und Greifern – **kein**
 eingelesenes Adapter-STEP, keine F/T-Messung, Greifkräfte oder
-Kollisionsvalidierung des Doppelwerkzeugs. Die bestehende
-11-Schritte-Kaffee-Choreografie und die noch unveröffentlichte,
-komplexere Entwicklungs-PR #18 werden **nicht** durch diesen
-gezielten Merge umgestellt. Vor deren Freigabe müssen die Toolframes,
-die Zweigreifer-Kollisionen und der Griff am Tassenhenkel getestet werden.
+Kollisionsvalidierung des Doppelwerkzeugs. **Nachfolgeänderung: [PR #20](https://github.com/Coffee-Tobi/robocasa/pull/20) wurde ebenfalls auf main übernommen.** Der 11-Schritte-Kaffeeablauf und die 20-Sekunden-Latte-Art-Gießgesten verwenden jetzt kinematisch denselben 90°-Doppeladapter. Siebträger/Milchkanne hängen am axialen IR40, die optionale Keramiktasse am orthogonalen IR40, mit separater Takeaway-Variante. Der gerenderte 20-Sekunden-MuJoCo-Test bestand mit 100 Bildern bei 5 FPS und 18,0 mm maximaler Ausgießerspitzenbewegung.
+
+[Quellcode](robobarista/dual_90_tool_attachments.py) |
+[Test](tests/test_pr4_90deg_tool_attachments.py) |
+[Latte-Art-Lauf](robobarista/latte_art_20s.py).
+
+**Nicht nachgewiesen:** Motor- und Kraftregelung eines realen FR5, Fingerkontakt, korrekte reale 90°-Adapterabmessungen, vollständige Zweigreifer-Kollisionen, echte Kannenflüssigkeit oder Latte-Art-Erfolg. Die weitere experimentelle PR #18 darf nicht blind gemergt werden, weil sie ältere Versionen der Greifer-/Kaffee-Dateien enthält.
 
 
 ## Open-Source-Zubehör und FAIRINO-Check (Oktober 2026)
