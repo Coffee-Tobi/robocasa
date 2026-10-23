@@ -17,6 +17,7 @@ import math
 import xml.etree.ElementTree as ET
 from .barista_cell import build_cell_scene
 from .scene import _nums
+from .geometry import look_at_quat
 
 # Physical dimensions of OUTER printed flat panel, including quiet zone.
 PITCHER_SIDE_OUTER_M = .036
@@ -127,6 +128,19 @@ def build_compact_tag_cell(vendor_dir:Path) -> Path:
         parent.append(node)
         face=_must(node,f"geom[@name='rb_tagface_{name}']")
         _mount_on_object(node,name,xyz,rpy,face,size)
+    # For 30-36mm AprilTags, pixel footprint matters more than raw tag
+    # dimension. A realistic closer three-camera rig at ~0.7-1.1m replaces
+    # the widely spaced legacy camera coordinates ONLY in compact mode.
+    compact_eyes={
+        'cell_left':(-.74,-1.03,1.61),
+        'cell_right':(.58,-1.08,1.55),
+        'cell_back':(-.02,.42,1.69)}
+    target=(-.10,-.30,1.04)
+    for name,eye in compact_eyes.items():
+        camera=_must(world,f"camera[@name='{name}']")
+        camera.set('pos',_nums(eye))
+        camera.set('quat',_nums(look_at_quat(eye,target)))
+        camera.set('fovy','50')
     out=original.with_name('rb_artly_compact_tags_island.xml')
     tree.write(out,encoding='unicode')
     return out
