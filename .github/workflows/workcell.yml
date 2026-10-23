@@ -6,7 +6,6 @@ on:
       - 'robobarista/cell_demo.py'
       - 'robobarista/workcell_constraints.py'
       - 'tests/test_barista_cell.py'
-      - 'COLAB_WORKCELL.ipynb'
       - '.github/workflows/workcell.yml'
   workflow_dispatch:
 jobs:
