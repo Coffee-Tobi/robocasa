@@ -135,7 +135,7 @@ def reconstruct_pitches(rows,chain,*,arm,joint_unit,flange_to_pitcher,
     M=validate_rigid_transform(flange_to_pitcher,"flange_to_pitcher")
     from .real_latte_dataset import validate_realman_episode
     source=validate_realman_episode(rows)
-    offset=0 if arm=="left" else 6
+    offset=0 if arm=="left" else 7
     ret=[]
     for row in rows:
         q=np.asarray(row["state"],float)[offset:offset+6]
