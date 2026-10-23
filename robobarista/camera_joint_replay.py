@@ -43,6 +43,8 @@ from .workcell_constraints import (
 )
 from .demo import render_pair,to_json
 from .scene import SIDE_PITCHER_TAG_IDS
+from .compact_tags import (build_compact_tag_cell,
+    expected_compact_marker_transforms,ACTIVE_FRACTION,STATION_PLACEMENT)
 
 
 def _transform(position,rotation):
@@ -69,14 +71,15 @@ TAG_DEFINITIONS={
 SIDE_LENGTHS={tid:fixture[1] for tid,fixture in MARKERS.items()}
 
 
-def _add_held_pitcher_robot_variant(vendor_dir):
+def _add_held_pitcher_robot_variant(vendor_dir,marker_profile='legacy'):
     """Return complete MJCF where a VISUAL no-contact pitcher follows TCP.
 
     Distinct from actual moving demonstrator object; this avoids teleporting
     the object during arm replay. Payload contact checks use conservative
     sphere envelopes independent of the visual clone.
     """
-    scene=build_cell_scene(vendor_dir)
+    scene=(build_compact_tag_cell(vendor_dir) if marker_profile=='compact'
+           else build_cell_scene(vendor_dir))
     fr=Path(scene).parent
     tree=ET.parse(fr/'rb_fr5_cell_robot.xml')
     tcp=tree.getroot().find(".//body[@name='rb_cell_tcp']")
@@ -97,7 +100,8 @@ def _add_held_pitcher_robot_variant(vendor_dir):
     cell_tree=ET.parse(scene)
     root=cell_tree.getroot()
     root.find('include').set('file',out_robot.name)
-    out_xml=fr/'rb_fr5_safe_motion_cell.xml'
+    out_xml=fr/('rb_fr5_safe_motion_compact_cell.xml' if marker_profile=='compact'
+                else 'rb_fr5_safe_motion_cell.xml')
     cell_tree.write(out_xml,encoding='unicode')
     return out_xml
 
@@ -280,7 +284,7 @@ def _camera_pose_estimate(images,depths,cals):
     return est,detections_by_camera,n_views
 
 
-def _fixed_reference_vision_check(model,data,detections,depths,cals):
+def _fixed_reference_vision_check(model,data,detections,depths,cals,marker_profile='legacy'):
     """Vision-estimate fixed station fiducials; compare with model only as QA.
 
     The camera extrinsics in this experiment are still known a priori from
@@ -288,8 +292,10 @@ def _fixed_reference_vision_check(model,data,detections,depths,cals):
     Never feed the model's tag true coordinates into the camera fit.
     """
     report={}
-    active_side=.105*440/512
     for station,tag_id in TAG_ID.items():
+        active_side=(STATION_PLACEMENT[station][3]*ACTIVE_FRACTION
+                     if marker_profile=='compact' and station in STATION_PLACEMENT
+                     else .105*440/512)
         if station in ('plastic_cup','pitcher_top','pitcher_top_secondary'):
             continue
         if station=='robot_base' or station in (
@@ -419,7 +425,16 @@ def run(args):
     rng_seed=int(args.seed)
     out=Path(args.output).resolve()
     out.mkdir(parents=True,exist_ok=True)
-    scene=_add_held_pitcher_robot_variant(Path(args.vendor_dir).resolve())
+    global MARKERS,TAG_DEFINITIONS,SIDE_LENGTHS
+    marker_profile=getattr(args,'marker_profile','legacy')
+    if marker_profile=='compact':
+        MARKERS={}
+        for tag_id,(position,rpy,active_side) in expected_compact_marker_transforms().items():
+            R=Rotation.from_euler('xyz',rpy).as_matrix()
+            MARKERS[tag_id]=(_transform(position,R),active_side)
+        TAG_DEFINITIONS={tid:('pitcher',marker[0]) for tid,marker in MARKERS.items()}
+        SIDE_LENGTHS={tid:marker[1] for tid,marker in MARKERS.items()}
+    scene=_add_held_pitcher_robot_variant(Path(args.vendor_dir).resolve(),marker_profile)
     model=mujoco.MjModel.from_xml_path(str(scene))
     data=mujoco.MjData(model)
     mujoco.mj_forward(model,data)
@@ -476,7 +491,7 @@ def run(args):
             est,dets,n_seen=_camera_pose_estimate(views,depths,cals)
             if i==0:
                 fixed_references=_fixed_reference_vision_check(
-                    model,data,dets,depths,cals)
+                    model,data,dets,depths,cals,marker_profile)
                 (out/'fixed_reference_vision_check.json').write_text(
                     json.dumps(to_json(fixed_references),indent=2),
                     encoding='utf-8')
@@ -597,6 +612,12 @@ def run(args):
     report={
         'status':'PASS' if no_pose==0 and (getattr(args,'capture_only',False) or len(replay)==args.frames) else 'INCOMPLETE',
         'camera_capture_only':bool(getattr(args,'capture_only',False)),
+        'tag_profile':marker_profile,
+        'pitcher_outer_tag_sizes_mm':([36,32,30] if marker_profile=='compact' else [90,90,82]),
+        'cup_outer_tag_size_mm':28 if marker_profile=='compact' else 90,
+        'portafilter_handle_outer_tag_size_mm':24 if marker_profile=='compact' else None,
+        'camera_resolution_px':[args.width,args.height],
+        'registered_marker_sizes_include_quiet_zone':True,
         'native_fairino_motion_plan_is_separate_step':bool(getattr(args,'capture_only',False)),
         'robot_arm_moves_through_6_real_hinge_qpos':len(replay)==args.frames,
         'replay_inputs_camera_estimates_only':True,
@@ -633,6 +654,8 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--output',default='runs/allowed_camera_replay')
     parser.add_argument('--capture-only',action='store_true',help='Measure 3-camera AprilTag poses without running legacy joint replay')
+    parser.add_argument('--marker-profile',choices=['legacy','compact'],default='legacy',
+                        help='compact: rigid 24-42mm real-sized tags; legacy: old large markers')
     parser.add_argument('--vendor-dir',default='vendor')
     parser.add_argument('--frames',type=int,default=13)
     parser.add_argument('--fps',type=float,default=5)
