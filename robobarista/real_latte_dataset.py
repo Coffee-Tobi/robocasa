@@ -4,7 +4,7 @@ Source: https://huggingface.co/datasets/ridxm/latte-pour-demos
 The upstream GitHub repo has NO LICENSE at the time of this integration.
 Use dataset locally, never copy source or redistribute video into Git history.
 
-Important: 12D Realman *joint states* are NOT a calibrated 6D pitcher pose.
+Important: 14D Realman *joint states and grippers* are NOT a calibrated 6D pitcher pose.
 No AprilTags/known camera extrinsics are asserted for the upstream videos.
 The follow-on realman_fk_bridge needs a matching manufacturer URDF, the
 recorded joint order/unit, and a measured flange-to-pitcher transform.
@@ -16,20 +16,24 @@ from pathlib import Path
 import numpy as np
 
 DEFAULT_REPO="ridxm/latte-pour-demos"
-CAMERA_KEYS=("observation.images.top",
+CAMERA_KEYS=("observation.images.top_camera",
              "observation.images.left_wrist",
              "observation.images.right_wrist")
 
 
-def validate_realman_episode(rows, *, expected_dims=12):
+def validate_realman_episode(rows, *, expected_dims=14):
     """Validate the recorded synchronized joint series, not robot accuracy."""
     if not isinstance(rows,list) or len(rows)<8:
         raise ValueError("Need at least 8 samples from one episode")
     times=np.asarray([r["time_s"] for r in rows],float)
-    states=np.asarray([r["state"] for r in rows],float)
-    actions=np.asarray([r["action"] for r in rows],float)
-    if states.shape!=(len(rows),expected_dims) or actions.shape!=states.shape:
+    # Reject malformed ragged arrays cleanly before NumPy raises a confusing
+    # "inhomogeneous shape" exception.
+    state_vectors=[np.asarray(r["state"],float) for r in rows]
+    action_vectors=[np.asarray(r["action"],float) for r in rows]
+    if any(v.shape!=(expected_dims,) for v in state_vectors+action_vectors):
         raise ValueError(f"Expected {expected_dims}D state/action per frame")
+    states=np.stack(state_vectors)
+    actions=np.stack(action_vectors)
     if not (np.isfinite(times).all() and np.isfinite(states).all()
             and np.isfinite(actions).all() and np.all(np.diff(times)>0)):
         raise ValueError("Nonfinite or nonmonotonic Realman recording")
@@ -43,8 +47,11 @@ def validate_realman_episode(rows, *, expected_dims=12):
         "left_arm_max_raw_joint_change":float(np.max(
             np.abs(states[:, :6]-states[0,:6]))),
         "right_arm_max_raw_joint_change":float(np.max(
-            np.abs(states[:, 6:]-states[0,6:]))),
+            np.abs(states[:, 7:13]-states[0,7:13]))),
         "joint_units_confirmed":False,
+        "state_layout_from_upstream_Hardware_Bridge_ROS2":"[left six joints, left gripper, right six joints, right gripper]",
+        "left_gripper_raw_first":float(states[0,6]),
+        "right_gripper_raw_first":float(states[0,13]),
         "flange_and_pitcher_pose_available":False,
         "milk_fluid_simulation":False
     }
@@ -122,12 +129,14 @@ def extract_published_episode(*, output_dir, repo_id=DEFAULT_REPO,
         "source":repo_id,"episode":episode,
         "source_type":"REAL robot kinesthetic demonstration",
         "data_license_verified":False,
-        "state_kind":"Recorded dual RM65 joint signals (12D), NOT TCP poses",
+        "state_kind":"14D left(6)+left_gripper+right(6)+right_gripper, NOT TCP poses",
         "camera_views_advertised":available,
         "camera_intrinsics_extrinsics_available":False,
         "target_robot":"OpenDroid R2D3 with two Realman RM65 arms",
         "left_arm_indices":[0,1,2,3,4,5],
-        "right_arm_indices":[6,7,8,9,10,11],
+        "left_gripper_index":6,
+        "right_arm_indices":[7,8,9,10,11,12],
+        "right_gripper_index":13,
         "upstream_image_processing":"None; optional original decoded RGB only",
         "hardware_execution_authorized":False
     })
