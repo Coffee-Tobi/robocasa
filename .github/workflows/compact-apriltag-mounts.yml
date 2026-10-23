@@ -54,5 +54,6 @@ jobs:
             runs/compact_tags_1280/camera_measurements.json
             runs/compact_tags_1280/ground_truth_evaluation_only.json
             runs/compact_tags_1280/fixed_reference_vision_check.json
+            runs/compact_tags_1280/camera_capture.mp4
             runs/compact_tags_1280/camera_vs_fr5_side_by_side.mp4
           if-no-files-found: warn
