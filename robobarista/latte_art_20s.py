@@ -181,8 +181,8 @@ def run(args):
     grip_body=model.body("rb_gripped_pitcher").id
     tip=model.geom("rb_gripped_pitcher_spout").id
     neck=model.geom("rb_gripped_pitcher_adapter").id
-    left=model.geom("rb_handle_jaw_-1").id
-    right=model.geom("rb_handle_jaw_1").id
+    left=model.geom("rb_90_ir40_handle_jaw_left").id
+    right=model.geom("rb_90_ir40_handle_jaw_right").id
     try:
         for i,(t,q) in enumerate(zip(timestamps,paths)):
             valid,reason=_valid_state(model,data,qids,limits,q,"pitcher")
@@ -227,7 +227,7 @@ def run(args):
             draw.rectangle((679,48,947,252),outline=(240,240,240),width=3)
             draw.rectangle((682,51,943,72),fill=(17,27,35))
             draw.text((689,54),"OVERVIEW",fill="white")
-            draw.text((15,11),f"IR40-50 grip | 20 s fine pour | {t:05.2f}s",fill="white")
+            draw.text((15,11),f"90 deg IR40 + F/T | 20 s fine pour | {t:05.2f}s",fill="white")
             draw.text((15,765),f"{phase_name(t)} | millimetre-scale joint motion | symbolic foam, no liquid",fill=(240,214,170))
             frame.save(frames_dir/f"pour_{i:04d}.png")
     finally:
@@ -242,7 +242,10 @@ def run(args):
         "frames":len(timestamps),
         "simulator":"MuJoCo forward-kinematics with checked poses, not mj_step motor control",
         "view":"wrist-follow POV + gripper close-up + whole scene inset",
-        "gripper":"two conceptual IR40-50; handle between first gripper fingers",
+        "gripper":"two conceptual IR40-50 on 90-degree adapter; pitcher handle between axial gripper fingers",
+        "actual_90_degree_tool_adapter":True,
+        "force_torque_sensor_before_both_grippers":True,
+        "inactive_orthogonal_gripper_collision_validated":False,
         "rigid_kinematic_handle_fixture":True,
         "physical_grasp_force_verified":False,
         "milk_fluid_dynamics":False,
