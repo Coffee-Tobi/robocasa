@@ -71,6 +71,22 @@ TAG_DEFINITIONS={
 SIDE_LENGTHS={tid:fixture[1] for tid,fixture in MARKERS.items()}
 
 
+def marker_config(profile):
+    """Pure profile configuration: no module-global mutation across runs."""
+    if profile == 'legacy':
+        markers = MARKERS.copy()
+    elif profile == 'compact':
+        markers = {
+            tid:(_transform(pos,Rotation.from_euler('xyz',rpy).as_matrix()),side)
+            for tid,(pos,rpy,side) in expected_compact_marker_transforms().items()
+        }
+    else:
+        raise ValueError(f'Unknown marker profile: {profile}')
+    definitions={tid:('pitcher',entry[0]) for tid,entry in markers.items()}
+    sides={tid:entry[1] for tid,entry in markers.items()}
+    return markers,definitions,sides
+
+
 def _add_held_pitcher_robot_variant(vendor_dir,marker_profile='legacy'):
     """Return complete MJCF where a VISUAL no-contact pitcher follows TCP.
 
@@ -261,24 +277,24 @@ def _random_joint_motion(model,data,qids,limits,base,seed,frames):
     return np.asarray(positions),len(rejected)
 
 
-def _camera_pose_estimate(images,depths,cals):
+def _camera_pose_estimate(images,depths,cals,markers,tag_definitions,side_lengths):
     """Estimate from real rendered pixels, with no simulator pose oracle."""
     obs=[]
     detections_by_camera={}
     for name,im in images.items():
         found=detect_tags(im,include_apriltags=True,detector='pupil')
-        target=[(tid,uv) for tid,uv in found if tid in MARKERS]
+        target=[(tid,uv) for tid,uv in found if tid in markers]
         # Keep static station detections in the raw optical record, too.
         # Only recognized moving pitcher tags enter its pose estimator.
         detections_by_camera[name]=found
         for tid,corners in target:
-            one=solve_single(corners,depths[name],cals[name],SIDE_LENGTHS[tid])
+            one=solve_single(corners,depths[name],cals[name],side_lengths[tid])
             if one is not None:
                 obs.append((tid,one))
     n_views=len(set(id(o['calibration']) for _,o in obs))
     if n_views<2:
         return None,detections_by_camera,n_views
-    est=bundle_adjust_object(obs,TAG_DEFINITIONS,SIDE_LENGTHS)
+    est=bundle_adjust_object(obs,tag_definitions,side_lengths)
     if not est or not est['converged'] or est['reprojection_rmse_px']>3:
         return None,detections_by_camera,n_views
     return est,detections_by_camera,n_views
@@ -425,15 +441,8 @@ def run(args):
     rng_seed=int(args.seed)
     out=Path(args.output).resolve()
     out.mkdir(parents=True,exist_ok=True)
-    global MARKERS,TAG_DEFINITIONS,SIDE_LENGTHS
     marker_profile=getattr(args,'marker_profile','legacy')
-    if marker_profile=='compact':
-        MARKERS={}
-        for tag_id,(position,rpy,active_side) in expected_compact_marker_transforms().items():
-            R=Rotation.from_euler('xyz',rpy).as_matrix()
-            MARKERS[tag_id]=(_transform(position,R),active_side)
-        TAG_DEFINITIONS={tid:('pitcher',marker[0]) for tid,marker in MARKERS.items()}
-        SIDE_LENGTHS={tid:marker[1] for tid,marker in MARKERS.items()}
+    markers,tag_definitions,side_lengths=marker_config(marker_profile)
     scene=_add_held_pitcher_robot_variant(Path(args.vendor_dir).resolve(),marker_profile)
     model=mujoco.MjModel.from_xml_path(str(scene))
     data=mujoco.MjData(model)
@@ -496,7 +505,7 @@ def run(args):
                     target_dir.mkdir(exist_ok=True,parents=True)
                     Image.fromarray(views[camera_name]).save(
                         target_dir/f"frame_{i:04d}.png")
-            est,dets,n_seen=_camera_pose_estimate(views,depths,cals)
+            est,dets,n_seen=_camera_pose_estimate(views,depths,cals,markers,tag_definitions,side_lengths)
             if i==0:
                 fixed_references=_fixed_reference_vision_check(
                     model,data,dets,depths,cals,marker_profile)
@@ -528,7 +537,7 @@ def run(args):
                   'views=',n_seen,'valid=',record['valid'],
                   'tags=',record['tags_seen'],
                   'cameras=',[name for name,items in dets.items()
-                               if any(tid in MARKERS for tid,_ in items)],
+                               if any(tid in markers for tid,_ in items)],
                   flush=True)
 
         (out/'camera_measurements.json').write_text(
