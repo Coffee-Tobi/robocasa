@@ -24,7 +24,8 @@ from .workcell_constraints import DOCKS, PAYLOAD_SPHERES
 from .demo import render_pair
 from .follow_camera import insert_camera,ArmFollowCamera,CAMERA_NAME
 from .robocasa_coffee_adapter import CoffeeMachineState
-from .dual_ir40_concept import add_visual_dual_ir40_50
+from .dual_tool_90_preview import build_simulation
+from .dual_90_tool_attachments import attach_90_held_tools,insert_free_ceramic_cup_handle
 
 
 POUR_PHASES=('Approach','Base-fill','Lower','Sway','Cut-through')
@@ -35,25 +36,26 @@ RECIPE=[
     ('01  Siebtraeger aufnehmen (virtuell)','pitcher_park','portafilter','portafilter_pickup'),
     ('02  Mahlen + integrierter Tamper','grinder_portafilter','portafilter','grind_tamp'),
     ('03  Siebtraeger zur Bruehgruppe','espresso_portafilter','portafilter','insert_grouphead'),
-    ('04  Kunststoffbecher unter Espresso','espresso_cup','plastic_cup','place_cup'),
+    ('04  Keramiktasse am Henkel unter Espresso','espresso_cup','plastic_cup','place_cup'),
     ('05  Espresso-Bezug (visualisiert)','espresso_cup','bare_tcp','brew'),
     ('06  Milchkannne vom Parkplatz','pitcher_park','pitcher','pitcher_pickup'),
     ('07  Milch dosieren','milk_dispenser_pitcher','pitcher','dose'),
     ('08  Dampflanze + Milchaufschaeumen','espresso_steam_pitcher','pitcher','steam'),
-    ('09  Becher zum Giessplatz','pour_cup','plastic_cup','cup_to_pour'),
+    ('09  Keramiktasse am Henkel zum Giessplatz','pour_cup','plastic_cup','cup_to_pour'),
     ('10  Angenommene Latte-Art-Giessgeste','pour_cup','pitcher','pour'),
     ('11  Kanne am Rinser reinigen (symbolisch)','pitcher_park','pitcher','rinse'),
 ]
 
 
-def _story_scene(vendor_dir):
-    built=_add_held_pitcher_robot_variant(Path(vendor_dir).resolve())
+def _story_scene(vendor_dir,cup_style='handle_mug'):
+    # The accepted 90-degree scene is the SINGLE authoritative tool model.
+    # Never silently rebuild the old pair of parallel grippers.
+    built=build_simulation(Path(vendor_dir).resolve())
     fr=Path(built).parent
-    root=ET.parse(fr/'rb_fr5_safe_cell_robot.xml')
+    root=ET.parse(fr/'rb_fr5_actual_90_dual_preview_robot.xml')
     tcp=root.getroot().find(".//body[@name='rb_cell_tcp']")
     if tcp is None:raise RuntimeError('Missing FR5 wrist TCP')
-    # Conceptual non-contact dual IR40-50 equipment. Not a physical pickup.
-    add_visual_dual_ir40_50(tcp,include_props=True)
+    attach_90_held_tools(root,cup_style=cup_style)
     for tool in ('portafilter','plastic_cup'):
         b=ET.SubElement(tcp,'body',{'name':'rb_story_'+tool,'pos':'0 0 0'})
         if tool=='portafilter':
@@ -80,7 +82,9 @@ def _story_scene(vendor_dir):
     world=env.getroot().find('worldbody')
     insert_camera(world)
     cup=world.find(".//body[@name='rb_plastic_cup']")
-    if cup is None:raise RuntimeError('Cannot find plastic cup')
+    if cup is None:raise RuntimeError('Cannot find ceramic/practice cup')
+    if cup_style=='handle_mug':
+        insert_free_ceramic_cup_handle(world)
     ET.SubElement(cup,'geom',{'name':'rb_story_espresso_disc',
        'type':'cylinder','pos':'0 0 .067','size':'.038 .003',
        'rgba':'.3 .13 .05 0','mass':'0','contype':'0','conaffinity':'0'})
@@ -105,7 +109,11 @@ def _alpha(model,tool):
         'plastic_cup':('rb_story_plastic_cup_cup',)}
     for names in tools.values():
         for name in names:
-            model.geom(name).rgba[3]=0.
+            try:
+                model.geom(name).rgba[3]=0.
+            except KeyError:
+                # There are no legacy tcp clones in the new 90° robot.
+                pass
     attached={
         'pitcher':('rb_gripped_pitcher_adapter','rb_gripped_pitcher_stop_lower',
                    'rb_gripped_pitcher_stop_upper','rb_gripped_pitcher_bridge',
@@ -114,10 +122,19 @@ def _alpha(model,tool):
         'portafilter':('rb_gripped_portafilter_adapter',
                       'rb_gripped_portafilter_handle',
                       'rb_gripped_portafilter_basket'),
-        'plastic_cup':('rb_gripped_cup_body',)}
+        'plastic_cup':('rb_gripped_cup_body',
+                       'rb_gripped_cup_handle_upper',
+                       'rb_gripped_cup_handle_lower',
+                       'rb_gripped_cup_handle_outer')}
     for key,names in attached.items():
         for name in names:
-            model.geom(name).rgba[3]=(0.82 if key=='plastic_cup' else 1.0) if tool==key else 0.0
+            try:
+                model.geom(name).rgba[3]=(0.82 if key=='plastic_cup' else 1.0) if tool==key else 0.0
+            except KeyError:
+                if name.startswith('rb_gripped_cup_handle_'):
+                    # Disposable cups have no handles.
+                    continue
+                raise
 
 
 def _make_cup_contents(model):
@@ -221,7 +238,8 @@ def _random_pour_gesture(model,data,qids,limits,home,stages,seed):
 def run(args):
     out=Path(args.output).resolve()
     out.mkdir(exist_ok=True,parents=True)
-    scene=_story_scene(Path(args.vendor_dir))
+    scene=_story_scene(Path(args.vendor_dir),
+                       cup_style=getattr(args,'cup_style','handle_mug'))
     model=mujoco.MjModel.from_xml_path(str(scene))
     data=mujoco.MjData(model)
     _set_free_pose(model,data,'rb_pitcher_free',[-10,-10,-10],0)
@@ -372,6 +390,11 @@ def run(args):
         'over_shoulder_follow_with_overview_inset':camera_mode=='follow',
         'calibrated_apriltag_rgbd_cameras_unchanged':True,
         'two_IR40_grippers_visible_only':True,
+        'accepted_90_degree_ir40_mount':True,
+        'force_torque_sensor_mounted_before_adapter':True,
+        'compact_tags':True,
+        'cup_style':getattr(args,'cup_style','handle_mug'),
+        'unused_second_gripper_collision_cleared':False,
         'tool_objects_attached_to_gripper_frames':True,
         'old_tcp_attached_tool_clones_hidden':True,
         'actual_finger_contact_force_simulated':False,
@@ -393,6 +416,7 @@ def main():
     p.add_argument('--height',type=int,default=570)
     p.add_argument('--fps',type=float,default=8)
     p.add_argument('--camera-view',choices=('follow','overview'),default='follow')
+    p.add_argument('--cup-style',choices=('handle_mug','takeaway'),default='handle_mug')
     p.add_argument('--frames-leg',type=int,default=4)
     args=p.parse_args()
     report=run(args)
