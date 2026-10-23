@@ -82,6 +82,73 @@ def _image_uint8(value):
     return Image.fromarray(rgb,"RGB")
 
 
+def extract_single_parquet_episode(*, output_dir, repo_id=DEFAULT_REPO,
+                                   episode=0):
+    """CPU-light REAL public data import; no torch, no video, no full-dataset sync.
+
+    For the verified ridxm release each episode is a separate Parquet file.
+    Fail closed if the layout changes. Pin the actual source revision SHA.
+    Requires `pip install huggingface_hub pyarrow`.
+    """
+    if not isinstance(episode,int) or episode<0:
+        raise ValueError("Episode index must be non-negative")
+    try:
+        from huggingface_hub import HfApi,hf_hub_download
+        import pyarrow.parquet as pq
+    except ImportError as exc:
+        raise RuntimeError(
+            "Lightweight import: pip install huggingface_hub pyarrow") from exc
+    path=Path(output_dir)
+    if path.exists() and any(path.iterdir()):
+        raise FileExistsError("Choose fresh output directory; no overwrite")
+    details=HfApi().dataset_info(repo_id,files_metadata=True)
+    revision=details.sha
+    candidates=[
+        f for f in details.siblings
+        if f.rfilename.startswith("data/")
+        and f.rfilename.endswith(f"episode_{episode:06d}.parquet")]
+    if len(candidates)!=1:
+        raise ValueError(
+            f"Expected one exact Parquet for episode {episode}; "
+            "upstream storage layout may have changed")
+    file=candidates[0]
+    if file.size is not None and file.size>60_000_000:
+        raise ValueError("Episode data >60 MB lightweight import budget")
+    local=hf_hub_download(
+        repo_id=repo_id,repo_type="dataset",
+        filename=file.rfilename,revision=revision)
+    table=pq.read_table(local)
+    expected={"timestamp","observation.state","action","episode_index"}
+    if not expected.issubset(table.column_names):
+        raise ValueError("Original Parquet lacks required synchronized columns")
+    records=table.select(sorted(expected)).to_pylist()
+    records=[r for r in records if int(r["episode_index"])==episode]
+    if not records:
+        raise ValueError("Parquet has no rows for selected episode")
+    t0=float(records[0]["timestamp"])
+    rows=[{"time_s":float(r["timestamp"])-t0,
+           "state":r["observation.state"],"action":r["action"]}
+          for r in records]
+    summary=validate_realman_episode(rows)
+    summary.update({
+        "source":repo_id,
+        "source_revision":revision,
+        "source_data_path":file.rfilename,
+        "episode":episode,
+        "source_type":"ACTUAL original dual Realman physical demonstration",
+        "recorded_source_joint_state_dims":14,
+        "source_camera_6d_pitcher_pose":False,
+        "source_real_milk_physics_model":False,
+        "source_cameras_downloaded":False,
+        "data_license_verified":False,
+        "hardware_execution_authorized":False,
+        "source_joint_units_verified":False})
+    path.mkdir(parents=True,exist_ok=True)
+    (path/"recorded_realman_joints.json").write_text(json.dumps(rows,indent=2))
+    (path/"source_and_validity.json").write_text(json.dumps(summary,indent=2))
+    return summary
+
+
 def extract_published_episode(*, output_dir, repo_id=DEFAULT_REPO,
                               episode=0, with_video=False, video_step=10,
                               local_root=None):
@@ -166,13 +233,22 @@ def main():
     p.add_argument("--repo-id",default=DEFAULT_REPO)
     p.add_argument("--episode",type=int,default=0)
     p.add_argument("--with-videos",action="store_true")
+    p.add_argument("--parquet-only",action="store_true",
+                   help="Fast actual episode using pyarrow + huggingface_hub; no LeRobot/torch needed")
     p.add_argument("--video-step",type=int,default=10)
     p.add_argument("--local-root",default=None)
     a=p.parse_args()
-    print(json.dumps(extract_published_episode(
-        output_dir=a.output,repo_id=a.repo_id,episode=a.episode,
-        with_video=a.with_videos,video_step=a.video_step,
-        local_root=a.local_root),indent=2))
+    if a.parquet_only:
+        if a.with_videos:
+            raise ValueError("--parquet-only cannot download videos")
+        result=extract_single_parquet_episode(
+            output_dir=a.output,repo_id=a.repo_id,episode=a.episode)
+    else:
+        result=extract_published_episode(
+            output_dir=a.output,repo_id=a.repo_id,episode=a.episode,
+            with_video=a.with_videos,video_step=a.video_step,
+            local_root=a.local_root)
+    print(json.dumps(result,indent=2))
 
 
 if __name__=="__main__":
