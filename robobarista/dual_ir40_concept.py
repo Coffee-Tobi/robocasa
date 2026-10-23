@@ -13,7 +13,9 @@ STROKE_MM=40.
 # Local robot TCP frame; concept-only offsets (metres).
 MOUNTS={"handle_tool":(-.070,0.,.040),"cup_tool":(.070,0.,.040)}
 
-def add_visual_dual_ir40_50(tcp:ET.Element,cup_diameter_mm:float=80.,include_props=False,compact_tags=False) -> None:
+def add_visual_dual_ir40_50(tcp:ET.Element,cup_diameter_mm:float=80.,include_props=False,compact_tags=False,cup_style='takeaway') -> None:
+    if cup_style not in ('takeaway','handle_mug'):
+        raise ValueError('cup_style must be takeaway or handle_mug')
     """Add approximate non-colliding gripper geometry; optionally rigid held tools. No grasp physics."""
     if not 55<=cup_diameter_mm<=100:raise ValueError('supported cup concept: 55-100 mm')
     def body(parent,name,pos):
@@ -36,10 +38,18 @@ def add_visual_dual_ir40_50(tcp:ET.Element,cup_diameter_mm:float=80.,include_pro
         else:
             # Two opposing approximate 3D-printed curved-jaw envelopes.
             # Curvature must be designed from the cup's actual taper.
-            span=cup_diameter_mm/2000+.006
-            for sign in (-1,1):
-                box(unit,"rb_cup_jaw_"+str(sign),(sign*span,0,.080),
-                    (.006,.027,.022),".93 .60 .24 1")
+            if cup_style=='handle_mug':
+                # Narrow opposed fingers grasp the *handle stem* near local y=0.
+                # The ceramic vessel is offset to y=+.12 m, clear of the
+                # jaws. Old takeaway-style clamping around the base is NOT used.
+                for sign in (-1,1):
+                    box(unit,"rb_cup_jaw_"+str(sign),(sign*.013,.011,.080),
+                        (.006,.014,.024),".93 .60 .24 1")
+            else:
+                span=cup_diameter_mm/2000+.006
+                for sign in (-1,1):
+                    box(unit,"rb_cup_jaw_"+str(sign),(sign*span,0,.080),
+                        (.006,.027,.022),".93 .60 .24 1")
 
     if include_props:
         # Pre-calibrated kinematic attachments: prop is located inside the
@@ -68,9 +78,28 @@ def add_visual_dual_ir40_50(tcp:ET.Element,cup_diameter_mm:float=80.,include_pro
             pos="0 .175 -.005",size=".043 .020",rgba=".7 .72 .74 1",
             mass="0",contype="0",conaffinity="0")
         cup=body(mounts["cup_tool"],"rb_gripped_cup",(0,0,.080))
-        ET.SubElement(cup,"geom",name="rb_gripped_cup_body",type="cylinder",
-            pos="0 0 0",size=f"{cup_diameter_mm/2000} .047",
-            rgba=".72 .87 .93 .82",mass="0",contype="0",conaffinity="0")
+        if cup_style=='handle_mug':
+            # Cup centre displaced AWAY from gripper jaws: y=+120 mm.
+            # Ring handle lies at the jaws and connects toward the cup.
+            ET.SubElement(cup,"geom",name="rb_gripped_cup_body",
+                type="cylinder",pos="0 .120 0",
+                size=".041 .047",rgba=".88 .84 .77 1",
+                mass="0",contype="0",conaffinity="0")
+            for part,coords in (
+                ('upper',(0,.016,.026,0,.085,.026)),
+                ('lower',(0,.016,-.027,0,.085,-.027)),
+                ('outer',(0,.016,-.027,0,.016,.026))):
+                ET.SubElement(cup,"geom",
+                    name="rb_gripped_cup_handle_"+part,
+                    type="capsule",fromto=" ".join(map(str,coords)),
+                    size=".006",rgba=".89 .85 .79 1",
+                    mass="0",contype="0",conaffinity="0")
+        else:
+            ET.SubElement(cup,"geom",name="rb_gripped_cup_body",
+                type="cylinder",pos="0 0 0",
+                size=f"{cup_diameter_mm/2000} .047",
+                rgba=".72 .87 .93 .82",mass="0",
+                contype="0",conaffinity="0")
         if compact_tags:
             # The held props in the storyboard are RIGID CLONES of the free
             # props. Give them UNIQUE AprilTag IDs to avoid duplicate-ID
@@ -103,7 +132,9 @@ def add_visual_dual_ir40_50(tcp:ET.Element,cup_diameter_mm:float=80.,include_pro
             attach_tag(pf,"held_portafilter",74,(0,.085,.014),
                        (0,0,0),.024)
             # Cup: removable food-safe clip concept on outside rim.
-            attach_tag(cup,"held_cup",76,(0,-.054,.042),
+            attach_tag(cup,"held_cup",76,
+                       (0,.064,.042) if cup_style=='handle_mug'
+                       else (0,-.054,.042),
                        (pi/2,0,0),.028,post_m=.014)
 
 def build_dual_gripper_scene(vendor_dir):
