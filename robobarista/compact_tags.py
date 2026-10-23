@@ -77,7 +77,7 @@ def _panel(marker_body,tag_face,outer_m):
         'rgba':'.22 .27 .30 1','mass':'0','contype':'0','conaffinity':'0'})
 
 
-def _mount_on_object(body,name,xyz,rpy,tag_face,outer_m,base_r=None):
+def _mount_on_object(body,name,xyz,rpy,tag_face,outer_m,clip_length_m=None):
     body.set('pos',_nums(xyz))
     body.set('euler',_nums(rpy))
     # Local plate behind printed tag plus short small clip strut
@@ -85,11 +85,13 @@ def _mount_on_object(body,name,xyz,rpy,tag_face,outer_m,base_r=None):
     for geom in list(body.findall('geom')):
         if geom is not tag_face:body.remove(geom)
     _panel(body,tag_face,outer_m)
-    if base_r is not None:
+    if clip_length_m is not None:
+        # The strut spans from the back of the marker to the actual
+        # mug rim/handle or pitcher shell. No unsupported floating face.
         ET.SubElement(body,'geom',{
             'name':f'rb_clip_post_{name}',
-            'type':'cylinder','pos':'0 0 -.009',
-            'size':'.003 .007',
+            'type':'cylinder','pos':_nums((0,0,-clip_length_m/2)),
+            'size':_nums((.003,clip_length_m/2)),
             'rgba':'.3 .34 .38 1','mass':'0',
             'contype':'0','conaffinity':'0'})
 
@@ -108,13 +110,14 @@ def build_compact_tag_cell(vendor_dir:Path) -> Path:
         face=next((g for g in marker.iter('geom')
                    if g.attrib['name'].startswith('rb_tagface_')),None)
         if face is None:raise RuntimeError(f"Pitcher marker missing {tid}")
-        _mount_on_object(marker,str(tid),xyz,rpy,face,size,base_r=.048)
+        _mount_on_object(marker,str(tid),xyz,rpy,face,size,
+                         clip_length_m={71:.048,72:.034,23:.020}[tid])
 
     cup=_must(root,".//body[@name='rb_plastic_cup']")
     cm=_must(cup,".//body[@name='rb_cup_marker']")
     face=_must(cm,"geom[@name='rb_tagface_cell_plastic_cup']")
     _mount_on_object(cm,'cup',*CUP_MARKER[:2],face,CUP_MARKER[2],
-                     base_r=.045)
+                     clip_length_m=.015)
     for name,(target,xyz,rpy,size) in STATION_PLACEMENT.items():
         node=_must(world,f"body[@name='rb_tag_mount_{name}']")
         # Remove the post, tall pedestal and huge backing plate.
