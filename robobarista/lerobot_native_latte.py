@@ -76,6 +76,7 @@ def create_native_lerobot_dataset(capture_dir,output_dir,repo_id="local/robobari
     out=Path(output_dir).resolve()
     if out.exists() and any(out.iterdir()):
         raise FileExistsError("Do not overwrite existing LeRobot dataset")
+    out.mkdir(parents=True,exist_ok=True)
     ds=LeRobotDataset.create(
         repo_id=repo_id,root=out,fps=fps,features=features,
         robot_type="virtual_milk_pitcher_pose_not_fr5",
