@@ -292,7 +292,9 @@ def run(args):
                            q=q))
     renderer=mujoco.Renderer(model,width=args.width,height=args.height)
     camera_mode=getattr(args,'camera_view','follow')
-    follow=ArmFollowCamera(model) if camera_mode=='follow' else None
+    follow=(ArmFollowCamera(model,view='handle_close'
+                             if camera_mode=='handle_close' else 'behind')
+            if camera_mode in ('follow','handle_close') else None)
     frames=[]
     events=[]
     cup_at_espresso=False
@@ -417,6 +419,7 @@ def run(args):
         'tag_profile':getattr(args,'marker_profile','compact'),
         'unique_gripped_object_tags':bool(getattr(args,'marker_profile','compact')=='compact'),
         'over_shoulder_follow_with_overview_inset':camera_mode=='follow',
+        'front_quarter_handle_detail_with_overview_inset':camera_mode=='handle_close',
         'calibrated_apriltag_rgbd_cameras_unchanged':True,
         'two_IR40_grippers_visible_only':True,
         'tool_objects_attached_to_gripper_frames':True,
@@ -441,7 +444,8 @@ def main():
     p.add_argument('--width',type=int,default=760)
     p.add_argument('--height',type=int,default=570)
     p.add_argument('--fps',type=float,default=8)
-    p.add_argument('--camera-view',choices=('follow','overview'),default='follow')
+    p.add_argument('--camera-view',choices=('follow','handle_close','overview'),
+                   default='handle_close')
     p.add_argument('--marker-profile',choices=('legacy','compact'),default='compact')
     p.add_argument('--cup-style',choices=('handle_mug','takeaway'),default='handle_mug',
                    help='Reusable handled ceramic mug versus separate disposable cup')
