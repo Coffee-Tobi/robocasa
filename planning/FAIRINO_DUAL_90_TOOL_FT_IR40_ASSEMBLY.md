@@ -5,6 +5,36 @@ Dies ist die vom Nutzer gewünschte Architektur für einen möglichen FAIRINO FR
 Diese Notiz ersetzt bewusst **nicht** die realen Adapter-/Sensor-STEP-Dateien,
 und nimmt den Greifphysik-Dry-run nicht als Hardware-Beleg.
 
+## Bestätigte Nutzerauswahl: Force Torque Sensor (Inlux)
+
+Der Nutzer hat am 23.10.2026 **ausdrücklich klargestellt**, dass für
+das 90°-Dual-Tool-Szenario **genau der Inlux Robotics "Force Torque Sensor"**
+mit Artikelnummer **ITOSX1000FTS** gemeint ist, und **NICHT**
+der bislang ebenfalls recherchierte TMC/GZCX-6F-75B-Sensor.
+
+**Verbindlicher Referenzaufbau für künftige Planung**:
+FAIRINO FR5 → Inlux ITOSX1000FTS 6-Achs Force Torque Sensor →
+Inlux `ICACX1210XDUAL` Dual Cobot Tool Adapter (90°-Orientierung aus CAD
+noch exakt zu prüfen) → **2 × Inlux IR40-50**. Die tatsächliche
+mechanische Montage in dieser Dreierkombination wurde noch **nicht**
+mit passenden STEP-Dateien oder einer Händlerfreigabe nachgewiesen.
+
+Bestätigte Herstellerangaben ITOSX1000FTS:
+Messbereich 0–200 N / 0–5 Nm; Genauigkeit ±0,1 N / ±0,01 Nm;
+IP63; 5-Pin M12; für FR5 laut Inlux plug-and-play am Roboterflansch;
+Datenblatt/2D-Zeichnung und 3D-STEP herunterladbar.
+Listenpreis 885 EUR auf Herstellerseite, MwSt nach Rechnungsstatus.
+https://inluxrobotics.eu/products/force-torque-sensor
+
+**Elektrischer wichtiger Neufund**:
+Der offizielle Inlux `ICACX1500GSCSTA` Standardsplitter
+bestätigt **nur** die Paarungen (IR40-50 + IR40-50) und
+(Force Torque Sensor + IR40-50). Für **alle drei zugleich** gibt
+es in dieser Kompatibilitätsliste **keine Freigabe**. Eine dritte
+RS485-/M12-Verbindung ist erst nach Abklärung von Busadressierung,
+24-V-Strombudget und ggf. getrennter Sensorleitung zulässig.
+https://inluxrobotics.eu/collections/grippers/products/gripper-splitter-cable
+
 ## Abweichung des aktuellen MuJoCo-Entwurfs
 
 In `robobarista/dual_ir40_concept.py` wurde bisher
@@ -42,7 +72,7 @@ Hersteller-STEP-Dateien und die Adapter-Werkzeugrahmen prüfen.
    accuracy ±0.1N / ±0.01Nm, IP63, STEP und 2D-Zeichnung verfügbar.
    https://inluxrobotics.eu/products/force-torque-sensor
 
-   Alternative Fairino/TMC `GZCX-6F-75B`, 735 EUR zzgl. MwSt,
+   **Nicht vom Nutzer gewählte Alternative (nicht einplanen):** Fairino/TMC `GZCX-6F-75B`, 735 EUR zzgl. MwSt,
    Flanschposition ausdrücklich als zwischen FR-Roboter und Werkzeug genannt.
    **ACHTUNG**: TMC Produktdetailseite und Katalog nennen
    widersprüchliche Fx/Fy/Fz, Mz, Gewicht und Accuracy-Spezifikationen.
