@@ -52,7 +52,7 @@ jobs:
               --input-joints runs/source_episode0_private/recorded_realman_joints.json \
               --urdf /tmp/realman_models/RM65/urdf/RM65-B/urdf/RM65-B.urdf \
               --joint-unit rad --arm "$arm" \
-              --start-s 8 --end-s 12 --frames 13 --fps 3 \
+              --start-s 8 --end-s 12 --frames 13 --fps 3 --render-virtual-preview \
               --output "runs/real_90_${arm}_8to12" || true
           done
       - name: Report real versus virtual status without claiming source calibration
@@ -79,4 +79,6 @@ jobs:
         if: always()
         with:
           name: Realman-Original-90deg-Exploratory-Metrics-ONLY
-          path: runs/real_90_*/report.json
+          path: |
+            runs/real_90_*/report.json
+            runs/real_90_*/*.mp4
