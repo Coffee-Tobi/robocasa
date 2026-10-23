@@ -1,0 +1,139 @@
+"""Physically plausible small AprilTag mount option for the 3-RGBD FR5 cell.
+
+Default large-marker historical benchmark remains UNCHANGED. This module
+constructs an ALTERNATIVE MJCF, and new camera replay must select
+--marker-profile compact. It NEVER passes pose from the simulator to the
+AprilTag detector: all real observations come from camera pixels.
+
+Size includes white quiet zone, whereas OpenCV solvePnP needs ACTIVE black
+tag width = outer_size * 440/512. The constant comes from barista_cell._assets.
+
+Real hardware note: these are modelled flat rigid mounting plates, NOT a
+verified food-safe mount or an adhesive that withstands hot steam/dishwashing.
+"""
+from __future__ import annotations
+from pathlib import Path
+import math
+import xml.etree.ElementTree as ET
+from .barista_cell import build_cell_scene
+from .scene import _nums
+
+# Physical dimensions of OUTER printed flat panel, including quiet zone.
+PITCHER_SIDE_OUTER_M = .036
+PITCHER_TOP_OUTER_M = .032
+PITCHER_AUX_OUTER_M = .030
+PLASTIC_CUP_OUTER_M = .028
+PORTAFILTER_OUTER_M = .024
+STATION_OUTER_M = .042
+STATION_SMALL_OUTER_M = .036
+ACTIVE_FRACTION = 440.0 / 512.0
+
+# Transform of the AprilTag top-face frame in the body's rigid frame.
+# Body X convention: cylinder's axis is Z, handle is +X, spout is -X.
+PITCHER_MARKERS = {
+    71: ((.083,.022,.120), (0.,0.,0.),PITCHER_TOP_OUTER_M),
+    72: ((.085,-.028,.107),(math.radians(35),0.,0.),
+         PITCHER_AUX_OUTER_M),
+    23: ((0.,-.067,.080),(math.pi/2,0.,0.),
+         PITCHER_SIDE_OUTER_M),
+}
+CUP_MARKER = ((0.,-.058,.105),(math.pi/2,0.,0.),PLASTIC_CUP_OUTER_M)
+
+# Station mounts located on actual rigid prop/housing, not long stalks.
+# Local position coordinates follow barista_cell's primitive assets.
+STATION_PLACEMENT={
+    'grinder':('rb_grinder',(-.043,-.095,.205),(math.pi/2,0.,0.),.042),
+    'portafilter':('rb_portafilter_stand',(0.,-.137,.089),
+                    (math.pi/2,0.,0.),PORTAFILTER_OUTER_M),
+    'espresso':('rb_espresso_machine',(.145,-.132,.315),
+                (math.pi/2,0.,0.),.042),
+    'milk_dispenser':('rb_milk_dispenser',(.062,-.099,.250),
+                     (math.pi/2,0.,0.),.042),
+    'pitcher_stand':('rb_pitcher_stand',(.071,.044,.016),(0.,0.,0.),.036),
+    'pour':('worldbody',(.310,-.575,.825),(0.,0.,0.),.036),
+    'rinser':('rb_rinser',(.105,-.062,.065),(0.,0.,0.),.036),
+    'robot_base':('worldbody',(.185,.055,.822),(0.,0.,0.),.036),
+}
+
+
+def _must(root,path):
+    obj=root.find(path)
+    if obj is None:raise RuntimeError(f"Missing known CAD body/geom: {path}")
+    return obj
+
+
+def _panel(marker_body,tag_face,outer_m):
+    """Add a THIN physical tab behind, flush with tag surface.
+
+    Does not alter simulated collision/contact dynamics: finite plate is
+    massless and noncolliding, just like old fiduciary meshes.
+    """
+    tag_face.set('size',_nums((outer_m/2,outer_m/2,.0001)))
+    face_name=tag_face.attrib['name']
+    ET.SubElement(marker_body,'geom',{
+        'name':face_name.replace('rb_tagface_','rb_tag_backing_'),
+        'type':'box','pos':'0 0 -.0028',
+        'size':_nums((outer_m/2+.0015,outer_m/2+.0015,.0022)),
+        'rgba':'.22 .27 .30 1','mass':'0','contype':'0','conaffinity':'0'})
+
+
+def _mount_on_object(body,name,xyz,rpy,tag_face,outer_m,base_r=None):
+    body.set('pos',_nums(xyz))
+    body.set('euler',_nums(rpy))
+    # Local plate behind printed tag plus short small clip strut
+    # extending toward the physical object; NOT a hovering 10cm panel.
+    for geom in list(body.findall('geom')):
+        if geom is not tag_face:body.remove(geom)
+    _panel(body,tag_face,outer_m)
+    if base_r is not None:
+        ET.SubElement(body,'geom',{
+            'name':f'rb_clip_post_{name}',
+            'type':'cylinder','pos':'0 0 -.009',
+            'size':'.003 .007',
+            'rgba':'.3 .34 .38 1','mass':'0',
+            'contype':'0','conaffinity':'0'})
+
+
+def build_compact_tag_cell(vendor_dir:Path) -> Path:
+    original=Path(build_cell_scene(Path(vendor_dir)))
+    tree=ET.parse(original)
+    root=tree.getroot()
+    world=_must(root,'worldbody')
+    pitcher=_must(root,".//body[@name='rb_milk_pitcher']")
+    pitcher_names={71:'rb_pitcher_top_marker',
+                   72:'rb_pitcher_top_secondary_marker',
+                   23:'rb_pitcher_side_marker'}
+    for tid,(xyz,rpy,size) in PITCHER_MARKERS.items():
+        marker=_must(pitcher,f".//body[@name='{pitcher_names[tid]}']")
+        face=next((g for g in marker.iter('geom')
+                   if g.attrib['name'].startswith('rb_tagface_')),None)
+        if face is None:raise RuntimeError(f"Pitcher marker missing {tid}")
+        _mount_on_object(marker,str(tid),xyz,rpy,face,size,base_r=.048)
+
+    cup=_must(root,".//body[@name='rb_plastic_cup']")
+    cm=_must(cup,".//body[@name='rb_cup_marker']")
+    face=_must(cm,"geom[@name='rb_tagface_cell_plastic_cup']")
+    _mount_on_object(cm,'cup',*CUP_MARKER[:2],face,CUP_MARKER[2],
+                     base_r=.045)
+    for name,(target,xyz,rpy,size) in STATION_PLACEMENT.items():
+        node=_must(world,f"body[@name='rb_tag_mount_{name}']")
+        # Remove the post, tall pedestal and huge backing plate.
+        world.remove(node)
+        parent=world if target=='worldbody' else _must(
+            world,f".//body[@name='{target}']")
+        parent.append(node)
+        face=_must(node,f"geom[@name='rb_tagface_{name}']")
+        _mount_on_object(node,name,xyz,rpy,face,size)
+    out=original.with_name('rb_artly_compact_tags_island.xml')
+    tree.write(out,encoding='unicode')
+    return out
+
+
+def expected_compact_marker_transforms():
+    """Return position+rigid-body orientation+ACTIVE width for camera BA.
+
+    These values are CAD-mount constants. The BA must NOT read any moving
+    simulator object pose to estimate a camera observation.
+    """
+    return {tid:(pos,rpy,outer*ACTIVE_FRACTION)
+            for tid,(pos,rpy,outer) in PITCHER_MARKERS.items()}
