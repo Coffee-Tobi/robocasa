@@ -1,0 +1,116 @@
+name: Real Recorded RM65 to Current FR5 90deg Exploratory
+on:
+  pull_request:
+    paths:
+      - 'robobarista/real_demo_90_ik.py'
+      - 'robobarista/one_arm_fixed_cup_hinge.py'
+      - 'tests/test_one_arm_fixed_cup_hinge.py'
+      - 'tests/test_real_demo_90_ik.py'
+      - '.github/workflows/real-demo-90-ik-exploratory.yml'
+  workflow_dispatch:
+
+jobs:
+  original-episode-90-degree-feasibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 23
+    env:
+      MUJOCO_GL: osmesa
+      PYOPENGL_PLATFORM: osmesa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install MuJoCo OSMesa and original parquet reader
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 ffmpeg
+          python -m pip install -r requirements.txt 'huggingface_hub>=0.27,<2' 'pyarrow>=16,<23'
+      - name: Test source and approved current tool frames
+        run: |
+          python -m pytest -q tests/test_real_demo_90_ik.py tests/test_current_90_tool_frames.py tests/test_real_latte_import.py tests/test_one_arm_fixed_cup_hinge.py
+      - name: Download ONE ACTUAL numerical episode without video
+        run: |
+          python -m robobarista.real_latte_dataset --parquet-only --episode 0 --output runs/source_episode0_private
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          info=json.loads(Path('runs/source_episode0_private/source_and_validity.json').read_text())
+          assert info['frames']==400 and info['recorded_source_joint_state_dims']==14
+          assert not info['source_cameras_downloaded'] and not info['data_license_verified']
+          print('Recorded episode:',info['frames'],'rows,',info['median_hz'],'Hz')
+          PY
+      - name: Fetch official RM65 URDF (B variant remains UNCONFIRMED)
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/RealManRobot/rm_models.git /tmp/realman_models
+          git -C /tmp/realman_models sparse-checkout set RM65
+          test -s /tmp/realman_models/RM65/urdf/RM65-B/urdf/RM65-B.urdf
+      - name: Evaluate BOTH original source arms 8-12s as an unverified interval
+        continue-on-error: true
+        run: |
+          for arm in right left; do
+            echo "===== Recorded original $arm arm / uncalibrated identity pitcher mount ====="
+            python -m robobarista.real_demo_90_ik \
+              --input-joints runs/source_episode0_private/recorded_realman_joints.json \
+              --urdf /tmp/realman_models/RM65/urdf/RM65-B/urdf/RM65-B.urdf \
+              --joint-unit rad --arm "$arm" \
+              --start-s 8 --end-s 12 --frames 13 --fps 3 --render-virtual-preview \
+              --output "runs/real_90_${arm}_8to12" || true
+          done
+      - name: Render one FR5 arm + programmable physical 1-DOF fixed-pivot cup
+        run: |
+          test -s runs/real_90_left_8to12/IK_joint_path_ONLY_IF_COMPLETE.json
+          python -m robobarista.one_arm_fixed_cup_hinge \
+            --robot-joint-path runs/real_90_left_8to12/IK_joint_path_ONLY_IF_COMPLETE.json \
+            --mode scripted --duration 4 --fps 3 \
+            --output runs/single_fr5_hinged_cup_scripted
+          python -m robobarista.one_arm_fixed_cup_hinge \
+            --robot-joint-path runs/real_90_left_8to12/IK_joint_path_ONLY_IF_COMPLETE.json \
+            --mode projected-source \
+            --original-joints runs/source_episode0_private/recorded_realman_joints.json \
+            --urdf /tmp/realman_models/RM65/urdf/RM65-B/urdf/RM65-B.urdf \
+            --source-cup-arm right --duration 4 --fps 3 \
+            --output runs/single_fr5_hinged_cup_projected
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for mode, folder in [('scripted','scripted'),('projected-source','projected')]:
+              root=Path('runs/single_fr5_hinged_cup_'+folder)
+              d=json.loads((root/'summary.json').read_text())
+              assert d['status']=='ONE_ARM_HINGE_VIDEO_CREATED'
+              assert d['cup_independent_translation_dofs']==0
+              assert d['cup_independent_rotation_dofs']==1
+              assert abs(d['max_tilt_deg'])<=18
+              assert (root/d['video']).stat().st_size>10000
+              print(mode,'pivot:',d['cup_pivot_xyz_m'],'spout-rim start mm:',
+                    d['distance_spout_to_rim_first_mm'])
+          PY
+      - name: Report real versus virtual status without claiming source calibration
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for arm in ('right','left'):
+              file=Path(f'runs/real_90_{arm}_8to12/report.json')
+              if not file.is_file():
+                  print('ERROR: no report for',arm)
+                  continue
+              d=json.loads(file.read_text())
+              print(json.dumps({key:d.get(key) for key in (
+                  'status','arm_selection','real_samples_in_window',
+                  'source_fk_excursion_mm','accepted_frames','requested_frames',
+                  'first_failure','error_type','error','max_tcp_position_error_mm',
+                  'max_visual_spout_error_mm','collision_geometry_physically_complete',
+                  'actual_pitcher_mount_calibrated'
+              )},indent=2))
+          PY
+      - name: Upload our own MuJoCo videos and metrics, not original copyrighted videos/joints
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Realman-Original-90deg-Exploratory-Metrics-ONLY
+          path: |
+            runs/real_90_*/report.json
+            runs/real_90_*/*.mp4
+            runs/single_fr5_hinged_cup_*/summary.json
+            runs/single_fr5_hinged_cup_*/*.mp4
