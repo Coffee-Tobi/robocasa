@@ -52,13 +52,22 @@ def test_grip_center_is_between_fingers_and_cup_has_real_rendered_handle():
               "rb_free_mug_handle_lower","rb_free_mug_handle_outer"):
         assert m.geom(g).id>=0
     a=m.body("rb_gripped_cup").id
-    # Orthogonal tool holder rotates cup frame -90 deg about local Y
-    holder=m.body("rb_90_ir40_cup").id
-    z_parent=d.xmat[holder].reshape(3,3)
-    z_body=d.xmat[a].reshape(3,3)
-    from scipy.spatial.transform import Rotation
-    expected=Rotation.from_euler("y",-90,degrees=True).as_matrix()
-    assert np.allclose(z_parent.T@z_body,expected,atol=1e-7)
+    # Cup is upright relative to a level TCP: Rside=Ry(+90),
+    # jaw spin=Rz(+90), cup payload=inverse(Rside@spin).
+    tcp=m.body("rb_cell_tcp").id
+    Rt=d.xmat[tcp].reshape(3,3)
+    Rc=d.xmat[a].reshape(3,3)
+    assert np.allclose(Rt.T@Rc,np.eye(3),atol=1e-7)
+    # Bowl must be beside, not underneath, the clamping jaw centre.
+    bowl=m.geom("rb_gripped_cup_body").id
+    jaw=m.geom("rb_90_ir40_cup_jaw_left").id
+    jaw2=m.geom("rb_90_ir40_cup_jaw_right").id
+    gr=(d.geom_xpos[jaw]+d.geom_xpos[jaw2])/2
+    rel=Rt.T@(d.geom_xpos[bowl]-gr)
+    assert rel[0]>.07 and abs(rel[2])<.01
+    # The closing direction of jaws is sideways in TCP (not vertical).
+    close=Rt.T@(d.geom_xpos[jaw]-d.geom_xpos[jaw2])
+    assert abs(close[2])<1e-7
 
 
 def test_takeaway_has_no_fake_handle_but_reuses_orthogonal_arm():
