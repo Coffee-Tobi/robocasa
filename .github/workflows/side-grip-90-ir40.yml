@@ -1,0 +1,109 @@
+name: Approved FR5 90-Degree IR40 Side-Handle Grasp Regression
+on:
+  pull_request:
+    paths:
+      - 'robobarista/dual_tool_90_preview.py'
+      - 'robobarista/dual_90_tool_attachments.py'
+      - 'robobarista/side_grasp_preview.py'
+      - 'robobarista/latte_art_20s.py'
+      - 'tests/test_pr11_side_grip.py'
+      - 'tests/test_pr4_90deg_tool_attachments.py'
+      - '.github/workflows/side-grip-90-ir40.yml'
+  workflow_dispatch:
+
+jobs:
+  geometric-front-grip:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: MuJoCo OSMesa dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Both jaws horizontal, both bowls lateral, 90 degree tool axes
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -m pytest -q \
+            tests/test_pr11_side_grip.py \
+            tests/test_pr4_90deg_tool_attachments.py \
+            tests/test_dual_tool_90_preview.py
+
+      - name: Render actual 6-axis FR5 horizontal-side approach to both handles
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.side_grasp_preview \
+            --vendor-dir vendor --output runs/front_side_grasp \
+            --frames-per-tool 9 --fps 5 --width 760 --height 570
+      - name: Independently inspect the side approach and movie gates
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          d=Path('runs/front_side_grasp')
+          x=json.loads((d/'summary.json').read_text())
+          assert x['status']=='PASS'
+          assert len(x['side_approaches'])==2
+          assert {z['mode'] for z in x['side_approaches']}=={'cup','pitcher'}
+          for item in x['side_approaches']:
+              assert item['horizontal_approach_height_component']<.035
+              assert item['horizontal_finger_closing_height_component']<.035
+              assert item['horizontal_approach_distance_mm']>=24
+          assert not x['robot_gripper_closure_simulated']
+          assert not x['swept_unused_gripper_envelope_safe']
+          for p in ('cup_side_grasp_mujoco.png','pitcher_side_grasp_mujoco.png',
+                    'front_side_grasp_mujoco.mp4'):
+              assert (d/p).stat().st_size>10000,p
+          print('Side grasp pose & actual MuJoCo IK path PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RoboBarista-PR11-Actual-MuJoCo-Side-Grip
+          path: |
+            runs/front_side_grasp/*.png
+            runs/front_side_grasp/*.mp4
+            runs/front_side_grasp/summary.json
+
+      - name: Rerender normal 20s Latte Art using front-side pitcher orientation
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.latte_art_20s \
+            --fps 5 --duration 20 --target-spout-mm 18 \
+            --output runs/side_grip_latte20 --width 560 --height 420
+      - name: Verify standard latte movie really uses frontal side approach
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('runs/side_grip_latte20')
+          x=json.loads((p/'summary.json').read_text())
+          assert x['status']=='PASS'
+          assert x['pickup_wrist_mode'].startswith('Ry(-90')
+          assert x['side_handle_approach_mm']>=24
+          assert x['side_handle_route_checked_substeps']>0
+          assert not x['approach_from_below']
+          assert not x['physical_grasp_force_verified']
+          assert x['frames']==100 and x['video_created']
+          assert x['spout_max_displacement_from_start_mm']<=20.01
+          assert (p/'latte_art_20s.mp4').stat().st_size>10000
+          print('Front-side 20s latte cinematic PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RoboBarista-PR11-Front-Side-20s-Latte
+          path: |
+            runs/side_grip_latte20/latte_art_20s.mp4
+            runs/side_grip_latte20/summary.json
+            runs/side_grip_latte20/spout_positions.json
