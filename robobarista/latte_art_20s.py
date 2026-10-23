@@ -160,7 +160,15 @@ def run(args):
     item=stations["pour_cup"]
     if item["stage"] is None:
         raise RuntimeError("No collision-safe pour station predock")
-    origin=np.array(item["stage"]["q_rad"],float)
+    # PR11: DO NOT use the legacy vertical / underside wrist orientation
+    # returned by pour_cup predock. Reuse a geometrically validated
+    # HORIZONTAL-SIDE handle approach for the axial IR40. The simulated
+    # reference remains a free-space pouring *gesture*, not a cup-surface
+    # milk pour or a real grasp.
+    from .side_grasp_preview import find_side_approach
+    _pre,origin,_xyz0,_xyz1,side_distance,side_checks=(
+        find_side_approach(model,data,qids,limits,home,"pitcher"))
+    mujoco.mj_forward(model,data)
     timestamps=np.arange(args.duration*args.fps)/args.fps
     paths,scale,target_excursion=build_latte_path(
         model,data,qids,limits,origin,timestamps,
@@ -243,6 +251,10 @@ def run(args):
         "simulator":"MuJoCo forward-kinematics with checked poses, not mj_step motor control",
         "view":"wrist-follow POV + gripper close-up + whole scene inset",
         "gripper":"two conceptual IR40-50 on 90-degree adapter; pitcher handle between axial gripper fingers",
+        "pickup_wrist_mode":"Ry(-90 deg): axial IR40 horizontal, unused orthogonal tool faces upward",
+        "side_handle_approach_mm":float(side_distance*1000),
+        "side_handle_route_checked_substeps":int(side_checks),
+        "approach_from_below":False,
         "actual_90_degree_tool_adapter":True,
         "force_torque_sensor_before_both_grippers":True,
         "inactive_orthogonal_gripper_collision_validated":False,
