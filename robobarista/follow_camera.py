@@ -24,7 +24,10 @@ class ArmFollowCamera:
     Smooths CAMERA pose only; does not modify robot qpos, motor commands,
     AprilTag observations, or calibrated world-camera extrinsics.
     """
-    def __init__(self,model,smoothing=.40):
+    def __init__(self,model,smoothing=.40,view='behind'):
+        if view not in ('behind','handle_close'):
+            raise ValueError('Unknown cinematic camera view')
+        self.view=view
         self.model=model
         self.mocap_id=int(model.body_mocapid[model.body(RIG_BODY).id])
         if self.mocap_id<0:raise ValueError("Following camera must be a mocap body")
@@ -41,13 +44,26 @@ class ArmFollowCamera:
         length=float(np.linalg.norm(radial))
         radial=radial/length if length>0.08 else np.array([0.,-1.])
         side=np.array([-radial[1],radial[0]])
-        # Free-space view behind robot arm with a small side offset.
-        eye=np.array([tcp[0]-1.06*radial[0]+.44*side[0],
-                      tcp[1]-1.06*radial[1]+.44*side[1],
-                      max(1.60,tcp[2]+.51)])
-        focus=tcp.copy()
-        focus[:2]+=.26*radial
-        focus[2]-=.11
+        if self.view=='handle_close':
+            # Front-quarter opposite side: look BACK AT the wrist and
+            # handle from outside the arm, instead of hiding the mug
+            # behind white robot links. This is a *cinematic* camera only,
+            # never a calibrated AprilTag camera or collision geometry.
+            eye=np.array([tcp[0]+.64*radial[0]+.48*side[0],
+                          tcp[1]+.64*radial[1]+.48*side[1],
+                          max(1.35,tcp[2]+.35)])
+            focus=tcp.copy()
+            focus[:2]+=.12*radial
+            focus[2]+=.055
+        else:
+            # The old over-the-shoulder fallback is useful for overview,
+            # but may hide cup handles behind links.
+            eye=np.array([tcp[0]-1.06*radial[0]+.44*side[0],
+                          tcp[1]-1.06*radial[1]+.44*side[1],
+                          max(1.60,tcp[2]+.51)])
+            focus=tcp.copy()
+            focus[:2]+=.26*radial
+            focus[2]-=.11
         alpha=self.smoothing
         if self.eye is None:
             self.eye=eye
