@@ -682,8 +682,9 @@ def run(args):
         'native_fairino_motion_plan_is_separate_step':bool(getattr(args,'capture_only',False)),
         'robot_arm_moves_through_6_real_hinge_qpos':len(replay)==args.frames,
         'replay_inputs_camera_estimates_only':True,
-        'human_demonstration':False,
-        'source_motion':'seeded random collision-preflighted joint-space trajectory; independent virtual demonstrator pitcher follows its FK',
+        'source_motion':('collision-screened generated latte-art-like 20s virtual IK reference; no human demo'
+                         if getattr(args,'latte_art_source',False)
+                         else 'seeded random collision-preflighted joint-space trajectory; independent virtual demonstrator pitcher follows its FK'),
         'frames':args.frames,'fps':args.fps,'seed':rng_seed,
         'camera_valid_frames':sum(x['valid'] for x in camera_records),
         'camera_two_view_frames':sum(x['visible_views']>=2 for x in camera_records),
