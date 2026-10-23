@@ -13,7 +13,7 @@ STROKE_MM=40.
 # Local robot TCP frame; concept-only offsets (metres).
 MOUNTS={"handle_tool":(-.070,0.,.040),"cup_tool":(.070,0.,.040)}
 
-def add_visual_dual_ir40_50(tcp:ET.Element,cup_diameter_mm:float=80.,include_props=False) -> None:
+def add_visual_dual_ir40_50(tcp:ET.Element,cup_diameter_mm:float=80.,include_props=False,compact_tags=False) -> None:
     """Add approximate non-colliding gripper geometry; optionally rigid held tools. No grasp physics."""
     if not 55<=cup_diameter_mm<=100:raise ValueError('supported cup concept: 55-100 mm')
     def body(parent,name,pos):
@@ -71,6 +71,40 @@ def add_visual_dual_ir40_50(tcp:ET.Element,cup_diameter_mm:float=80.,include_pro
         ET.SubElement(cup,"geom",name="rb_gripped_cup_body",type="cylinder",
             pos="0 0 0",size=f"{cup_diameter_mm/2000} .047",
             rgba=".72 .87 .93 .82",mass="0",contype="0",conaffinity="0")
+        if compact_tags:
+            # The held props in the storyboard are RIGID CLONES of the free
+            # props. Give them UNIQUE AprilTag IDs to avoid duplicate-ID
+            # detections from a parked clone elsewhere in the workcell.
+            # Sizes INCLUDE quiet zone; corner solvers must use 440/512.
+            def attach_tag(parent,name,tid,position,rpy,outer,post_m=0.):
+                mount=ET.SubElement(parent,"body",name="rb_small_tag_"+name,
+                    pos=" ".join(map(str,position)),
+                    euler=" ".join(map(str,rpy)))
+                ET.SubElement(mount,"geom",name="rb_tagface_"+name,
+                    type="box",pos="0 0 0",
+                    size=f"{outer/2} {outer/2} .0001",
+                    material=f"rb_mat_{tid}",mass="0",contype="0",
+                    conaffinity="0")
+                ET.SubElement(mount,"geom",name="rb_tag_backing_"+name,
+                    type="box",pos="0 0 -.0028",
+                    size=f"{outer/2+.0015} {outer/2+.0015} .0022",
+                    rgba=".27 .30 .32 1",mass="0",contype="0",
+                    conaffinity="0")
+                if post_m:
+                    ET.SubElement(mount,"geom",name="rb_small_clip_"+name,
+                        type="cylinder",pos=f"0 0 {-post_m/2}",
+                        size=f".003 {post_m/2}",rgba=".35 .36 .39 1",
+                        mass="0",contype="0",conaffinity="0")
+            from math import pi
+            # Pitcher cylinder: local centre (0,.113,-.022), radius .044.
+            attach_tag(jug,"held_pitcher",75,(0,.055,-.008),
+                       (pi/2,0,0),.036,post_m=.014)
+            # Portafilter handle: long axis local +Y; top flat clip.
+            attach_tag(pf,"held_portafilter",74,(0,.085,.014),
+                       (0,0,0),.024)
+            # Cup: removable food-safe clip concept on outside rim.
+            attach_tag(cup,"held_cup",76,(0,-.054,.042),
+                       (pi/2,0,0),.028,post_m=.014)
 
 def build_dual_gripper_scene(vendor_dir):
     """Separate visual variant; existing production benchmark is unchanged."""
