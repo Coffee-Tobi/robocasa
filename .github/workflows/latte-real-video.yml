@@ -65,7 +65,7 @@ jobs:
           PYOPENGL_PLATFORM: osmesa
         run: |
           python -u -m robobarista.camera_joint_replay \
-            --capture-only --marker-profile legacy --frames 13 --fps 3 \
+            --capture-only --marker-profile compact --camera-count 3 --frames 13 --fps 3 \
             --seed 14 --width 960 --height 720 \
             --external-pitcher-trajectory runs/real_video_fk/source_pitcher_6d_URDF_FK.json \
             --output runs/real_video_fr5_cameras
@@ -76,7 +76,7 @@ jobs:
           PYOPENGL_PLATFORM: osmesa
         run: |
           python -u -m robobarista.camera_joint_replay \
-            --marker-profile legacy --frames 13 --fps 3 \
+            --marker-profile compact --camera-count 3 --frames 13 --fps 3 \
             --seed 14 --width 960 --height 720 \
             --external-pitcher-trajectory runs/real_video_fk/source_pitcher_6d_URDF_FK.json \
             --output runs/real_video_fr5_replay
@@ -89,6 +89,7 @@ jobs:
           print('Frames executed kinematically:',summary['replayed_frames'])
           print('Maximum tracked-camera-to-FR5 FK error [mm]:',
                 summary['max_camera_to_executed_fr5_error_mm'])
+          assert summary['tag_profile']=='compact'
           assert summary['replayed_frames']==13
           assert summary['status']=='PASS'
           assert summary['robot_arm_moves_through_6_real_hinge_qpos']
@@ -122,6 +123,9 @@ jobs:
           if p.exists():
               d=json.loads(p.read_text())
               print('FR5 camera status:',d['status'])
+              print('Tags on objects: compact / actual printed sizes 24-42mm')
+              print('Stations seen:',d['fixed_station_tags_recognized_in_initial_render'],'/',d['fixed_station_reference_count'])
+              print('NOTE compact station coverage != automatically sufficient for real robots')
               print('Valid reconstructed frames:',d['camera_valid_frames'])
               print('Max virtual camera body error:',d['max_camera_vs_truth_mm'])
           else:
