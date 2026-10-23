@@ -36,7 +36,7 @@ jobs:
         run: |
           python -u -m robobarista.coffee_workflow \
             --marker-profile compact --cup-style handle_mug \
-            --camera-view follow --frames-leg 3 \
+            --camera-view handle_close --frames-leg 3 \
             --width 760 --height 570 --fps 7 \
             --output runs/handled_mug_compact
       - name: Check result claims separately from real grip/contact
@@ -50,6 +50,7 @@ jobs:
           assert s['tag_profile']=='compact'
           assert s['cup_style']=='handle_mug'
           assert s['unique_gripped_object_tags']
+          assert s['front_quarter_handle_detail_with_overview_inset']
           assert not s['actual_cup_or_mug_pickup_executed']
           assert not s['offset_mug_payload_clearance_validated']
           assert (d/'coffee_workflow.mp4').stat().st_size>10000
