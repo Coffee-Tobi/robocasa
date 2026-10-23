@@ -22,8 +22,8 @@ from robobarista.external_pose_replay import (
 
 def fake_joint_rows(n=11):
     return [{"time_s":i*.2,
-             "state":[.001*i,0,0,0,0,0]+[0]*6,
-             "action":[.001*i,0,0,0,0,0]+[0]*6}
+             "state":[.001*i,0,0,0,0,0,.5]+[0,0,0,0,0,0,.2],
+             "action":[.001*i,0,0,0,0,0,.5]+[0,0,0,0,0,0,.2]}
             for i in range(n)]
 
 
@@ -46,8 +46,10 @@ def test_public_episode_joint_format_not_fake_tcp():
     report=validate_realman_episode(rows)
     assert report["frames"]==11
     assert report["flange_and_pitcher_pose_available"] is False
-    rows[2]["state"]=[0]*6
-    with pytest.raises(ValueError,match="12D"):
+    assert report["state_layout_from_upstream_Hardware_Bridge_ROS2"].startswith("[left six joints")
+    assert report["right_gripper_raw_first"] == pytest.approx(.2)
+    rows[2]["state"]=[0]*12
+    with pytest.raises(ValueError,match="14D"):
         validate_realman_episode(rows)
     rows=fake_joint_rows()
     rows[2]["time_s"]=rows[1]["time_s"]
@@ -71,6 +73,12 @@ def test_urdf_fk_and_full_6d_orientation(tmp_path):
         flange_to_pitcher=np.eye(4))
     assert len(poses)==11
     assert poses[-1]["rotation_xyzw"]!=poses[0]["rotation_xyzw"]
+    # Right arm is explicitly indices [7:13], NOT [6:12] (index 6 = left gripper).
+    right_poses,_=reconstruct_pitches(
+        fake_joint_rows(),chain,arm="right",joint_unit="rad",
+        flange_to_pitcher=np.eye(4))
+    assert right_poses[0]["rotation_xyzw"]==pytest.approx([0,0,0,1])
+    assert right_poses[-1]["rotation_xyzw"]==pytest.approx([0,0,0,1])
     assert not report["source_camera_6d_pitcher_measurement"]
     assert report["source_pitcher_pose_frames"]==11
 
@@ -104,7 +112,7 @@ def test_upstream_lerobot_import_one_episode_no_video_is_strict(tmp_path,monkeyp
             assert kwargs["episodes"]==[0]
             assert kwargs["download_videos"] is False
             self.meta=types.SimpleNamespace(info={"features":{
-                "observation.images.top":{"dtype":"video"}}})
+                "observation.images.top_camera":{"dtype":"video"}}})
         def select_columns(self,columns):
             assert set(columns)=={"timestamp","observation.state","action"}
             return [{"timestamp":r["time_s"],
@@ -120,7 +128,7 @@ def test_upstream_lerobot_import_one_episode_no_video_is_strict(tmp_path,monkeyp
     report=extract_published_episode(
         output_dir=tmp_path/"import",episode=0,with_video=False)
     assert report["frames"]==11
-    assert "observation.images.top" in report["camera_views_advertised"]
+    assert "observation.images.top_camera" in report["camera_views_advertised"]
     assert not report["flange_and_pitcher_pose_available"]
     assert not report["data_license_verified"]
     assert not report["hardware_execution_authorized"]
