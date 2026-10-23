@@ -2,6 +2,10 @@
 
 **Stand: 23. Oktober 2026. Einzige aktive Integrations-PR: #18**
 
+### Entscheidung 2/18: PR #2 – VERWORFEN / bereits ersetzt (Nutzerentscheidung)
+
+[PR #2](https://github.com/Coffee-Tobi/robocasa/pull/2) bleibt geschlossen und ungemergt. Der PR hing ursprünglich am verworfenen MPC-Branch #1; die sinnvollen Aufräum- und Kamera-Funktionen wurden unabhängig davon bereits mit dem gemergten [PR #3](https://github.com/Coffee-Tobi/robocasa/pull/3) nach main übernommen. Keine zusätzliche Übernahme oder Löschung notwendig.
+
 ### Entscheidung 1/18: PR #1 – VERWORFEN (Nutzerentscheidung)
 
 [PR #1](https://github.com/Coffee-Tobi/robocasa/pull/1) wurde **geschlossen, nicht gemergt**. Es war ein experimenteller eigener MPC-Optimizer und ein MuJoCo-Kontaktausleser. Für den praktischen FAIRINO FR5 verwenden wir vorrangig die offiziellen, bereits dokumentierten Steuerungs- und Schutzfunktionen:
