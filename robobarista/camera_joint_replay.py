@@ -497,7 +497,19 @@ def run(args):
     # A source path built from a *seeded random* set of collision-free joint
     # motions: visual demonstrator follows known FK; robot replay does NOT.
     q0,source_region=_find_start(model,data,qids,limits,rng_seed)
-    if getattr(args,'latte_art_source',False):
+    imported_source_path=getattr(args,'external_pitcher_trajectory',None)
+    if imported_source_path and getattr(args,'latte_art_source',False):
+        raise ValueError("Choose one trajectory source: real imported or synthetic latte")
+    external_source_stats=None
+    if imported_source_path:
+        from .external_pose_replay import virtual_fr5_ik_from_realman_source
+        q_true,external_source_stats=virtual_fr5_ik_from_realman_source(
+            model,data,qids,limits,q0,args.frames,args.fps,
+            source_path=imported_source_path)
+        rejected=0
+        (out/'external_pose_alignment_report.json').write_text(
+            json.dumps(to_json(external_source_stats),indent=2))
+    elif getattr(args,'latte_art_source',False):
         q_true,rejected=_latte_art_ik_source(
             model,data,qids,limits,q0,args.frames,args.fps)
     else:
@@ -508,7 +520,8 @@ def run(args):
         _write_q(model,data,qids,q)
         p,R=_read_body(data,tcp)
         truth.append(dict(position=p.copy(),rotation=R.copy()))
-    print('Generated permitted seeded-random source motion:',
+    print('Realman joint demonstrator → model FK → FR5 virtual IK → new camera capture:'
+          if imported_source_path else 'Generated virtual source motion:',
           args.frames,'frames, rejected random candidates:',rejected,
           'start region:',source_region,flush=True)
 
@@ -677,7 +690,12 @@ def run(args):
         'status':'PASS' if no_pose==0 and (getattr(args,'capture_only',False) or len(replay)==args.frames) else 'INCOMPLETE',
         'camera_capture_only':bool(getattr(args,'capture_only',False)),
         'virtual_latte_art_source':bool(getattr(args,'latte_art_source',False)),
-        'human_demonstration':False,
+        'imported_real_robot_joint_demonstration':bool(imported_source_path),
+        'camera_images_newly_rendered_in_mujoco':True,
+        'original_realman_videos_used_as_apriltag_measurements':False,
+        'unknown_realman_to_fr5_absolute_base_alignment':bool(imported_source_path),
+        'imported_source_alignment_metadata':external_source_stats,
+        'human_demonstration':bool(imported_source_path),
         'tag_profile':marker_profile,
         'pitcher_outer_tag_sizes_mm':([36,32,30] if marker_profile=='compact' else [90,90,82]),
         'cup_outer_tag_size_mm':28 if marker_profile=='compact' else 90,
@@ -688,9 +706,12 @@ def run(args):
         'native_fairino_motion_plan_is_separate_step':bool(getattr(args,'capture_only',False)),
         'robot_arm_moves_through_6_real_hinge_qpos':len(replay)==args.frames,
         'replay_inputs_camera_estimates_only':True,
-        'source_motion':('collision-screened generated latte-art-like 20s virtual IK reference; no human demo'
-                         if getattr(args,'latte_art_source',False)
-                         else 'seeded random collision-preflighted joint-space trajectory; independent virtual demonstrator pitcher follows its FK'),
+        'source_motion':(
+            'Realman recorded joints -> manufacturer RM65 URDF FK -> virtual FR5; NOT original camera 6D measurements'
+            if imported_source_path else
+            ('collision-screened synthetic latte-art-like source'
+             if getattr(args,'latte_art_source',False) else
+             'seeded random collision-preflighted joint-space source')),
         'frames':args.frames,'fps':args.fps,'seed':rng_seed,
         'camera_valid_frames':sum(x['valid'] for x in camera_records),
         'camera_two_view_frames':sum(x['visible_views']>=2 for x in camera_records),
@@ -723,6 +744,8 @@ def main():
     parser.add_argument('--output',default='runs/allowed_camera_replay')
     parser.add_argument('--capture-only',action='store_true',help='Measure 3-camera AprilTag poses without running legacy joint replay')
     parser.add_argument('--latte-art-source',action='store_true',help='Collision-preflighted 20s VIRTUAL latte pour source (not a human demo)')
+    parser.add_argument('--external-pitcher-trajectory',default=None,
+                        help='RM65 URDF-FK pitcher pose JSON; remeasure new virtual tags, NOT original camera footage')
     parser.add_argument('--save-camera-frames',action='store_true',
                         help='Save unaltered RGB views for optional native Hugging Face LeRobot video dataset; storage intensive')
     parser.add_argument('--marker-profile',choices=['legacy','compact'],default='legacy',
