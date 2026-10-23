@@ -41,8 +41,6 @@ def test_sensor_is_upstream_of_right_angle_adapter_and_two_ir40s():
 
 def test_robot_still_has_real_fr5_hinge_joints():
     model=mujoco.MjModel.from_xml_path(str(build_simulation(Path("vendor"))))
-    for i in range(1,7):
-        assert model.joint(f"j{i}").type[0] if False else True
     from robobarista.robot_replay import robot_qpos_addresses
     addresses,limits = robot_qpos_addresses(model)
     assert len(addresses)==6
