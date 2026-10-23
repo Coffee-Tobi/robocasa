@@ -29,8 +29,8 @@ STEP_TEXT={
 "insert_grouphead":("3 | SIEBTRAEGER EINSETZEN",
       "Bayonett: ansetzen, dann verdrehen bis Widerstand.",
       "FT-Drehmomentsignal rechts: SYNTHETISCH, kein echter Lock."),
-"place_cup":("4 | KUNSTSTOFFBECHER POSITIONIEREN",
-      "IR40 Bechergreifer transportiert den Becher zum Auslauf.",
+"place_cup":("4 | TASSE AM HENKEL POSITIONIEREN",
+      "IR40-Tassenhenkelgreifer bewegt die Tasse (nur virtuell).",
       "Abstellen ist bisher eine kinematische Visualisierung."),
 "brew":("5 | ESPRESSO BEZIEHEN",
       "Espressomaschine starten, Extraktionszeit ueberwachen.",
@@ -44,9 +44,9 @@ STEP_TEXT={
 "steam":("8 | MILCH AUFSCHAEUMEN",
       "Kanne zur Dampflanze, seitlichen Kontakt vorsichtig pruefen.",
       "FT-Seitenkraft rechts: SYNTHETISCH, keine echte Dueseberuehrung."),
-"cup_to_pour":("9 | BECHER ZUM GIESSPLATZ",
-      "IR40 Bechergreifer positioniert Espresso unter der Kanne.",
-      "Becherposition ist symbolisch, noch ohne Boden-Reibung."),
+"cup_to_pour":("9 | TASSE AM HENKEL ZUM GIESSPLATZ",
+      "IR40-Henkelgreifer positioniert die Tasse unter der Kanne.",
+      "Tassenposition ist symbolisch, kein echter Henkelschluss."),
 "pour":("10 | LATTE ART GIESSEN",
       "Grosse Bewegung vermeiden; feine Ausgiesserbewegung.",
       "Latte Art: getrennte FAIRINO-NewSpline-Demo, keine Milchphysik."),
@@ -58,12 +58,12 @@ TOOLS={
 "portafilter_pickup":"IR40-50 A | Griffadapter Siebtraeger",
 "grind_tamp":"IR40-50 A | Griffadapter Siebtraeger",
 "insert_grouphead":"IR40-50 A | Griffadapter Siebtraeger",
-"place_cup":"IR40-50 B | breite Becherbacken",
+"place_cup":"IR40-50 B | Tassenhenkel-Adapter (nur visuell)",
 "brew":"Kein Greifer aktiv | Maschinenprozess",
 "pitcher_pickup":"IR40-50 A | Milchkanne",
 "dose":"IR40-50 A | Milchkanne",
 "steam":"IR40-50 A | Milchkanne",
-"cup_to_pour":"IR40-50 B | breite Becherbacken",
+"cup_to_pour":"IR40-50 B | Henkelgreifer (kein Kontakt)",
 "pour":"IR40-50 A | Milchkanne",
 "rinse":"IR40-50 A | Milchkanne"
 }
@@ -162,7 +162,10 @@ def run(args):
     from types import SimpleNamespace
     p=SimpleNamespace(vendor_dir=args.vendor_dir,output=str(raw),seed=14,
         width=args.width,height=args.height,fps=float(args.capture_fps),
-        camera_view="follow",frames_leg=args.frames_leg)
+        camera_view=getattr(args,'camera_view','handle_close'),
+        frames_leg=args.frames_leg,
+        marker_profile=getattr(args,'marker_profile','compact'),
+        cup_style=getattr(args,'cup_style','handle_mug'))
     summary=run_coffee(p)
     if summary["status"]!="PASS":raise RuntimeError("Underlying scene did not pass")
     events=json.loads((raw/"recipe.json").read_text())
@@ -225,6 +228,10 @@ def run(args):
         "duration_s":picture_index/(args.capture_fps*args.repeat),
         "video_created":video.stat().st_size>10000,
         "both_IR40_gripper_concepts_visible":True,
+        "tag_profile":getattr(args,"marker_profile","compact"),
+        "cup_style":getattr(args,"cup_style","handle_mug"),
+        "camera_view":getattr(args,"camera_view","handle_close"),
+        "cup_grip_at_handle_visually_only":getattr(args,"cup_style","handle_mug")=="handle_mug",
         "portafilter_bayonet_test":detailed[2]["mock_ft"],
         "steam_side_contact_test":detailed[7]["mock_ft"],
         "fairino_trajectory_LA_vendor_method_plan":lookahead,
@@ -250,6 +257,10 @@ def main():
     p.add_argument("--capture-fps",type=int,default=6)
     p.add_argument("--repeat",type=int,default=2)
     p.add_argument("--frames-leg",type=int,default=9)
+    p.add_argument("--marker-profile",choices=('legacy','compact'),default='compact')
+    p.add_argument("--cup-style",choices=('handle_mug','takeaway'),default='handle_mug')
+    p.add_argument("--camera-view",choices=('follow','handle_close','overview'),
+                   default='handle_close')
     a=p.parse_args()
     r=run(a)
     import sys

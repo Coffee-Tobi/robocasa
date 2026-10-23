@@ -1,0 +1,153 @@
+name: Real Latte Art FK and Camera Video Data
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/latte-real-video.yml'
+      - 'robobarista/real_latte_dataset.py'
+      - 'robobarista/realman_fk_bridge.py'
+      - 'robobarista/external_pose_replay.py'
+      - 'robobarista/camera_joint_replay.py'
+      - 'robobarista/latte_fluid_proxy.py'
+      - 'tests/test_latte_fluid_proxy.py'
+  workflow_dispatch:
+
+jobs:
+  actual-published-source-and-fr5-camera-attempt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install rendered RGB-D AprilTag and data dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 libglx-mesa0 ffmpeg
+          python -m pip install -r requirements.txt
+          python -m pip install 'huggingface_hub>=0.27,<2' 'pyarrow>=16,<23'
+      - name: Obtain the true 400-sample, 14-channel public latte demo
+        run: |
+          python -m robobarista.real_latte_dataset --parquet-only \
+            --episode 0 --output runs/real_video_source
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('runs/real_video_source/source_and_validity.json').read_text())
+          assert d['frames']==400 and d['recorded_source_joint_state_dims']==14
+          assert not d['source_camera_6d_pitcher_pose']
+          print('Verified public episode 0 at',d['source_revision'])
+          PY
+      - name: FK real recorded joints using possible official RM65-B model
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/RealManRobot/rm_models.git /tmp/rm_models
+          git -C /tmp/rm_models sparse-checkout set RM65
+          python -m robobarista.realman_fk_bridge \
+             --input-joints runs/real_video_source/recorded_realman_joints.json \
+             --urdf /tmp/rm_models/RM65/urdf/RM65-B/urdf/RM65-B.urdf \
+             --flange link_6 --joint-names joint_1 joint_2 joint_3 joint_4 joint_5 joint_6 \
+             --joint-unit rad --arm right --start-s 8 --end-s 12 \
+             --assume-identity-tool --output runs/real_video_fk
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('runs/real_video_fk/source_pose_provenance.json')
+          d=json.loads(p.read_text())
+          assert d['source_pitcher_pose_frames']>50
+          assert not d['flange_to_pitcher_physically_calibrated']
+          print('Model-based, uncalibrated flange path excursion [mm]:',
+                d['source_pitcher_translation_excursion_mm'])
+          PY
+      - name: Attempt *actual MuJoCo* FR5 3-camera replay on imported path
+        continue-on-error: true
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.camera_joint_replay \
+            --capture-only --marker-profile compact --camera-count 3 --frames 13 --fps 3 \
+            --seed 14 --width 960 --height 720 \
+            --external-pitcher-trajectory runs/real_video_fk/source_pitcher_6d_URDF_FK.json \
+            --output runs/real_video_fr5_cameras
+      - name: Replay newly camera-measured real-demo path on articulated virtual FR5
+        continue-on-error: true
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.camera_joint_replay \
+            --marker-profile compact --camera-count 3 --frames 13 --fps 3 \
+            --seed 14 --width 960 --height 720 \
+            --external-pitcher-trajectory runs/real_video_fk/source_pitcher_6d_URDF_FK.json \
+            --output runs/real_video_fr5_replay
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          p=Path('runs/real_video_fr5_replay')
+          summary=json.loads((p/'summary.json').read_text())
+          print('Camera-measured source -> constrained 6-joint FR5 replay:',summary['status'])
+          print('Frames executed kinematically:',summary['replayed_frames'])
+          print('Maximum tracked-camera-to-FR5 FK error [mm]:',
+                summary['max_camera_to_executed_fr5_error_mm'])
+          assert summary['tag_profile']=='compact'
+          assert summary['replayed_frames']==13
+          assert summary['status']=='PASS'
+          assert summary['robot_arm_moves_through_6_real_hinge_qpos']
+          assert (p/'demo_and_replay.mp4').stat().st_size>10000
+          PY
+      - name: Run repeatable CPU milk illustration; NOT physical FluidLab
+        run: |
+          python -m pytest -q tests/test_latte_fluid_proxy.py
+          python -m robobarista.latte_fluid_proxy \
+            --source runs/real_video_fk/source_pitcher_6d_URDF_FK.json \
+            --output runs/real_video_fluid/illustrative_2d_milk.mp4 \
+            --fps 15
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path=Path('runs/real_video_fluid/illustrative_2d_milk.mp4')
+          s=json.loads(Path(str(path)+'.json').read_text())
+          assert path.stat().st_size>5000
+          assert not s['physically_validated_fluidlab_execution']
+          assert not s['real_latte_art_pattern_predicted']
+          assert not s['robot_command_generated']
+          print('Explicit qualitative milk preview created, not FluidLab.')
+          PY
+      - name: Summarize what actually passed
+        if: always()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          p=Path('runs/real_video_fr5_cameras/summary.json')
+          if p.exists():
+              d=json.loads(p.read_text())
+              print('FR5 camera status:',d['status'])
+              print('Tags on objects: compact / actual printed sizes 24-42mm')
+              print('Stations seen:',d['fixed_station_tags_recognized_in_initial_render'],'/',d['fixed_station_reference_count'])
+              print('NOTE compact station coverage != automatically sufficient for real robots')
+              print('Valid reconstructed frames:',d['camera_valid_frames'])
+              print('Max virtual camera body error:',d['max_camera_vs_truth_mm'])
+          else:
+              print('FR5 relative pose IK or camera capture did NOT complete; no falsely successful video claimed.')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Real-Recorded-Latte-FK-and-Optional-Actual-MuJoCo-Camera-Video
+          path: |
+            runs/real_video_fk/source_pitcher_6d_URDF_FK.json
+            runs/real_video_fk/source_pose_provenance.json
+            runs/real_video_source/source_and_validity.json
+            runs/real_video_fr5_cameras/camera_capture.mp4
+            runs/real_video_fr5_cameras/camera_measurements.json
+            runs/real_video_fr5_cameras/camera_vs_truth_EVAL_ONLY.json
+            runs/real_video_fr5_cameras/summary.json
+            runs/real_video_fr5_cameras/external_pose_alignment_report.json
+            runs/real_video_fr5_replay/demo_and_replay.mp4
+            runs/real_video_fr5_replay/robot_replay.json
+            runs/real_video_fr5_replay/summary.json
+            runs/real_video_fr5_replay/camera_vs_truth_EVAL_ONLY.json
+            runs/real_video_fluid/illustrative_2d_milk.mp4
+            runs/real_video_fluid/illustrative_2d_milk.mp4.json
+          if-no-files-found: error

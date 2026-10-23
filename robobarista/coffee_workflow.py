@@ -46,14 +46,18 @@ RECIPE=[
 ]
 
 
-def _story_scene(vendor_dir):
-    built=_add_held_pitcher_robot_variant(Path(vendor_dir).resolve())
+def _story_scene(vendor_dir,marker_profile='compact',cup_style='handle_mug'):
+    if cup_style not in ('takeaway','handle_mug'):
+        raise ValueError('Cup style must be takeaway or handle_mug')
+    built=_add_held_pitcher_robot_variant(Path(vendor_dir).resolve(),marker_profile)
     fr=Path(built).parent
     root=ET.parse(fr/'rb_fr5_safe_cell_robot.xml')
     tcp=root.getroot().find(".//body[@name='rb_cell_tcp']")
     if tcp is None:raise RuntimeError('Missing FR5 wrist TCP')
     # Conceptual non-contact dual IR40-50 equipment. Not a physical pickup.
-    add_visual_dual_ir40_50(tcp,include_props=True)
+    add_visual_dual_ir40_50(tcp,include_props=True,
+                            compact_tags=(marker_profile=='compact'),
+                            cup_style=cup_style)
     for tool in ('portafilter','plastic_cup'):
         b=ET.SubElement(tcp,'body',{'name':'rb_story_'+tool,'pos':'0 0 0'})
         if tool=='portafilter':
@@ -81,6 +85,28 @@ def _story_scene(vendor_dir):
     insert_camera(world)
     cup=world.find(".//body[@name='rb_plastic_cup']")
     if cup is None:raise RuntimeError('Cannot find plastic cup')
+    if cup_style=='handle_mug':
+        # The legacy internal body name rb_plastic_cup is retained for
+        # existing stage/dataset compatibility. Here it is visualized as a
+        # handled reusable CERAMIC MUG, never as a disposable cup.
+        for geom in cup.findall("geom"):
+            if geom.get("name") in (
+                "rb_cup_base","rb_plastic_wall_0","rb_plastic_wall_1",
+                "rb_plastic_wall_2","rb_plastic_rim"):
+                geom.set("rgba",".89 .85 .78 1")
+        # Three massless geometry pieces form an OUTWARD +X mug loop,
+        # accessible by the handle; no physical grasp force is simulated.
+        for name,ends in (
+            ("upper",(.037,0,.083,.083,0,.083)),
+            ("lower",(.037,0,.039,.083,0,.039)),
+            ("outer",(.083,0,.039,.083,0,.083))):
+            ET.SubElement(cup,"geom",{
+                "name":"rb_free_mug_handle_"+name,
+                "type":"capsule",
+                "fromto":" ".join(map(str,ends)),
+                "size":".006",
+                "rgba":".89 .85 .79 1",
+                "contype":"0","conaffinity":"0","mass":"0"})
     ET.SubElement(cup,'geom',{'name':'rb_story_espresso_disc',
        'type':'cylinder','pos':'0 0 .067','size':'.038 .003',
        'rgba':'.3 .13 .05 0','mass':'0','contype':'0','conaffinity':'0'})
@@ -114,10 +140,20 @@ def _alpha(model,tool):
         'portafilter':('rb_gripped_portafilter_adapter',
                       'rb_gripped_portafilter_handle',
                       'rb_gripped_portafilter_basket'),
-        'plastic_cup':('rb_gripped_cup_body',)}
+        'plastic_cup':('rb_gripped_cup_body',
+                       'rb_gripped_cup_handle_upper',
+                       'rb_gripped_cup_handle_lower',
+                       'rb_gripped_cup_handle_outer')}
     for key,names in attached.items():
         for name in names:
-            model.geom(name).rgba[3]=(0.82 if key=='plastic_cup' else 1.0) if tool==key else 0.0
+            try:
+                geom=model.geom(name)
+            except KeyError:
+                # Takeaway mode does not contain ceramic handle pieces.
+                if name.startswith('rb_gripped_cup_handle_'):
+                    continue
+                raise
+            geom.rgba[3]=(0.82 if key=='plastic_cup' else 1.0) if tool==key else 0.0
 
 
 def _make_cup_contents(model):
@@ -221,7 +257,10 @@ def _random_pour_gesture(model,data,qids,limits,home,stages,seed):
 def run(args):
     out=Path(args.output).resolve()
     out.mkdir(exist_ok=True,parents=True)
-    scene=_story_scene(Path(args.vendor_dir))
+    cup_style=getattr(args,'cup_style','handle_mug')
+    scene=_story_scene(Path(args.vendor_dir),
+                       getattr(args,'marker_profile','compact'),
+                       cup_style)
     model=mujoco.MjModel.from_xml_path(str(scene))
     data=mujoco.MjData(model)
     _set_free_pose(model,data,'rb_pitcher_free',[-10,-10,-10],0)
@@ -239,6 +278,9 @@ def run(args):
     # Stage path screening: check before any rendering.
     recipe=[]
     for label,dock,tool,action in RECIPE:
+        if cup_style=='handle_mug':
+            label=label.replace('Kunststoffbecher','Keramiktasse am Henkel')
+            label=label.replace('Becher zum Giessplatz','Tasse am Henkel zum Giessplatz')
         q=np.asarray(stages[dock]['stage']['q_rad'],float)
         safe,reason,checked=_check_route(
             model,data,qids,limits,home,q,tool)
@@ -250,7 +292,9 @@ def run(args):
                            q=q))
     renderer=mujoco.Renderer(model,width=args.width,height=args.height)
     camera_mode=getattr(args,'camera_view','follow')
-    follow=ArmFollowCamera(model) if camera_mode=='follow' else None
+    follow=(ArmFollowCamera(model,view='handle_close'
+                             if camera_mode=='handle_close' else 'behind')
+            if camera_mode in ('follow','handle_close') else None)
     frames=[]
     events=[]
     cup_at_espresso=False
@@ -355,6 +399,9 @@ def run(args):
             mp4=(out/'coffee_workflow.mp4').stat().st_size>1000
     report={
         'status':'PASS' if len(events)==len(RECIPE) and mp4 else 'FAIL',
+        'cup_style':cup_style,
+        'cup_grip_claim':'visually positioned near handle, NOT physical force-validated grasp' if cup_style=='handle_mug' else 'conceptual opposed jaws around disposable cup body',
+        'compact_tags_on_carried_tools':getattr(args,'marker_profile','compact')=='compact',
         'virtual_espresso_and_milk_workflow_stages':len(events),
         'safe_predock_stages':sum(v['kinematic_predock_checked'] for v in events),
         'true_machine_docking_completed':False,
@@ -369,12 +416,17 @@ def run(args):
         'pour_motion_is_demonstrative_not_cdmp_learned':True,
         'video_frames':len(frames),
         'video_camera_view':camera_mode,
+        'tag_profile':getattr(args,'marker_profile','compact'),
+        'unique_gripped_object_tags':bool(getattr(args,'marker_profile','compact')=='compact'),
         'over_shoulder_follow_with_overview_inset':camera_mode=='follow',
+        'front_quarter_handle_detail_with_overview_inset':camera_mode=='handle_close',
         'calibrated_apriltag_rgbd_cameras_unchanged':True,
         'two_IR40_grippers_visible_only':True,
         'tool_objects_attached_to_gripper_frames':True,
         'old_tcp_attached_tool_clones_hidden':True,
         'actual_finger_contact_force_simulated':False,
+        'offset_mug_payload_clearance_validated':False if cup_style=='handle_mug' else None,
+        'actual_cup_or_mug_pickup_executed':False,
         'mp4_created':mp4,
         'no_mechanical_contact_or_liquid_physics':True,
         'limitations':'Full logical kinematic espresso/milk/latte choreography with explicit no-contact machine pre-docks; simulated processes are labels and proxy object poses only. No portafilter insertion, safe-contact modelling, espresso fluid, froth texture or actual latte art.'
@@ -392,7 +444,11 @@ def main():
     p.add_argument('--width',type=int,default=760)
     p.add_argument('--height',type=int,default=570)
     p.add_argument('--fps',type=float,default=8)
-    p.add_argument('--camera-view',choices=('follow','overview'),default='follow')
+    p.add_argument('--camera-view',choices=('follow','handle_close','overview'),
+                   default='handle_close')
+    p.add_argument('--marker-profile',choices=('legacy','compact'),default='compact')
+    p.add_argument('--cup-style',choices=('handle_mug','takeaway'),default='handle_mug',
+                   help='Reusable handled ceramic mug versus separate disposable cup')
     p.add_argument('--frames-leg',type=int,default=4)
     args=p.parse_args()
     report=run(args)

@@ -1,0 +1,263 @@
+name: Real Latte Demonstration to FR5 Camera Bridge
+on:
+  pull_request:
+    paths:
+      - 'robobarista/real_latte_dataset.py'
+      - 'robobarista/realman_fk_bridge.py'
+      - 'robobarista/external_pose_replay.py'
+      - 'robobarista/original_camera_tags.py'
+      - 'robobarista/camera_joint_replay.py'
+      - 'tests/test_real_latte_import.py'
+      - '.github/workflows/real-latte-import.yml'
+  workflow_dispatch:
+
+jobs:
+  safe-geometric-import-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install only the numeric tools needed for tests
+        run: python -m pip install 'numpy>=1.26,<3' 'scipy>=1.11' 'pytest>=8'
+      - name: Validate LeRobot schema, RM65 URDF FK and safe bounded retarget
+        run: |
+          python -m pytest -q tests/test_real_latte_import.py
+      - name: Validate Python source compiles without actual robot software
+        run: |
+          python -m compileall -q robobarista/real_latte_dataset.py robobarista/realman_fk_bridge.py robobarista/external_pose_replay.py robobarista/camera_joint_replay.py
+
+  virtual-foreign-pose-camera-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install MuJoCo, Pupil AprilTags and OSMesa CPU
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Generate a strictly SYNTHETIC external pose fixture for software testing
+        run: |
+          python - <<'PY'
+          import json,math
+          from pathlib import Path
+          d=Path('runs/synthetic_source');d.mkdir(parents=True,exist_ok=True)
+          frames=[{'time_s':i/5.0,
+                   'position_m':[.4 + .002*math.sin(i/3),-.2,.95],
+                   'rotation_xyzw':[0,0,0,1]}
+                  for i in range(11)]
+          (d/'source_pose_DO_NOT_LABEL_HUMAN.json').write_text(json.dumps(frames))
+          PY
+      - name: Camera remeasurement of imported poses via actual rendered AprilTags
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.camera_joint_replay \
+             --capture-only --marker-profile legacy \
+             --frames 11 --fps 5 --width 960 --height 720 \
+             --external-pitcher-trajectory runs/synthetic_source/source_pose_DO_NOT_LABEL_HUMAN.json \
+             --output runs/external_pose_camera_smoke
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          p=Path('runs/external_pose_camera_smoke')
+          d=json.loads((p/'summary.json').read_text())
+          assert d['status']=='PASS',d
+          assert d['imported_external_pose_source']
+          assert not d['human_demonstration']
+          assert not d['external_source_original_human_provenance_verified']
+          assert not d['original_realman_videos_used_as_apriltag_measurements']
+          assert d['camera_valid_frames']==11
+          assert (p/'camera_capture.mp4').stat().st_size>10000
+          print('External 6D source -> virtual FR5 IK -> actual rendered RGB-D AprilTag image-based remeasurement: PASS')
+          PY
+
+      - name: EXPLORATORY real human episode -> uncalibrated RM65 FK -> NEW virtual AprilTags
+        continue-on-error: true
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -m pip install 'huggingface_hub>=0.27,<2' 'pyarrow>=16,<23'
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/RealManRobot/rm_models.git /tmp/realman_models
+          git -C /tmp/realman_models sparse-checkout set RM65
+          python -m robobarista.real_latte_dataset --parquet-only --episode 0 --output runs/real_src
+          python -m robobarista.realman_fk_bridge \
+            --input-joints runs/real_src/recorded_realman_joints.json \
+            --urdf /tmp/realman_models/RM65/urdf/RM65-B/urdf/RM65-B.urdf \
+            --flange link_6 --joint-names joint_1 joint_2 joint_3 joint_4 joint_5 joint_6 \
+            --joint-unit rad --arm right --start-s 8 --end-s 12 \
+            --assume-identity-tool --output runs/real_fk_EXPLORATORY
+          python -u -m robobarista.camera_joint_replay \
+            --capture-only --marker-profile legacy --frames 11 --fps 5 \
+            --width 960 --height 720 \
+            --external-pitcher-trajectory runs/real_fk_EXPLORATORY/source_pitcher_6d_URDF_FK.json \
+            --output runs/real_fk_camera_EXPLORATORY
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('runs/real_fk_camera_EXPLORATORY/summary.json').read_text())
+          print('REAL source exploratory image-based virtual remeasurement status:',x['status'])
+          print('Camera pose valid frames:',x['camera_valid_frames'])
+          print('Relative pose source only; original tool calibration, original video AprilTags and real FR5 firmware NOT verified.')
+          PY
+
+  public-metadata-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install public HF metadata client (no videos and no torch)
+        run: python -m pip install 'huggingface_hub>=0.27,<2'
+      - name: Probe public dataset metadata ONLY
+        run: |
+          python - <<'PY'
+          from huggingface_hub import HfApi,hf_hub_download
+          import json
+          repo='ridxm/latte-pour-demos'
+          ds=HfApi().dataset_info(repo,files_metadata=True)
+          print('Dataset:',repo)
+          print('License advertised:', (ds.card_data or {}).get('license') if isinstance(ds.card_data,dict) else getattr(ds.card_data,'license',None))
+          names=[x.rfilename for x in ds.siblings]
+          print('Number of listed files:',len(names))
+          assert 'meta/info.json' in names, 'Actual LeRobot v3 metadata not found'
+          f=hf_hub_download(repo_id=repo,repo_type='dataset',filename='meta/info.json')
+          data=json.load(open(f))
+          report={
+              'repo':repo,
+              'version':data.get('codebase_version'),
+              'frames_per_second_claimed_by_metadata':data.get('fps'),
+              'total_episodes':data.get('total_episodes'),
+              'state_feature':data.get('features',{}).get('observation.state'),
+              'action_feature':data.get('features',{}).get('action'),
+              'original_cameras':[k for k in data.get('features',{}) if 'image' in k],
+              'videos_downloaded':False,
+              'real_robot_source_pose_reconstructed':False}
+          print(json.dumps(report,indent=2,default=str))
+          print('First available data files:',
+                [(x.rfilename,x.size) for x in ds.siblings
+                 if x.rfilename.startswith('data/') and x.rfilename.endswith('.parquet')][:5])
+          PY
+      - name: Try first REAL numerical episode without videos or copied assets
+        run: |
+          python -m pip install 'pyarrow>=16,<23' 'numpy>=1.26,<3'
+          python - <<'PY'
+          import json
+          import numpy as np
+          import pyarrow.parquet as pq
+          from huggingface_hub import HfApi,hf_hub_download
+          repo='ridxm/latte-pour-demos'
+          info=HfApi().dataset_info(repo,files_metadata=True)
+          files=sorted((s for s in info.siblings
+                        if s.rfilename.startswith('data/')
+                        and s.rfilename.endswith('.parquet')),
+                       key=lambda x:x.rfilename)
+          if not files:
+              raise RuntimeError('No original demonstration Parquet shards published')
+          first=files[0]
+          if first.size is not None and first.size>60_000_000:
+              raise RuntimeError('First shard exceeds 60MB research limit; no download')
+          path=hf_hub_download(repo_id=repo,repo_type='dataset',
+                               filename=first.rfilename)
+          table=pq.read_table(path)
+          print('Original first shard columns:',table.column_names)
+          required={'timestamp','observation.state','action'}
+          assert required.issubset(table.column_names),table.column_names
+          rows=table.select(sorted(required|({'episode_index'}
+                            if 'episode_index' in table.column_names else set()))).to_pylist()
+          rows=[r for r in rows if 'episode_index' not in r or int(r['episode_index'])==0]
+          if len(rows)<8:raise RuntimeError('First shard lacks >=8 episode 0 samples')
+          timestamps=np.asarray([r['timestamp'] for r in rows],float)
+          states=np.asarray([r['observation.state'] for r in rows],float)
+          actions=np.asarray([r['action'] for r in rows],float)
+          assert states.shape==(len(rows),14),states.shape
+          assert actions.shape==states.shape
+          assert np.isfinite(states).all() and np.all(np.diff(timestamps)>0)
+          summary={
+            'source':'ACTUAL publicly available ridxm Parquet (not synthetic)',
+            'first_shard':first.rfilename,
+            'first_episode_samples_in_shard':len(rows),
+            'sampled_duration_s':float(timestamps[-1]-timestamps[0]),
+            'median_recording_frequency_Hz':float(1/np.median(np.diff(timestamps))),
+            '14d_verified':True,
+            'left_gripper_bounds':states[:,6].min().item(), 
+            'right_gripper_bounds':states[:,13].min().item(),
+            'right_arm_max_abs_recorded':float(np.abs(states[:,7:13]).max()),
+            'left_arm_max_abs_recorded':float(np.abs(states[:,:6]).max()),
+            'raw_joint_vectors_republished':False,
+            'original_video_downloaded':False,
+            'original_camera_6d_pose_derived':False}
+          print(json.dumps(summary,indent=2))
+          PY
+      - name: Discover actual official RealMan RM65 URDFs for source FK
+        continue-on-error: true
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/RealManRobot/rm_models.git /tmp/rm_models
+          git -C /tmp/rm_models sparse-checkout set RM65
+          python - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree as ET
+          root=Path('/tmp/rm_models/RM65')
+          urdfs=sorted(root.rglob('*.urdf'))
+          print('Exact official RM65 .urdf candidates:',len(urdfs))
+          for p in urdfs[:25]:
+              try:
+                  node=ET.parse(p).getroot()
+                  joints=[(j.get('name'),j.get('type'),j.find('child').get('link'))
+                          for j in node.findall('joint')]
+                  revolute=[x for x in joints if x[1] in ('revolute','continuous')]
+                  print('CANDIDATE',p.relative_to(root),
+                        'moving_joints=',revolute,
+                        'all_joints=',len(joints))
+              except Exception as e:print('NOT PARSABLE',p,e)
+          if not urdfs:
+              raise RuntimeError('No official RealMan RM65 URDF in sparse clone')
+          PY
+      - name: Run OUR fast official Parquet importer against real episode 0
+        run: |
+          python -m pip install 'scipy>=1.11'
+          python -m robobarista.real_latte_dataset --parquet-only --episode 0 --output runs/real_original_episode_0
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path('runs/real_original_episode_0/source_and_validity.json').read_text())
+          assert a['frames']==400,a
+          assert 19<a['duration_s']<21,a
+          assert not a['data_license_verified']
+          assert not a['hardware_execution_authorized']
+          assert not a['source_camera_6d_pitcher_pose']
+          print('REAL uploaded data imported by our code:', a['frames'],
+                'frames, source:',a['source_data_path'])
+          print('No original videos or trajectories committed / uploaded.')
+          PY
+      - name: Exploratory REAL episode 0 -> official RM65-B URDF FK (UNCALIBRATED)
+        continue-on-error: true
+        run: |
+          python -m robobarista.realman_fk_bridge \
+            --input-joints runs/real_original_episode_0/recorded_realman_joints.json \
+            --urdf /tmp/rm_models/RM65/urdf/RM65-B/urdf/RM65-B.urdf \
+            --flange link_6 --joint-names joint_1 joint_2 joint_3 joint_4 joint_5 joint_6 \
+            --arm right --joint-unit rad --assume-identity-tool \
+            --start-s 8 --end-s 12 --output runs/ridxm_exploratory_fk
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('runs/ridxm_exploratory_fk/source_pose_provenance.json').read_text())
+          assert not r['flange_to_pitcher_physically_calibrated']
+          assert not r['source_camera_6d_pitcher_measurement']
+          print('Actual 14D recorded joints -> official possible RM65-B FK, exploratory only:')
+          print('Frames:',r['source_pitcher_pose_frames'],
+                'nominal flange excursion [mm]:',r['source_pitcher_translation_excursion_mm'])
+          PY
+
