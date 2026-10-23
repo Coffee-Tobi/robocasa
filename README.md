@@ -45,24 +45,24 @@ Düsenkontakt, Portafilter-Einrasten, echte Hersteller-Regelung, reale
 Messkameras und Flüssigkeits-/Temperatursicherheit.
 
 
-## NEU: Gesamter Kaffeeprozess mit beiden IR40-50 und F/T-Prototypen
+## Aktueller 90°-Kaffeeablauf – ohne erfundene Kraftsensordaten
 
-Der [34,5-sekündige komplette RoboBarista-Videotest](https://github.com/Coffee-Tobi/robocasa/actions/workflows/full-barista-contacts.yml)
-zeigt elf Schritte: Siebträger, Mühle mit Tamper, Brühgruppe, Kunststoffbecher,
-Espresso, Milchkanne, Dosieren, Dampflanze, Becherplatzierung, Latte Art, Rinser.
+Der vollständige MuJoCo-Kaffeeablauf liegt weiterhin in
+[`robobarista/coffee_workflow.py`](robobarista/coffee_workflow.py).
+Er verwendet die in [#19–#21](https://github.com/Coffee-Tobi/robocasa/pull/21)
+freigegebene **FR5 → 6-Achs-F/T-Proxy → 90°-Dualadapter →
+zwei IR40-50**-Anordnung mit seitlich zugreifenden Werkzeugen.
 
-- [Filmcode](robobarista/full_barista_sensor_video.py)
-- [FAIRINO F/T / LoadTrajectoryLA Anbindung](robobarista/fairino_force_and_trajectory.py)
-- [Sensor- und Sicherheitsstatus](planning/COMPLETE_COFFEE_PROCESS_FORCE_SENSORS.md)
-
-**WICHTIG:** Alle Kontakt-Kurven sind synthetische Beispielwerte; keine echte
-Siebträger-Verriegelung oder Berührung der Dampfdüse wird durchgeführt.
-Das Video visualisiert bislang kollisionsgeprüfte Vorpositionen.
-Der direkte Standard für aus drei Kameras erzeugte 6D-Bewegungen bleibt
-**FAIRINO `NewSpline`**; `LoadTrajectoryLA` erfordert eine eigene,
-vom Hersteller unterstützte *Gelenktrajektoriedatei*, keine rohe
-AprilTag-Positionsliste.
-
+Auf Nutzerwunsch wurden der **alte PR #10** (11-Stufen-Video mit
+illustrativen, nicht gemessenen F/T-Kurven) und der **alte PR #6**
+(FAIRINO-ähnlicher MoveL/Ruckig-Offlinevergleich) aus dem aktiven
+Quellcode zurückgezogen. Die GitHub-PR-Historie bleibt erhalten.
+Ein künftiger Kraftsensor-Test soll separat um den **ausgewählten Inlux
+Force Torque Sensor ITOSX1000FTS** neu entstehen, statt synthetische
+Kräfte zu demonstrieren. Die realen FAIRINO-Befehle in
+[`robobarista/fairino_native_spline.py`](robobarista/fairino_native_spline.py)
+und [`robobarista/fairino_barista_pipeline.py`](robobarista/fairino_barista_pipeline.py)
+bleiben erhalten (aktuell als Dry-run ohne FR5-Hardware).
 
 **Ein einziger aktiver Bewegungsansatz:** drei fest kalibrierte RGB-D-Kameras
 erkennen AprilTags auf der Milchkanne; daraus wird eine 6D-Bewegung rekonstruiert,

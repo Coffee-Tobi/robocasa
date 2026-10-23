@@ -1,0 +1,54 @@
+name: Retired PR6 and PR10 – Keep FAIRINO and 90deg Coffee
+on:
+  pull_request:
+    paths:
+      - 'robobarista/compare_camera_planners.py'
+      - 'robobarista/full_barista_sensor_video.py'
+      - 'robobarista/fairino_force_and_trajectory.py'
+      - 'README.md'
+      - 'COLAB_ROBOBARISTA.ipynb'
+      - 'tests/test_fairino_force_and_trajectory.py'
+      - '.github/workflows/cleanup-pr6-pr10.yml'
+  workflow_dispatch:
+jobs:
+  retired-experiments-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install MuJoCo and robotics tests
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Check obsolete imports removed but main API still present
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          retired=[
+              'robobarista/compare_camera_planners.py',
+              'robobarista/full_barista_sensor_video.py',
+              'robobarista/fairino_force_and_trajectory.py',
+              'tests/test_fairino_force_and_trajectory.py',
+              '.github/workflows/full-barista-contacts.yml'
+          ]
+          for p in retired:assert not Path(p).exists(),p
+          assert not any("full_barista_sensor_video" in "".join(c.get("source",[])) for c in json.loads(Path("COLAB_ROBOBARISTA.ipynb").read_text())["cells"])
+          for p in ('robobarista/fairino_native_spline.py','robobarista/fairino_barista_pipeline.py',
+                    'robobarista/dual_90_tool_attachments.py','robobarista/side_grasp_preview.py'):
+              assert Path(p).exists(),p
+          PY
+          python -m compileall -q robobarista
+      - name: Keep manufacturer SDK and 90deg grip regression green
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -m pytest -q tests/test_fairino_native_spline.py \
+            tests/test_dual_tool_90_preview.py \
+            tests/test_pr11_side_grip.py \
+            tests/test_pr4_90deg_tool_attachments.py
