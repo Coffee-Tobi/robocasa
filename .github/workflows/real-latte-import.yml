@@ -64,4 +64,58 @@ jobs:
               'videos_downloaded':False,
               'real_robot_source_pose_reconstructed':False}
           print(json.dumps(report,indent=2,default=str))
+          print('First available data files:',
+                [(x.rfilename,x.size) for x in ds.siblings
+                 if x.rfilename.startswith('data/') and x.rfilename.endswith('.parquet')][:5])
+          PY
+      - name: Try first REAL numerical episode without videos or copied assets
+        run: |
+          python -m pip install 'pyarrow>=16,<23' 'numpy>=1.26,<3'
+          python - <<'PY'
+          import json
+          import numpy as np
+          import pyarrow.parquet as pq
+          from huggingface_hub import HfApi,hf_hub_download
+          repo='ridxm/latte-pour-demos'
+          info=HfApi().dataset_info(repo,files_metadata=True)
+          files=sorted((s for s in info.siblings
+                        if s.rfilename.startswith('data/')
+                        and s.rfilename.endswith('.parquet')),
+                       key=lambda x:x.rfilename)
+          if not files:
+              raise RuntimeError('No original demonstration Parquet shards published')
+          first=files[0]
+          if first.size is not None and first.size>60_000_000:
+              raise RuntimeError('First shard exceeds 60MB research limit; no download')
+          path=hf_hub_download(repo_id=repo,repo_type='dataset',
+                               filename=first.rfilename)
+          table=pq.read_table(path)
+          print('Original first shard columns:',table.column_names)
+          required={'timestamp','observation.state','action'}
+          assert required.issubset(table.column_names),table.column_names
+          rows=table.select(sorted(required|({'episode_index'}
+                            if 'episode_index' in table.column_names else set()))).to_pylist()
+          rows=[r for r in rows if 'episode_index' not in r or int(r['episode_index'])==0]
+          if len(rows)<8:raise RuntimeError('First shard lacks >=8 episode 0 samples')
+          timestamps=np.asarray([r['timestamp'] for r in rows],float)
+          states=np.asarray([r['observation.state'] for r in rows],float)
+          actions=np.asarray([r['action'] for r in rows],float)
+          assert states.shape==(len(rows),14),states.shape
+          assert actions.shape==states.shape
+          assert np.isfinite(states).all() and np.all(np.diff(timestamps)>0)
+          summary={
+            'source':'ACTUAL publicly available ridxm Parquet (not synthetic)',
+            'first_shard':first.rfilename,
+            'first_episode_samples_in_shard':len(rows),
+            'sampled_duration_s':float(timestamps[-1]-timestamps[0]),
+            'median_recording_frequency_Hz':float(1/np.median(np.diff(timestamps))),
+            '14d_verified':True,
+            'left_gripper_bounds':states[:,6].min().item(), 
+            'right_gripper_bounds':states[:,13].min().item(),
+            'right_arm_max_abs_recorded':float(np.abs(states[:,7:13]).max()),
+            'left_arm_max_abs_recorded':float(np.abs(states[:,:6]).max()),
+            'raw_joint_vectors_republished':False,
+            'original_video_downloaded':False,
+            'original_camera_6d_pose_derived':False}
+          print(json.dumps(summary,indent=2))
           PY
