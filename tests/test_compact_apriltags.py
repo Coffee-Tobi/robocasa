@@ -31,7 +31,6 @@ def test_compact_apriltags_have_small_physical_sizes_and_mounts():
             model.geom('rb_tag_stem_'+label)
     for k in ('71','72','23','cup'):
         assert model.geom('rb_clip_post_'+k).id>=0
-    assert model.geom('rb_gripped_pitcher_body').id if False else True
 
 
 def test_compact_marker_relative_transforms_match_rendered_mujoco_body():
