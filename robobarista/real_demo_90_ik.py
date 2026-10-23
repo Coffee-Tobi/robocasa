@@ -10,6 +10,8 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import subprocess
+import shutil
 
 import mujoco
 import numpy as np
@@ -84,7 +86,8 @@ def _swept_segment(model, data, qids, limits, a, b):
 
 
 def attempt_replay(*, input_joints, urdf, output, arm, unit,
-                   start_s, end_s, frames=13, fps=3, seed=14):
+                   start_s, end_s, frames=13, fps=3, seed=14,
+                   render_virtual_preview=False):
     """Records all failures as clear JSON; no fake success or skipped poses."""
     out = Path(output)
     out.mkdir(parents=True, exist_ok=True)
@@ -197,6 +200,39 @@ def attempt_replay(*, input_joints, urdf, output, arm, unit,
             "swept_arm_links_contact_screened": True,
             "hardware_controller_tested": False,
         })
+        if render_virtual_preview and report["status"].startswith("GEOMETRIC_IK_PASS"):
+            # Render our OWN MuJoCo geometry only. Source videos and original
+            # copyrighted source joints are NEVER included in the artifact.
+            from PIL import Image, ImageDraw
+            from .cell_demo import _set_free_pose
+            if not shutil.which("ffmpeg"):
+                raise RuntimeError("ffmpeg is required for virtual preview")
+            _set_free_pose(model, data, "rb_pitcher_free", [-10,-10,-10], 0)
+            _alpha(model, "pitcher")
+            png_dir = out / "virtual_fr5_preview_frames"
+            png_dir.mkdir(exist_ok=True)
+            renderer = mujoco.Renderer(model, width=640, height=480)
+            try:
+                for frame, q in enumerate(accepted):
+                    data.qpos[qids] = q
+                    mujoco.mj_forward(model, data)
+                    renderer.update_scene(data, camera="cell_overview")
+                    view=Image.fromarray(renderer.render().copy())
+                    canvas=Image.new("RGB",(640,530),(25,30,36))
+                    canvas.paste(view,(0,40))
+                    draw=ImageDraw.Draw(canvas)
+                    draw.text((12,10),"RECORDED RM65 "+arm.upper()+" / UNCALIBRATED TOOL MOCK",fill=(250,220,170))
+                    draw.text((12,511),"FR5 90deg MuJoCo GEOMETRY ONLY - no milk or servo",fill=(255,235,188))
+                    canvas.save(png_dir/f"frame_{frame:04d}.png")
+            finally:
+                renderer.close()
+            file=out/"EXPLORATORY_virtual_FR5_not_real_pour.mp4"
+            subprocess.run(["ffmpeg","-y","-loglevel","error","-framerate",str(fps),
+               "-i",str(png_dir/"frame_%04d.png"),"-c:v","libx264",
+               "-pix_fmt","yuv420p",str(file)],check=True)
+            report["virtual_preview_video"] = file.name
+            report["video_is_original_demo"] = False
+            report["video_is_real_milk_pour"] = False
         (out/"source_pose_provenance_EXPLORATORY.json").write_text(
             json.dumps(source_report, indent=2))
         (out/"IK_joint_path_ONLY_IF_COMPLETE.json").write_text(
@@ -221,11 +257,13 @@ def main():
     p.add_argument("--end-s", type=float, required=True)
     p.add_argument("--frames", type=int, default=13)
     p.add_argument("--fps", type=int, default=3)
+    p.add_argument("--render-virtual-preview", action="store_true")
     a = p.parse_args()
     report = attempt_replay(
         input_joints=a.input_joints, urdf=a.urdf, output=a.output,
         arm=a.arm, unit=a.joint_unit, start_s=a.start_s,
-        end_s=a.end_s, frames=a.frames, fps=a.fps)
+        end_s=a.end_s, frames=a.frames, fps=a.fps,
+        render_virtual_preview=a.render_virtual_preview)
     print(json.dumps(report, indent=2))
     if not report["status"].startswith("GEOMETRIC_IK_PASS"):
         raise SystemExit(2)
