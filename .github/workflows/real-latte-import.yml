@@ -79,6 +79,36 @@ jobs:
           print('External 6D source -> virtual FR5 IK -> actual rendered RGB-D AprilTag image-based remeasurement: PASS')
           PY
 
+      - name: EXPLORATORY real human episode -> uncalibrated RM65 FK -> NEW virtual AprilTags
+        continue-on-error: true
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -m pip install 'huggingface_hub>=0.27,<2' 'pyarrow>=16,<23'
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/RealManRobot/rm_models.git /tmp/realman_models
+          git -C /tmp/realman_models sparse-checkout set RM65
+          python -m robobarista.real_latte_dataset --parquet-only --episode 0 --output runs/real_src
+          python -m robobarista.realman_fk_bridge \
+            --input-joints runs/real_src/recorded_realman_joints.json \
+            --urdf /tmp/realman_models/RM65/urdf/RM65-B/urdf/RM65-B.urdf \
+            --flange link_6 --joint-names joint_1 joint_2 joint_3 joint_4 joint_5 joint_6 \
+            --joint-unit rad --arm right --start-s 8 --end-s 12 \
+            --assume-identity-tool --output runs/real_fk_EXPLORATORY
+          python -u -m robobarista.camera_joint_replay \
+            --capture-only --marker-profile legacy --frames 11 --fps 5 \
+            --width 960 --height 720 \
+            --external-pitcher-trajectory runs/real_fk_EXPLORATORY/source_pitcher_6d_URDF_FK.json \
+            --output runs/real_fk_camera_EXPLORATORY
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('runs/real_fk_camera_EXPLORATORY/summary.json').read_text())
+          print('REAL source exploratory image-based virtual remeasurement status:',x['status'])
+          print('Camera pose valid frames:',x['camera_valid_frames'])
+          print('Relative pose source only; original tool calibration, original video AprilTags and real FR5 firmware NOT verified.')
+          PY
+
   public-metadata-probe:
     runs-on: ubuntu-latest
     timeout-minutes: 7
