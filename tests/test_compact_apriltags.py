@@ -70,18 +70,8 @@ def test_cup_marker_is_small_tab_attached_to_rim():
     assert pos[2]-cup[2]==pytest.approx(.105)
 
 
-def test_movie_props_also_carry_small_tags_not_just_stand_tags():
-    from robobarista.coffee_workflow import _story_scene
-    xml=_story_scene(Path('vendor'),marker_profile='compact')
-    model=mujoco.MjModel.from_xml_path(str(xml))
-    expected={'held_portafilter':.024,'held_pitcher':.036,'held_cup':.028}
-    for part,outer in expected.items():
-        geom=model.geom('rb_tagface_'+part).id
-        assert 2*model.geom_size[geom,0]==pytest.approx(outer)
-        assert model.geom_contype[geom]==0
-        assert model.geom('rb_tag_backing_'+part).id>=0
-    assert model.geom('rb_small_clip_held_pitcher').id>=0
-    assert model.geom('rb_small_clip_held_cup').id>=0
+# Held-prop/film tests belong to the separate pending coffee-workflow PR #18.
+# The approved main branch imports ONLY a standalone 90deg preview scene.
 
 
 def test_optional_fourth_camera_compiles_separately_from_three_cam_rig():
