@@ -100,7 +100,9 @@ def _mount_on_object(body,name,xyz,rpy,tag_face,outer_m,clip_length_m=None):
             'contype':'0','conaffinity':'0'})
 
 
-def build_compact_tag_cell(vendor_dir:Path) -> Path:
+def build_compact_tag_cell(vendor_dir:Path, camera_count:int=3) -> Path:
+    if camera_count not in (3,4):
+        raise ValueError('Only 3 or 4 compact measurement cameras supported')
     original=Path(build_cell_scene(Path(vendor_dir)))
     tree=ET.parse(original)
     root=tree.getroot()
@@ -144,7 +146,17 @@ def build_compact_tag_cell(vendor_dir:Path) -> Path:
         camera.set('pos',_nums(eye))
         camera.set('quat',_nums(look_at_quat(eye,target)))
         camera.set('fovy','50')
-    out=original.with_name('rb_artly_compact_tags_island.xml')
+    if camera_count==4:
+        # Experimental fourth downward-looking viewpoint, NOT the cinematic
+        # follow camera. Its station coverage must be measured rather than assumed.
+        eye=(-.10,0.,1.93)
+        target4=(-.08,0.,.98)
+        ET.SubElement(world,'camera',{
+            'name':'cell_overhead_aux',
+            'pos':_nums(eye),
+            'quat':_nums(look_at_quat(eye,target4)),
+            'fovy':'70'})
+    out=original.with_name('rb_artly_compact_tags_4cam_island.xml' if camera_count==4 else 'rb_artly_compact_tags_island.xml')
     tree.write(out,encoding='unicode')
     return out
 
