@@ -62,7 +62,7 @@ def find_side_approach(model,data,qids,limits,qhome,mode):
                    [qhome,np.array([0,-.7,1.1,-1.1,.8,0]),
                     np.array([-1,-.7,1.2,-1.0,.8,0]),
                     np.array([1,-.7,1.2,-1.0,-.8,0])],
-                   "pitcher" if mode=="pitcher" else "cup")
+                   "pitcher" if mode=="pitcher" else "plastic_cup")
         if ans is None:continue
         qend=ans["q"]
         approach_axis=np.array([1.,0.,0.]) if mode=="cup" else np.array([-1.,0.,0.])
@@ -70,11 +70,11 @@ def find_side_approach(model,data,qids,limits,qhome,mode):
             # Pre-grasp lies upstream along the tool's horizontal axis.
             pre=np.asarray(p,float)-approach_axis*travel
             before=_solve(model,data,qids,limits,pre,r,[qend,qhome],
-                          "pitcher" if mode=="pitcher" else "cup")
+                          "pitcher" if mode=="pitcher" else "plastic_cup")
             if before is None:continue
             good,why,n=_check_route(model,data,qids,limits,
                                     before["q"],qend,
-                                    "pitcher" if mode=="pitcher" else "cup")
+                                    "pitcher" if mode=="pitcher" else "plastic_cup")
             if not good:continue
             target=(before["q"],qend,pre,np.asarray(p,float),travel,n)
             break
@@ -137,7 +137,7 @@ def render(args):
                 e=t*t*(3-2*t)
                 q=(1-e)*a+e*b
                 ok,reason=_valid_state(model,data,qids,limits,q,
-                                        "pitcher" if mode=="pitcher" else "cup")
+                                        "pitcher" if mode=="pitcher" else "plastic_cup")
                 if not ok: raise RuntimeError(mode+": unsafe trajectory frame "+reason)
                 pose_at(model,data,qids,q)
                 if i < args.frames_per_tool-2:
