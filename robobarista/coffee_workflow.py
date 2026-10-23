@@ -437,7 +437,9 @@ def main():
     p.add_argument('--height',type=int,default=570)
     p.add_argument('--fps',type=float,default=8)
     p.add_argument('--camera-view',choices=('follow','overview'),default='follow')
-    p.add_argument('--marker-profile',choices=('legacy','compact'),default='legacy')
+    p.add_argument('--marker-profile',choices=('legacy','compact'),default='compact')
+    p.add_argument('--cup-style',choices=('handle_mug','takeaway'),default='handle_mug',
+                   help='Reusable handled ceramic mug versus separate disposable cup')
     p.add_argument('--frames-leg',type=int,default=4)
     args=p.parse_args()
     report=run(args)
