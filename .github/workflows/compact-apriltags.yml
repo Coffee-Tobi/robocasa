@@ -12,6 +12,8 @@ on:
       - 'robobarista/moveit_scene_bridge.py'
       - 'tests/test_latte_dmp_integration.py'
       - 'tests/test_integration_quality_moveit.py'
+      - 'tests/test_vendor_runtime_preflight.py'
+      - 'robobarista/vendor_runtime_preflight.py'
       - '.github/workflows/compact-apriltags.yml'
   workflow_dispatch:
 jobs:
@@ -32,7 +34,7 @@ jobs:
           MUJOCO_GL: osmesa
           PYOPENGL_PLATFORM: osmesa
         run: |
-          python -m pytest -q tests/test_compact_apriltags.py tests/test_lerobot_native_latte.py tests/test_latte_dmp_integration.py tests/test_integration_quality_moveit.py
+          python -m pytest -q tests/test_compact_apriltags.py tests/test_lerobot_native_latte.py tests/test_latte_dmp_integration.py tests/test_integration_quality_moveit.py tests/test_vendor_runtime_preflight.py
       - name: Run real rendered Pupil AprilTag cameras on small mounted markers
         env:
           MUJOCO_GL: osmesa
