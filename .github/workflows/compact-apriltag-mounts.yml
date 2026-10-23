@@ -20,7 +20,7 @@ jobs:
       - name: Install optical and physics dependencies
         run: |
           sudo apt-get install -y -qq libosmesa6 libgl1 ffmpeg
-          python -m pip install -r requirements.txt
+          python -m pip install 'numpy>=1.26,<3' 'scipy>=1.11' 'opencv-contrib-python-headless>=4.8,<5' 'Pillow>=10' 'matplotlib>=3.8' 'mujoco>=3.2,<4' 'pupil-apriltags==1.0.4.post11' 'pytest>=8'
       - name: Verify rigid 36-54mm mount configuration
         run: python -m pytest -q tests/test_compact_tag_mounts.py
       - name: Capture compact printed fiducials at 1280x960 (no GT recovery)
