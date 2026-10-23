@@ -54,18 +54,22 @@ these recordings to FAIRINO hardware.
 ## First import, with internet (Colab or personal computer)
 
 ```bash
-python -m pip install 'lerobot>=0.6,<1'
-# Download ONE episode only. Start with numerical data, not all 40 videos.
-python -m robobarista.real_latte_dataset \
+# FASTEST, recommended: 1 REAL Parquet episode, without torch or video:
+python -m pip install huggingface_hub pyarrow
+python -m robobarista.real_latte_dataset --parquet-only \
     --episode 0 --output runs/real_latte_episode0
 
-# Optional: only if camera videos needed; no dataset is committed:
+# Optional official full LeRobot v3 reader if video is needed:
+python -m pip install 'lerobot>=0.6,<1'
+# Download ONLY one episode. Raw RGB stays local (never in Git history):
 python -m robobarista.real_latte_dataset --episode 1 --with-videos \
     --video-step 10 --output runs/real_latte_episode1_visual
 ```
 
 This writes `recorded_realman_joints.json` and
-`source_and_validity.json`. The importer refuses non-14D streams,
+`source_and_validity.json`. The fast method has now been tested
+against actual remote data from `data/chunk-000/episode_000000.parquet`:
+**400 rows, 19.95s, 20Hz and 14D**. It downloads no videos or π0 weights. The importer refuses non-14D streams,
 missing frames, nonfinite data and unexpected timestamps. Video frames,
 if downloaded, are original image pixels, **not** 6D visual tracking.
 
@@ -110,11 +114,14 @@ python -m robobarista.realman_fk_bridge \
     --joint-names joint1 joint2 joint3 joint4 joint5 joint6 \
     --joint-unit rad --arm right \
     --assume-identity-tool \
+    --start-s 8 --end-s 13 \
     --output runs/real_latte_fk
 ```
 
-The example arm, joint names and units are placeholders; they are
-**not confirmed for the published episode**. For meaningful physical
+The example arm, joint names, 8–13 second segment and exact units are
+**not confirmed as correct for the published episode**.
+The crop flags are only examples: select the true pour interval
+from its actual videos before deriving and replaying the 6D path. For meaningful physical
 tool frames, provide JSON `{"T_flange_pitcher":[[...],[...],[...],[...]]}`
 from calibration and use `--mount-json` instead.
 
@@ -165,6 +172,7 @@ python -m robobarista.vision_quality \
 
 **Status:** import/FK/safe virtual-camera remeasurement integration code
 exists, and synthetic unit tests exist. Hugging Face **metadata** fetched in CI: **YES** (40 demos,
-20Hz, 14D, no public license metadata). Actual source episode full
-joint samples or MP4 downloaded: **NO** in this assistant session. Original reconstructed 6D source run: **NOT YET**.
+20Hz, 14D, no public license metadata). Original first numerical episode was **downloaded and parsed through GitHub
+Actions** (no copy or artifact retained); original MP4 camera imagery
+was NOT downloaded. No full exact pitcher FK or FR5 replay result yet. Original reconstructed 6D source run: **NOT YET**.
 Real FR5 controller run: **NEVER**.
