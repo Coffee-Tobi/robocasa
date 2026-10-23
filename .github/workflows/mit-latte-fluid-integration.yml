@@ -1,0 +1,68 @@
+name: MIT Latte Art Fluid Simulator Camera Bridge
+on:
+  pull_request:
+    paths:
+      - 'robobarista/latte_fluid_adapter.py'
+      - 'robobarista/latte-fluid-sidecar.ts'
+      - 'tests/test_latte_fluid_adapter.py'
+      - '.github/workflows/mit-latte-fluid-integration.yml'
+  workflow_dispatch:
+jobs:
+  genuine-fluid-solver-from-rendered-camera-poses:
+    runs-on: ubuntu-latest
+    timeout-minutes: 33
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install CPU MuJoCo + OpenCV + pupil apriltag + FFmpeg
+        run: |
+          sudo apt-get install -y -qq libosmesa6 libgl1 ffmpeg
+          python -m pip install -r requirements.txt
+          npm install --no-save tsx typescript
+          git clone --depth 1 https://github.com/p-sun/typescript-fluid-simulator.git vendor/latte-fluid-sim
+          test -s vendor/latte-fluid-sim/LICENSE
+      - name: Validate dimensional camera-to-fluid mapping
+        run: |
+          python -m pytest -q tests/test_latte_fluid_adapter.py
+      - name: Capture real rendered RGB-D/AprilTag trajectory
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+          ROBOBARISTA_TAG_PROFILE: legacy
+        run: |
+          python -u -m robobarista.camera_joint_replay --capture-only --frames 31 --fps 3 --seed 14 --width 960 --height 720 --output runs/milk_camera_31
+      - name: Feed observed 3D spout through ACTUAL upstream MIT 2D solver
+        run: |
+          python -m robobarista.latte_fluid_adapter --camera-measurements runs/milk_camera_31/camera_measurements.json --out runs/milk_2d/trace.json
+          npx tsx robobarista/latte-fluid-sidecar.ts runs/milk_2d/trace.json runs/milk_2d/frames
+          ffmpeg -y -loglevel error -framerate 3 -i runs/milk_2d/frames/milk_%04d.pgm -vf 'scale=640:640:flags=neighbor' -pix_fmt yuv420p -c:v libx264 runs/milk_2d/latte_surface_proxy.mp4
+      - name: Validate actual upstream core and distinguish from physical fluid simulation
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          p=Path('runs/milk_2d')
+          t=json.loads((p/'trace.json').read_text())
+          s=json.loads((p/'frames/summary.json').read_text())
+          assert s['frames']==31 and len(t['events'])==31,(s,len(t['events']))
+          assert s['white_proxy_cell_hits']>0,s
+          assert s['separate_2d_surface_only']
+          assert not s['real_milk_flow_simulated']
+          assert p.joinpath('latte_surface_proxy.mp4').stat().st_size>10000
+          print(s)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: MIT-Latte-Art-Paige-Sun-3D-AprilTag-To-2D-Milk-Proxy
+          path: |
+            runs/milk_camera_31/summary.json
+            runs/milk_2d/trace.json
+            runs/milk_2d/frames/summary.json
+            runs/milk_2d/latte_surface_proxy.mp4
+          if-no-files-found: warn
