@@ -19,6 +19,22 @@ und FAIRINO NewSpline aus `main` bleiben unverändert.
 | #18 | `moveit_scene_bridge.py` | Konservative nominale MuJoCo-KEEP_OUTS als MoveIt-Boxen exportieren; NICHT voller FR5-90°-Doppelgreifer / reale CAD-Kollision |
 | #18 | `vendor_runtime_preflight.py` | Hersteller-SDK/ROS2/SimMachine nur lesend auf vorhandene Software/API-Oberfläche prüfen, keinerlei Controller-Verbindung |
 
+## Aktuelle 90°-Werkzeugframe-Brücke (neu entwickelt)
+
+`current_90_tool_frames.py` liest die **tatsächlichen aktuellen** MuJoCo-
+Body- und Geom-Transforms aus `coffee_workflow._story_scene`:
+`rb_cell_tcp` → `rb_90_ir40_handle` → `rb_gripped_pitcher` und
+`rb_gripped_pitcher_spout`. Ein neuer Test prüft die Hierarchie, die
+Konstanz von `T_TCP_pitcher` bei Gelenkbewegung sowie explizite
+Rücktransformation eines Quell-Kannenpfades auf die FR5-Wrist-Pose.
+Die berechnete Spout-Position ist ausdrücklich nur die Mitte der
+Visualisierungs-Geometrie, kein vermessener Ausgießerrand.
+
+**Der Schritt ist ausschließlich geometrisch.** Er führt keine IK,
+Kollisionsprüfung des unbenutzten zweiten Greifers, Servobewegung,
+Milchphysik oder Kalibrierung am realen Hersteller-CAD aus. Die
+neue MuJoCo-Regressions-CI muss vor Merge grün sein.
+
 Die synthetischen Unit-Tests der Ursprungs-PRs sind übernommen; ein alter
 `camera_joint_replay.marker_config`-Test wurde entfernt, weil `main` bereits
 ein anderes, verbindliches Objekt-AprilTag-System hat. Dieses neue Branch
@@ -71,9 +87,9 @@ heruntergeladene Originalkameraframes.
 
 ## Vor der nächsten FR5-Bewegungsintegration
 
-1. Mit aktuellem `dual_90_tool_attachments.py` die echte
-   Transformationen `T_FR5_TCP→IR40→Kanne` (inkl. Ausgießer) herleiten
-   und getrennter Umrechnungs-Test gegen MuJoCo-Bodies.
+1. Die hier eingebaute *virtuelle* TCP→IR40→Kannen-Umrechnung an echter
+   STEP-Geometrie und kalibriertem Spout überprüfen; erst dann als
+   physische Transformation verwenden.
 2. Originaler RM65-Datensatz: Schenkarm, URDF-Variante, Originalgrößen,
    rad/deg und pour-only Segment *an Originalbildern* bestätigen.
 3. Für jede Quelle eigenständige Tests auf laterale Anfahrt, beide
