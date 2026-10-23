@@ -12,10 +12,13 @@ our repository.
 - https://ridxm.github.io/latte-art-robot/
 
 The authors report 40 teleoperated, real-life pouring demonstrations,
-three RGB cameras (overhead, two wrist-mounted) and 12D dual Realman RM65
-joint states/actions. *This is not an AprilTag measurement of the actual
+three RGB cameras (overhead, two wrist-mounted) and **actual 14D** dual
+Realman state/action samples. The published metadata reports
+`observation.state` and `action` as 14 floats each, matching
+`src/teleop/Hardware_Bridge_ROS2.py`:
+`[left six joints, left gripper, right six joints, right gripper]`. *This is not an AprilTag measurement of the actual
 pitcher position and not a physically modeled milk/crema solver.* The
-repository's README reports 20Hz while
+published HF `meta/info.json` confirms 20 Hz, while
 `configs/robot/r2d3.yaml` advertises 10Hz; one converter is written for
 LeRobot v2.1 and a 7D single-arm schema. **Read the actual episode
 metadata and timestamps**, do not trust nominal rates, joint units or
@@ -62,7 +65,7 @@ python -m robobarista.real_latte_dataset --episode 1 --with-videos \
 ```
 
 This writes `recorded_realman_joints.json` and
-`source_and_validity.json`. The importer refuses non-12D streams,
+`source_and_validity.json`. The importer refuses non-14D streams,
 missing frames, nonfinite data and unexpected timestamps. Video frames,
 if downloaded, are original image pixels, **not** 6D visual tracking.
 
@@ -89,9 +92,11 @@ https://github.com/RealManRobot/rm_models (Apache-2.0)
 
 The URDF must match the exact RM65 variant used to record the data.
 Find the corresponding six moving joint names in URDF **chain order**.
-Determine from original recording documentation whether the joint
-vectors are radians or degrees; the conversion CLI deliberately
-requires `--joint-unit`.
+The hardware bridge records ROS JointState positions without an explicit
+degrees conversion, so radians are likely but must be verified against the
+original RM65 recorder and observed ranges. The converter therefore
+still requires `--joint-unit`. The original camera key is
+`observation.images.top_camera`, not the README example `top`.
 
 Only for *first software smoke tests*, `--assume-identity-tool` treats
 the RM65 flange as the pitcher body. This is a **wrong physical tool
@@ -159,7 +164,7 @@ python -m robobarista.vision_quality \
    response, cup surface plane, force/torque, and wet milk-flow sensing.
 
 **Status:** import/FK/safe virtual-camera remeasurement integration code
-exists, and synthetic unit tests exist. Actual original Hugging Face
-episode downloaded in this session: **NO** (network unavailable in current
-execution environment). Original reconstructed 6D source run: **NOT YET**.
+exists, and synthetic unit tests exist. Hugging Face **metadata** fetched in CI: **YES** (40 demos,
+20Hz, 14D, no public license metadata). Actual source episode full
+joint samples or MP4 downloaded: **NO** in this assistant session. Original reconstructed 6D source run: **NOT YET**.
 Real FR5 controller run: **NEVER**.
