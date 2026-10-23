@@ -84,7 +84,9 @@ def add_fixed_pivot_one_axis_cup(scene_file, output_file):
                             pos="0 -1 1.3",mocap="true")
     ET.SubElement(camera_rig,"camera",name="rb_fixed_tilt_closeup",
                   pos="0 0 0",quat="1 0 0 0",fovy="49")
-    out=Path(output_file)
+    # _story_scene includes a relative robot XML file. Keep generated scene
+    # next to its source so MuJoCo resolves current FR5 model/assets reliably.
+    out=Path(scene_file).resolve().with_name(Path(output_file).name)
     out.parent.mkdir(parents=True,exist_ok=True)
     root.write(out,encoding="unicode")
     return out
