@@ -1,13 +1,7 @@
-name: High FPS Camera Spline Ruckig
+name: Historical Ruckig Offline Benchmark (manual only, not FAIRINO production)
 on:
-  push:
-    paths:
-      - 'robobarista/continuous_motion.py'
-      - 'robobarista/camera_joint_replay.py'
-      - 'requirements.txt'
-      - 'tests/test_continuous_motion.py'
-      - '.github/workflows/continuous-motion.yml'
   workflow_dispatch:
+
 jobs:
   continuous-vision:
     runs-on: ubuntu-latest

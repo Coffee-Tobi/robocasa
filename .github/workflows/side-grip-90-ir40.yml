@@ -1,4 +1,4 @@
-name: PR11 Side Approach – Never Grip Cups From Below
+name: Approved FR5 90-Degree IR40 Side-Handle Grasp Regression
 on:
   pull_request:
     paths:
@@ -8,7 +8,7 @@ on:
       - 'robobarista/latte_art_20s.py'
       - 'tests/test_pr11_side_grip.py'
       - 'tests/test_pr4_90deg_tool_attachments.py'
-      - '.github/workflows/pr11-side-handle-grip.yml'
+      - '.github/workflows/side-grip-90-ir40.yml'
   workflow_dispatch:
 
 jobs:

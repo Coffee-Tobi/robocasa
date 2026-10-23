@@ -1,5 +1,26 @@
 # RoboBarista — 3-Kamera-Aufnahme → FAIRINO FR5
 
+> **Aktueller Projektstand und Einstieg für den nächsten Chat:**
+> [`planning/CURRENT_STATUS_NEXT_CHAT_2026_10_23.md`](planning/CURRENT_STATUS_NEXT_CHAT_2026_10_23.md).
+> **Verbindliche Nutzerentscheidungen:** [`planning/PR_REVIEW_DECISIONS.md`](planning/PR_REVIEW_DECISIONS.md).
+> Forschungsentwürfe #17/#18 werden **erst im nächsten Chat** geprüft,
+> nicht ungeprüft in den derzeit freigegebenen `main` integriert.
+> Geometrischer Referenzaufbau und STEP-/Sensor-Lücken:
+> [`FAIRINO_DUAL_90_TOOL_FT_IR40_ASSEMBLY.md`](planning/FAIRINO_DUAL_90_TOOL_FT_IR40_ASSEMBLY.md).
+
+**Was du derzeit ausführen solltest:** [`COLAB_ROBOBARISTA.ipynb`](COLAB_ROBOBARISTA.ipynb)
+für den aktuellen FAIRINO-Kamera-Dry-run und
+[`robobarista/side_grasp_preview.py`](robobarista/side_grasp_preview.py)
+für die neu freigegebene waagerechte Anfahrt an Tasse/Kanne.
+Die früheren Colab-Notebooks `COLAB_START`, `COLAB_MOTION` und
+`COLAB_ROBOT` sowie `COLAB_COMPARE` bleiben zur historischen
+Kamera-/FR5-Benchmark-Reproduzierbarkeit vorhanden,
+sind aber **nicht** die aktuelle Standardpipeline.
+Der historische Ruckig-Workflow ist **nur noch manuell startbar**,
+damit der beibehaltene simulierte Motorvergleich #5 möglich bleibt.
+Der echte Robot-Controller wird durch keines dieser Notebooks angesprochen.
+
+
 ## Freigegeben: FAIRINO FR5 mit 90°-Doppelgreifer und F/T-Sensor (23.10.2026)
 
 Die geprüfte **MuJoCo-3D-Vorschau** ist als eigenständiges Modul in `main`
@@ -64,7 +85,7 @@ Kräfte zu demonstrieren. Die realen FAIRINO-Befehle in
 und [`robobarista/fairino_barista_pipeline.py`](robobarista/fairino_barista_pipeline.py)
 bleiben erhalten (aktuell als Dry-run ohne FR5-Hardware).
 
-**Ein einziger aktiver Bewegungsansatz:** drei fest kalibrierte RGB-D-Kameras
+**Ein einziger aktiver Bewegungsansatz:** drei **virtuell kalibrierte** RGB-D-Kameras
 erkennen AprilTags auf der Milchkanne; daraus wird eine 6D-Bewegung rekonstruiert,
 in FR5-Werkzeugkoordinaten umgerechnet und als
 **offizielle FAIRINO `NewSpline`-Befehle** bereitgestellt.
