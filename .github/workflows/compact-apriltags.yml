@@ -34,6 +34,12 @@ jobs:
           PYOPENGL_PLATFORM: osmesa
         run: |
           python -u -m robobarista.camera_joint_replay --capture-only --marker-profile compact --frames 13 --fps 5 --seed 14 --width 1280 --height 960 --output runs/compact_tags
+      - name: Run historical large AprilTags on identical source and pixel resolution
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+        run: |
+          python -u -m robobarista.camera_joint_replay --capture-only --marker-profile legacy --frames 13 --fps 5 --seed 14 --width 1280 --height 960 --output runs/large_tags
       - name: Check all camera frames and report errors without hiding any
         run: |
           python - <<'PY'
@@ -42,6 +48,26 @@ jobs:
           p=Path('runs/compact_tags')
           summary=json.loads((p/'summary.json').read_text())
           print(json.dumps(summary,indent=2))
+          baseline=json.loads(Path('runs/large_tags/summary.json').read_text())
+          assert baseline['status']=='PASS',baseline
+          large=json.loads(Path('runs/large_tags/camera_vs_truth_EVAL_ONLY.json').read_text())
+          small=json.loads((p/'camera_vs_truth_EVAL_ONLY.json').read_text())
+          from statistics import mean
+          def aggr(rows):
+              errors=[f['camera_vs_truth_mm'] for f in rows]
+              return {'mean_mm':mean(errors),'max_mm':max(errors),
+                      'p95_mm':sorted(errors)[int(.95*(len(errors)-1))]}
+          comparison={'same_seed_and_trajectory':True,
+                      'same_resolution_px':[1280,960],
+                      'large':aggr(large),'compact':aggr(small),
+                      'large_two_view_frames':baseline['camera_two_view_frames'],
+                      'compact_two_view_frames':summary['camera_two_view_frames'],
+                      'large_station_tags_detected':baseline['fixed_station_tags_recognized_in_initial_render'],
+                      'compact_station_tags_detected':summary['fixed_station_tags_recognized_in_initial_render'],
+                      'camera_placement_different_between_profiles':True,
+                      'hardware_accuracy_confirmed':False}
+          Path('runs/comparison.json').write_text(json.dumps(comparison,indent=2))
+          print('COMPARISON',json.dumps(comparison,indent=2))
           assert summary['tag_profile']=='compact'
           assert summary['frames']==13
           assert summary['camera_valid_frames']==13,summary
@@ -56,6 +82,8 @@ jobs:
           name: RoboBarista-Realistic-Compact-AprilTags-RGBD-Benchmark
           path: |
             runs/compact_tags/summary.json
+            runs/comparison.json
+            runs/large_tags/summary.json
             runs/compact_tags/camera_measurements.json
             runs/compact_tags/camera_vs_truth_EVAL_ONLY.json
             runs/compact_tags/fixed_reference_vision_check.json
