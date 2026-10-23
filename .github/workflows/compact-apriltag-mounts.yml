@@ -1,0 +1,58 @@
+name: Compact Realistic On-Object AprilTag Comparison
+on:
+  pull_request:
+    paths:
+      - 'robobarista/tag_mounts.py'
+      - 'robobarista/barista_cell.py'
+      - 'robobarista/camera_joint_replay.py'
+      - 'tests/test_compact_tag_mounts.py'
+      - '.github/workflows/compact-apriltag-mounts.yml'
+  workflow_dispatch:
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install optical and physics dependencies
+        run: |
+          sudo apt-get install -y -qq libosmesa6 libgl1 ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Verify rigid 36-54mm mount configuration
+        run: python -m pytest -q tests/test_compact_tag_mounts.py
+      - name: Capture compact printed fiducials at 1280x960 (no GT recovery)
+        env:
+          MUJOCO_GL: osmesa
+          PYOPENGL_PLATFORM: osmesa
+          ROBOBARISTA_TAG_PROFILE: compact
+        run: |
+          python -u -m robobarista.camera_joint_replay --capture-only --seed 14 --frames 13 --fps 5 --width 1280 --height 960 --output runs/compact_tags_1280
+      - name: Verify all camera poses from image-based AprilTag estimates
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          p=Path('runs/compact_tags_1280')
+          s=json.loads((p/'summary.json').read_text())
+          print(json.dumps(s,indent=2))
+          assert s['apriltag_profile']=='compact'
+          assert s['camera_valid_frames']==13
+          assert s['camera_two_view_frames']==13
+          assert s['max_camera_vs_truth_mm'] is not None
+          assert s['max_camera_vs_truth_mm']<4.
+          assert s['camera_captures_not_ground_truth_backfilled']
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RoboBarista-compact-physical-tag-13-frame-measurement
+          path: |
+            runs/compact_tags_1280/summary.json
+            runs/compact_tags_1280/camera_measurements.json
+            runs/compact_tags_1280/ground_truth_evaluation_only.json
+            runs/compact_tags_1280/fixed_reference_vision_check.json
+            runs/compact_tags_1280/camera_vs_fr5_side_by_side.mp4
+          if-no-files-found: warn
