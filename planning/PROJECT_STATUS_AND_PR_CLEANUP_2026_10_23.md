@@ -1,6 +1,17 @@
 # RoboBarista – Ein Projekt, klare Varianten, sauberer Entwicklungsstand
 
 **Stand: 23. Oktober 2026. Einzige aktive Integrations-PR: #18**
+
+### Entscheidung 1/18: PR #1 – VERWORFEN (Nutzerentscheidung)
+
+[PR #1](https://github.com/Coffee-Tobi/robocasa/pull/1) wurde **geschlossen, nicht gemergt**. Es war ein experimenteller eigener MPC-Optimizer und ein MuJoCo-Kontaktausleser. Für den praktischen FAIRINO FR5 verwenden wir vorrangig die offiziellen, bereits dokumentierten Steuerungs- und Schutzfunktionen:
+
+- `SetAnticollision`, `SetCollisionDetectionMethod`, `CustomCollisionDetectionStart` für Controller-Kollisionserkennung und Reaktionsstrategien;
+- `FT_GetForceTorqueRCS`, `FT_Guard`, `FT_Control` für gemessene Kraft und Kraftregelung **nur mit tatsächlich vorhandenem, konfiguriertem und kalibriertem kompatiblem F/T-Sensor**;
+- bestehende `fairino_force_and_trajectory.py` / `fairino_sdk_preflight.py` für Read-only/Dry-run, ohne selbst entwickelte doppelte Laufzeitsteuerung.
+
+Die FAIRINO-artige Offline-Kamerapfad-Interpolation erreichte gegenüber einer anderen glatteren Referenz 0,239 vs 0,471 mm Mittelabweichung zum rohen Kamerapfad. Der Vergleich wurde **ohne echte FAIRINO Firmware** durchgeführt und beweist daher noch keinen hardwareseitigen Vorteil. Herstellersteuerung bleibt bevorzugter Kandidat für späteren realen, gleichen Test. MPC und MuJoCo-Kontaktcode von PR #1 nicht in PR #18 übernehmen; Archivbranch erhalten. Sicherheits-/Kollisionsgeometrie-Simulation ist als unabhängiger Vortest weiterhin sinnvoll.
+
 https://github.com/Coffee-Tobi/robocasa/pull/18
 
 ## Warum gab es 18 Pull Requests?
@@ -8,16 +19,16 @@ https://github.com/Coffee-Tobi/robocasa/pull/18
 GitHub vergibt fortlaufende Nummern; die Zahl 18 bedeutet NICHT
 18 gleichzeitig offene Änderungen. Bei diesem Cleanup:
 - 9 ältere PRs sind bereits in `main` **gemergt**.
-- 6 sind **geschlossen, nicht gemergt**, darunter die überholten
+- 7 sind **geschlossen, nicht gemergt**, darunter die überholten
   Entwurfs-PRs #11, #13, #14, #16 und #17. Sie sind weiterhin
   über GitHub verlinkt, und ihre Branches wurden NICHT gelöscht.
-- **3 Drafts bleiben offen**, jeweils mit einer klaren Rolle.
+- **2 Drafts bleiben offen** nach dem Entscheid, jeweils mit einer klaren Rolle.
 
 | PR | Aufgabe | Vorgehen |
 |---|---|---|
 | [#18](https://github.com/Coffee-Tobi/robocasa/pull/18) | EIN Integrationsstand für kompakte Tags, Griffkonstruktion, Kaffeestoryboard, echten Demonstrationsimport, kinematische FR5-Wiedergabe und Milchproxy | CURRENT. Base=`main`; Tests prüfen, **nicht blind mergen** |
 | [#9](https://github.com/Coffee-Tobi/robocasa/pull/9) | Eigenständiges experimentelles FAIRINO-NewSpline/MuJoCo-Motor-Replay | Parken, gezielt mit Herstellercontroller benchmarken |
-| [#1](https://github.com/Coffee-Tobi/robocasa/pull/1) | Eigenständiger MPC/Kontaktsensor-/Greifphysik-Versuch | Parken, nicht mit visuellen Dummy-Kontakten verwechseln |
+| [#1](https://github.com/Coffee-Tobi/robocasa/pull/1) | Eigenständiger MPC/Kontaktsensor-/Greifphysik-Versuch | **VERWORFEN**, geschlossen, nicht gemergt; FAIRINO-Herstellerfunktionen bevorzugen |
 
 `main` bleibt der getestete Ausgangspunkt; aktive Entwicklung nur in
 `feature/latte-real-data-fluid-preview-2026-10-23`, bis PR #18 fertig ist.
