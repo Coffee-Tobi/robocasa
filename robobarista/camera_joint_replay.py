@@ -488,6 +488,14 @@ def run(args):
                 rgb,depth=render_pair(renderer,data,name)
                 views[name]=rgb
                 depths[name]=depth
+            if getattr(args,"save_camera_frames",False):
+                # RAW sensor images: these are needed by LeRobot rather than
+                # thumbnails annotated with model/execution labels.
+                for camera_name in names:
+                    target_dir=out/"raw_cameras"/camera_name
+                    target_dir.mkdir(exist_ok=True,parents=True)
+                    Image.fromarray(views[camera_name]).save(
+                        target_dir/f"frame_{i:04d}.png")
             est,dets,n_seen=_camera_pose_estimate(views,depths,cals)
             if i==0:
                 fixed_references=_fixed_reference_vision_check(
@@ -654,6 +662,8 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--output',default='runs/allowed_camera_replay')
     parser.add_argument('--capture-only',action='store_true',help='Measure 3-camera AprilTag poses without running legacy joint replay')
+    parser.add_argument('--save-camera-frames',action='store_true',
+                        help='Save unaltered RGB views for optional native Hugging Face LeRobot video dataset; storage intensive')
     parser.add_argument('--marker-profile',choices=['legacy','compact'],default='legacy',
                         help='compact: rigid 24-42mm real-sized tags; legacy: old large markers')
     parser.add_argument('--vendor-dir',default='vendor')
