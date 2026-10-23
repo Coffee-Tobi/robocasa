@@ -211,3 +211,23 @@ jobs:
                 'frames, source:',a['source_data_path'])
           print('No original videos or trajectories committed / uploaded.')
           PY
+      - name: Exploratory REAL episode 0 -> official RM65-B URDF FK (UNCALIBRATED)
+        continue-on-error: true
+        run: |
+          python -m robobarista.realman_fk_bridge \
+            --input-joints runs/real_original_episode_0/recorded_realman_joints.json \
+            --urdf /tmp/rm_models/RM65/urdf/RM65-B/urdf/RM65-B.urdf \
+            --flange link_6 --joint-names joint_1 joint_2 joint_3 joint_4 joint_5 joint_6 \
+            --arm right --joint-unit rad --assume-identity-tool \
+            --start-s 8 --end-s 12 --output runs/ridxm_exploratory_fk
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('runs/ridxm_exploratory_fk/source_pose_provenance.json').read_text())
+          assert not r['flange_to_pitcher_physically_calibrated']
+          assert not r['source_camera_6d_pitcher_measurement']
+          print('Actual 14D recorded joints -> official possible RM65-B FK, exploratory only:')
+          print('Frames:',r['source_pitcher_pose_frames'],
+                'nominal flange excursion [mm]:',r['source_pitcher_translation_excursion_mm'])
+          PY
+
