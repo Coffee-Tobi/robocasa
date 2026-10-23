@@ -66,6 +66,20 @@ This writes `recorded_realman_joints.json` and
 missing frames, nonfinite data and unexpected timestamps. Video frames,
 if downloaded, are original image pixels, **not** 6D visual tracking.
 
+### Test original cameras for any usable fiducial markers (2D only)
+
+```bash
+python -m robobarista.original_camera_tags \
+  --capture runs/real_latte_episode1_visual \
+  --output runs/real_latte_episode1_visual/original_tag_diagnostics.json
+```
+
+This scans sampled original RGB views for actual 36h11 AprilTags. It reports
+tag identities and pixel corners if any exist; if none exist, we **cannot**
+claim to recover metric pitcher 6D from the upstream cameras using our tag
+method. Even detected markers require calibrated placement, camera intrinsics
+and moving wrist-camera extrinsics to become metric 6D observations.
+
 ## Model-based reconstruction (requires your validated original URDF)
 
 Official RealMan model portal:
