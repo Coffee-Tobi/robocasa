@@ -2,6 +2,10 @@
 
 **Stand: 23. Oktober 2026. Einzige aktive Integrations-PR: #18; freigegebene 90°-Vorschau liegt bereits in main.**
 
+### Entscheidung 4/18: PR #4 – BEHALTEN UND AUF 90°-SYSTEM UMGESTELLT
+
+Der Nutzer hat die Anpassung **sofort** gewünscht. [PR #20](https://github.com/Coffee-Tobi/robocasa/pull/20) wurde deshalb gezielt nach `main` gemergt; der separate 20-s-MuJoCo-Test bestand mit 100 gerenderten Bildern bei 5 FPS und einer max. 18,0 mm weiten kinematischen Bewegung der Kannen-Ausgießerspitze. Die bestehenden PR#4-Objekte hängen jetzt **am neuen 90°-Aufbau**: Milchkanne und Siebträger am axialen IR40; Tasse mit Henkel (optionale Einwegbechervariante) am orthogonalen IR40. Nur die bildhafte/kinematische Montage wurde nachgewiesen, nicht Fingerkraft, 6D-F/T-Sensorfeedback, reale Tools, Milchschaum oder kollisionsfreie Freigabe des zusätzlich auskragenden unbenutzten Greifers. Der Coffee-Workflow wurde auf 90° geändert; PR#18 enthält einen älteren Zwischenstand derselben Dateien und darf bei späterem Merge die neuen `main`-Änderungen nicht überschreiben.
+
 ### Entscheidung 3/18: PR #3 – KAMERA/REFACTOR BEHALTEN; PARALLELHALTERUNG ERSETZEN
 
 Der Nutzer hat das maßlich vereinfachte MuJoCo-Bild mit FR5 → Inlux Force Torque Sensor (ITOSX1000FTS, derzeit visuelles Proxy) → 90° Dual Cobot Tool Adapter (ICACX1210XDUAL, derzeit visuelles Proxy) → zwei orthogonal montierte IR40-50-Fingergreifer **freigegeben** und explizit nach `main` übernehmen lassen.
