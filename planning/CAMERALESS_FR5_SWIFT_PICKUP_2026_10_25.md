@@ -64,3 +64,21 @@ steuerung nicht zwingend der erste Weg.
 
 Die zugehörige Swift-Mini-Standortposition ist ein
 **Simulationslayout**, keine Empfehlung für ein reales Produkt.
+
+
+## Tatsächlicher CI-Test: 25. Oktober 2026
+
+GitHub Actions: https://github.com/Coffee-Tobi/robocasa/actions/runs/40180692359
+Videos und JSON: https://github.com/Coffee-Tobi/robocasa/actions/runs/40180692359/artifacts/12594201832
+
+- 4/4 strukturelle und MuJoCo-Modelltests grün; **0 Trackingkameras**, sechs FR5-Joint-DOFs.
+- Fester Halter 0°: Anfahren, virtuelle Griffübergabe, Herausheben, Transport, Einsetzen funktionieren. Ein zusätzlicher Twist wurde wegen Selbstkollision / IK-Gelenksprung nach 2° gestoppt. Darum nur No-Twist-MP4 mit 67 Frames.
+- Fester Halter -30°: Alle acht Phasen inkl. **12°** Rechtsdrehung in 1°-Schritten vollständig mit vorhandenen Robot-Kollisionsgeometrien geprüft, **96 Frames**, MP4 erfolgreich.
+- Fester Halter -60°: Ebenfalls komplette 8 Phasen mit 12° Drehung, 96 Frames und MP4.
+- +30°, +60° und +90° sind blockiert; kein vollständiger IK-Pfad.
+
+**Interpretation:** -30° ist derzeit eine gute nur **virtuelle** feste Ausrichtung des Siebträgerhalters; kein physisches Montagekalibriermaß.
+Die überlebten IK/Robot-Collision-Checks belegen keine korrekte Swift-Aufnahme: Swift-Mini-Meshes sind noncolliding und Aufnahme/Bajonett original nicht vermessen.
+Der Greifer nimmt den Siebträger in der Modellgrafik auf (Visualisierungs-Zustandswechsel), nicht mit realem Fingerkontakt; **keine FR5-Kraftregelung ausgeführt**.
+Der im separaten Zweig gemessene virtuelle ca. 2,52N Kontakt ist **kein** FR5-Eindrückkraftbeleg und nicht mit dieser neuen IK-Trajektorie gekoppelt.
+Die Rechtsdrehung bleibt eine experimentelle Wunschbewegung, nicht durch das Swift-Mini-Handbuch als Pflicht bestätigt.
