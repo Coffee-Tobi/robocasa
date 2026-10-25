@@ -1,0 +1,60 @@
+name: FR5 Swift Mini Stand Pickup -- Camera-free IK
+
+on:
+  pull_request:
+    paths:
+      - 'robobarista/swift_fr5_pick_stand.py'
+      - 'tests/test_swift_fr5_pick_stand.py'
+      - '.github/workflows/fr5-swift-stand-pickup.yml'
+  workflow_dispatch:
+
+jobs:
+  fr5-station-pick-and-grinder-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    env:
+      MUJOCO_GL: osmesa
+      PYOPENGL_PLATFORM: osmesa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install FR5 scene and offscreen renderer
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Validate isolated cell and manufacturer's abstract machine limits
+        run: python -m pytest -q tests/test_swift_mini_portafilter_only.py tests/test_swift_fr5_pick_stand.py
+      - name: Attempt actual 6-joint FK and independent 6D IK for every stage
+        continue-on-error: true
+        run: |
+          python -m robobarista.swift_fr5_pick_stand \
+             --output runs/fr5_swift_stand_pick --frames-per-segment 5
+      - name: Print blocked conditions without claiming successful insertion
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('runs/fr5_swift_stand_pick/summary.json')
+          if not p.exists():
+              print('No report. Build/integration exception.'); raise SystemExit(2)
+          d=json.loads(p.read_text())
+          print(json.dumps(d,indent=2))
+          if d['status']=='KINEMATIC_FR5_COMPLETE_PREVIEW_ONLY':
+              assert (p/d['mp4']).stat().st_size>10000
+              assert d['tracking_cameras']==0
+              assert d['robot_force_control_executed']==False
+              print('Original FR5 6 joint IK playback video available; no grasp force.')
+          else:
+              print('BLOCKED; no safe full path or movie claimed.',d['first_failure'])
+          PY
+      - name: Upload video/report only, not external model meshes
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: FR5-SwiftMini-Pickup-IK-Provenance
+          path: |
+            runs/fr5_swift_stand_pick/*.mp4
+            runs/fr5_swift_stand_pick/summary.json
