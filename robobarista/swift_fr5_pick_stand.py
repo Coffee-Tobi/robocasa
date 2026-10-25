@@ -248,7 +248,8 @@ def plan_one_arm_demo(model,data,*,samples_per_segment=5,allow_right=True):
                 continue
             try:
                 _check_robot_kinematic_step(model,data,qids,ik["q"],True)
-            except RuntimeError:
+            except RuntimeError as err:
+                attempts[-1]["reject_reason"]=str(err)
                 continue
             selected=np.asarray(ik["q"]).copy()
             break
