@@ -29,7 +29,7 @@ from .swift_mini_portafilter_only import RIGHT_TWIST_DEG
 from .workcell_constraints import TRAVEL_CLEARANCE_M
 from .geometry import look_at_quat
 
-GRINDER_XYZ = np.array([-.42, .24, .82])
+GRINDER_XYZ = np.array([-.42, -.12, .82])
 RECEIVER_XYZ = GRINDER_XYZ + np.asarray(APPROX_PORTAFILTER_ENTRY_XYZ_M)
 HOLDER_BASKET_XYZ = np.array([-.20,-.33,.925])
 BASKET_SITE = "rb_gripped_portafilter_basket"
