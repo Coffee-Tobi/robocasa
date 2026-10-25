@@ -37,6 +37,16 @@ jobs:
         run: |
           python -m robobarista.swift_fr5_pick_stand \
              --output runs/fr5_swift_stand_pick --frames-per-segment 5
+      - name: Test alternative fixed stand orientations for gentle clockwise twist
+        continue-on-error: true
+        run: |
+          for deg in 30 -30 60 -60 90; do
+            echo "===== Fixed holder heading $deg degrees ====="
+            tag=$(echo "$deg" | sed 's/-/m/')
+            python -m robobarista.swift_fr5_pick_stand \
+              --output "runs/fr5_swift_grasp_${tag}" \
+              --frames-per-segment 5 --grasp-heading "$deg" || true
+          done
       - name: Print blocked conditions without claiming successful insertion
         run: |
           python - <<'PY'
@@ -70,3 +80,5 @@ jobs:
             runs/fr5_swift_stand_pick/summary.json
             runs/fr5_swift_no_right/*.mp4
             runs/fr5_swift_no_right/summary.json
+            runs/fr5_swift_grasp_*/*.mp4
+            runs/fr5_swift_grasp_*/summary.json
