@@ -1,0 +1,77 @@
+name: FR5 Complete Swift Mini Cycle - Follow West Camera
+
+on:
+  pull_request:
+    paths:
+      - 'robobarista/swift_fr5_full_cycle_follow.py'
+      - 'tests/test_swift_fr5_full_cycle_follow.py'
+      - '.github/workflows/fr5-swift-full-cycle-west-follow.yml'
+      - 'planning/FR5_SWIFT_MINI_ROUNDTRIP_2026_10_25.md'
+  workflow_dispatch:
+
+jobs:
+  program-and-verify-offline-full-cycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    env:
+      MUJOCO_GL: osmesa
+      PYOPENGL_PLATFORM: osmesa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install real FR5 MuJoCo, test dependencies and FFmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Test roundtrip phase logic and actual six-axis no-camera model
+        run: |
+          python -m pytest -q tests/test_swift_fr5_pick_stand.py tests/test_swift_fr5_full_cycle_follow.py
+      - name: Render entire real FR5 joint route plus symmetric unlock, return and release
+        run: |
+          python -m robobarista.swift_fr5_full_cycle_follow \
+            --output runs/fr5_swift_roundtrip_west \
+            --grasp-heading -30 --width 780 --height 700 --fps 15
+      - name: Check real render, fixed orientation, safe return and created MP4
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from PIL import Image
+          p=Path('runs/fr5_swift_roundtrip_west')
+          d=json.loads((p/'summary.json').read_text())
+          assert d['status']=='VIRTUAL_FR5_FULL_CYCLE_COMPLETE',d
+          assert d['robot_tracking_cameras']==0
+          assert d['render_only_camera_count']==1
+          assert d['camera_follows_translation'] and d['camera_quaternion_max_change']<1e-10
+          assert max(d['camera_xyz_extent_m'])>0.08
+          assert d['portafilter_in_stand_initially'] and d['portafilter_in_stand_at_end']
+          assert len(d['ownership_transitions'])==2
+          assert max(x['basket_alignment_mm'] for x in d['ownership_transitions'])<=3.
+          assert d['max_basket_tilt_deg']<1
+          assert d['right_turn_deg']==12. and d['unlock_left_turn_deg']==-12.
+          assert d['no_actual_gripper_finger_dynamics']
+          assert d['no_actual_robot_force_control']
+          movie=p/d['movie']
+          assert movie.stat().st_size>100000
+          shots=sorted((p/'frames').glob('frame_*.png'))
+          picks=[shots[0],shots[len(shots)//4],shots[len(shots)//2],
+                 shots[3*len(shots)//4],shots[-1]]
+          sheet=Image.new('RGB',(400*5,397),'#1b2730')
+          for i,f in enumerate(picks):
+              sheet.paste(Image.open(f).convert('RGB').resize((400,397)),
+                          (i*400,0))
+          sheet.save(p/'FOLLOW_WEST_CYCLE_FIVE_PHASES.png')
+          print('VERIFIED complete FR5 visual pick/right-twist/unlock/return/release')
+          print('Frames:',len(shots),'MP4:',movie)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: FR5-COMPLETE-ROUNDTRIP-WEST-STATIC-ANGLE-FOLLOW
+          path: |
+            runs/fr5_swift_roundtrip_west/*.mp4
+            runs/fr5_swift_roundtrip_west/*.png
+            runs/fr5_swift_roundtrip_west/summary.json
