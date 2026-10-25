@@ -40,6 +40,8 @@ def _geom(parent, name, shape, xyz, size, rgba, **kwargs):
         "mass": "0",
     }
     attrib.update(kwargs)
+    if "fromto" in attrib:
+        attrib.pop("pos", None)
     return ET.SubElement(parent, "geom", attrib)
 
 
