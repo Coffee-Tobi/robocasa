@@ -370,13 +370,13 @@ def render(output_dir,*,vendor_dir="vendor",allow_right=True,
     if west_view:
         camera_scene=ET.parse(scene)
         world=camera_scene.getroot().find("worldbody")
-        view_eye=RECEIVER_XYZ+np.array([-.70,-.20,.19])
+        view_eye=RECEIVER_XYZ+np.array([-.50,-.20,.21])
         # From WEST (-X), 20cm south/front; face right/east (+X).
         # West=quarter-turn around the grinder compared with south view.
         view_focus=RECEIVER_XYZ+np.array([0.,-.065,-.055])
         ET.SubElement(world,"camera",name="rb_WEST_video_view_only",
             pos=vec(view_eye),quat=vec(look_at_quat(view_eye,view_focus)),
-            fovy="46")
+            fovy="58")
         rendering_scene=Path(scene).with_name("rb_fr5_swift_WEST_VIEW_RENDER_ONLY.xml")
         camera_scene.write(rendering_scene,encoding="unicode")
         movie_model=mujoco.MjModel.from_xml_path(str(rendering_scene))
@@ -470,13 +470,16 @@ def main():
     p.add_argument("--grasp-heading",type=float,default=0.)
     p.add_argument("--frames-per-segment",type=int,default=5)
     p.add_argument("--west-view",action="store_true")
+    p.add_argument("--render-width",type=int,default=560)
+    p.add_argument("--render-height",type=int,default=480)
     p.add_argument("--insertion-only",action="store_true")
     a=p.parse_args()
     result=render(a.output,vendor_dir=a.vendor_dir,
                   allow_right=not a.no_right_turn,
                   frames_per_segment=a.frames_per_segment,
                   grasp_heading_deg=a.grasp_heading,
-                  west_view=a.west_view,insertion_only=a.insertion_only)
+                  west_view=a.west_view,insertion_only=a.insertion_only,
+                  width=a.render_width,height=a.render_height)
     if result["status"]!="KINEMATIC_FR5_COMPLETE_PREVIEW_ONLY":
         raise SystemExit(2)
 
