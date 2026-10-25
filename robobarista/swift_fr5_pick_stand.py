@@ -97,6 +97,13 @@ def build_robot_holder_swift_scene(vendor_dir=Path("vendor")):
     robot.write(pf_out,encoding="unicode")
     root.find("include").set("file",pf_out.name)
     world=_hide_world_except_scene(root)
+    # The removed original grinder contained a powered tamper joint. Delete
+    # its scene actuator as well; otherwise MuJoCo rejects the dangling target.
+    for act in list(root.findall("./actuator")):
+        for motor in list(act):
+            if motor.get("joint")=="rb_grinder_tamper_slide":
+                act.remove(motor)
+        if not len(act):root.remove(act)
     grinder=add_swift_mini_proxy(world,xyz=GRINDER_XYZ)
     # Fixed portafilter stand with open cradle, two lateral supports. Real
     # physical clamps/contact remain unmodeled; exact repeatable fixture!
