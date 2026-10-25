@@ -107,6 +107,8 @@ def add_swift_mini_proxy(world, *, xyz=(0,0,0)):
 def make_preview_scene(path):
     root=ET.Element("mujoco", model="Swift MINI scaled illustrative asset")
     ET.SubElement(root,"compiler",angle="radian")
+    visual=ET.SubElement(root,"visual")
+    ET.SubElement(visual,"global",offwidth="1600",offheight="1200")
     ET.SubElement(root,"option",gravity="0 0 -9.81")
     world=ET.SubElement(root,"worldbody")
     ET.SubElement(world,"light",pos="-.3 -.6 1.8",dir="0 0 -1",
