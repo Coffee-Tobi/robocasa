@@ -1,0 +1,74 @@
+name: Minimal Swift Mini portafilter lift and right-turn (experimental)
+
+on:
+  pull_request:
+    paths:
+      - 'robobarista/swift_mini_portafilter_only.py'
+      - 'robobarista/swift_mini_visual_asset.py'
+      - 'tests/test_swift_mini_portafilter_only.py'
+      - 'planning/MINIMAL_SWIFT_MINI_PORTAFILTER_2026_10_25.md'
+      - '.github/workflows/minimal-swift-mini-portafilter.yml'
+  workflow_dispatch:
+
+jobs:
+  minimal-no-tracking-physical-contact-demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 19
+    env:
+      MUJOCO_GL: osmesa
+      PYOPENGL_PLATFORM: osmesa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install headless physics and encoder
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Run isolated structural tests (0 sensors, 2 DOF)
+        run: |
+          python -m pytest -q tests/test_swift_mini_visual_asset.py tests/test_swift_mini_portafilter_only.py
+      - name: Render hypothetical upward gentle contact then right twist
+        run: |
+          python -m robobarista.swift_mini_portafilter_only \
+            --output runs/swift_mini_only_right \
+            --fps 15
+      - name: Render manufacturer-supported gentle insertion without unverified twist
+        run: |
+          python -m robobarista.swift_mini_portafilter_only \
+            --output runs/swift_mini_only_no_twist \
+            --fps 15 --no-right-turn
+      - name: Ensure camera-free model and contact limits
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for directory,right in [('runs/swift_mini_only_right',True),
+                                  ('runs/swift_mini_only_no_twist',False)]:
+              d=json.loads((Path(directory)/'report.json').read_text())
+              assert d['n_tracking_cameras']==0
+              assert d['n_robot_arms']==0
+              assert d['max_basket_tilt_deg']<.001
+              assert d['unintended_x_y_motion_m']<1e-5
+              assert d['portafilter_independent_motion_dofs']==2
+              assert d['real_portafilter_lock_verified'] is False
+              assert d['required_right_twist_manufacturer_confirmed'] is False
+              assert d['requested_optional_right_turn']==right
+              assert d['status'].startswith('SIMULATED_'), d
+              assert (Path(directory)/d['mp4']).stat().st_size>20000
+              print(directory,'max contact N:',d['max_normal_contact_force_N_SIMULATED_ONLY'])
+          PY
+      - name: Deliver true MuJoCo headless test movies
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SwiftMini-Portafilter-Only-Z-Contact-Yaw-Exploratory
+          path: |
+            runs/swift_mini_only_right/*.mp4
+            runs/swift_mini_only_no_twist/*.mp4
+            runs/swift_mini_only_right/report.json
+            runs/swift_mini_only_no_twist/report.json
+            runs/swift_mini_only_right/minimal_swift_portafilter.xml
+            runs/swift_mini_only_no_twist/minimal_swift_portafilter.xml
