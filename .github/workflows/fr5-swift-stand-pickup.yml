@@ -31,6 +31,32 @@ jobs:
         run: |
           python -m robobarista.swift_fr5_pick_stand \
              --output runs/fr5_swift_no_right --frames-per-segment 5 --no-right-turn
+      - name: Render genuine fixed WEST viewpoint at +0.50 m left +0.20 m forward
+        run: |
+          python -m robobarista.swift_fr5_pick_stand \
+            --output runs/fr5_west_insertion \
+            --frames-per-segment 5 --grasp-heading -30 \
+            --west-view --insertion-only
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from PIL import Image,ImageDraw
+          p=Path('runs/fr5_west_insertion')
+          d=json.loads((p/'summary.json').read_text())
+          assert d['status']=='KINEMATIC_FR5_COMPLETE_PREVIEW_ONLY',d.get('first_failure')
+          assert d['robot_camera_feedback_used'] is False
+          assert d['tracking_cameras']==0
+          assert d['connected_portafilter_handle_visual_geometry'] is True
+          assert (p/d['mp4']).stat().st_size>25000
+          fs=sorted((p/'frames').glob('fr5_*.png'))
+          selected=[fs[0],fs[len(fs)//2],fs[-1]]
+          imgs=[Image.open(f).convert('RGB').resize((520,562)) for f in selected]
+          board=Image.new('RGB',(520*3,562),'#17202a')
+          for i,im in enumerate(imgs): board.paste(im,(i*520,0))
+          board.save(p/'west_start_middle_end.png')
+          print('WEST camera offline render:',p/d['mp4'],'frames',len(fs))
+          print('world eye',d['west_view_eye_xyz_m'],'focus',d['west_view_focus_xyz_m'])
+          PY
       - name: Investigate extra right-twist (fail closed)
 
         continue-on-error: true
@@ -80,5 +106,8 @@ jobs:
             runs/fr5_swift_stand_pick/summary.json
             runs/fr5_swift_no_right/*.mp4
             runs/fr5_swift_no_right/summary.json
+            runs/fr5_west_insertion/*.mp4
+            runs/fr5_west_insertion/*.png
+            runs/fr5_west_insertion/summary.json
             runs/fr5_swift_grasp_*/*.mp4
             runs/fr5_swift_grasp_*/summary.json
