@@ -63,7 +63,7 @@ def _hide_world_except_scene(root):
     return world
 
 
-def build_robot_holder_swift_scene(vendor_dir=Path("vendor")):
+def build_robot_holder_swift_scene(vendor_dir=Path("vendor"),grasp_heading_deg=0.):
     scene_path=_story_scene(Path(vendor_dir),cup_style="handle_mug")
     scene=ET.parse(scene_path)
     root=scene.getroot()
@@ -127,6 +127,7 @@ def build_robot_holder_swift_scene(vendor_dir=Path("vendor")):
     parked=ET.SubElement(world,"body",{
         "name":PARKED_COPY, "pos":vec(HOLDER_BASKET_XYZ)
     })
+    parked.set("euler","0 0 "+str(float(np.deg2rad(grasp_heading_deg))))
     # Reuse handle's shape, but local basket center is the spatial origin.
     bowl=pf.find("geom[@name='"+BASKET_SITE+"']")
     assert bowl is not None
@@ -201,7 +202,7 @@ def _points(start,end,n):
         yield start+(end-start)*s
 
 
-def plan_one_arm_demo(model,data,*,samples_per_segment=5,allow_right=True):
+def plan_one_arm_demo(model,data,*,samples_per_segment=5,allow_right=True,grasp_heading_deg=0.):
     if model.ncam!=0:
         raise AssertionError("No camera bodies allowed in camera-free demo")
     qids,limits=robot_qpos_addresses(model)
@@ -211,7 +212,7 @@ def plan_one_arm_demo(model,data,*,samples_per_segment=5,allow_right=True):
     # Stand and source target both define basket Z=up, which enforces
     # portafilter level. This is a planned FIXTURE pose, NOT a video estimate.
     angle0=0.
-    neutral=np.eye(3)
+    neutral=Rotation.from_euler("z",grasp_heading_deg,degrees=True).as_matrix()
     # If local basket basis with R=I requires an unreachable tool orientation
     # the attempt FAILS; no fake teleport.
     recipe=[
@@ -324,6 +325,7 @@ def plan_one_arm_demo(model,data,*,samples_per_segment=5,allow_right=True):
       "portafilter_true_grasp_contact":False,
       "portafilter_right_twist_is_OEM_proven":False,
       "right_twist_command_deg":MAX_PROVISIONAL_RIGHT_DEG if allow_right else 0.,
+      "grasp_fixture_heading_deg":float(grasp_heading_deg),
       "robot_force_control_executed":False,
       "robot_ik_kinematic_only":True,
       "holder_basket_xyz_m":HOLDER_BASKET_XYZ.tolist(),
@@ -335,14 +337,16 @@ def plan_one_arm_demo(model,data,*,samples_per_segment=5,allow_right=True):
 
 
 def render(output_dir,*,vendor_dir="vendor",allow_right=True,
-           frames_per_segment=5,width=560,height=480,fps=8):
+           frames_per_segment=5,width=560,height=480,fps=8,
+           grasp_heading_deg=0.):
     out=Path(output_dir)
     out.mkdir(parents=True,exist_ok=True)
-    scene=build_robot_holder_swift_scene(Path(vendor_dir))
+    scene=build_robot_holder_swift_scene(Path(vendor_dir),grasp_heading_deg=grasp_heading_deg)
     model=mujoco.MjModel.from_xml_path(str(scene))
     data=mujoco.MjData(model)
     result=plan_one_arm_demo(model,data,samples_per_segment=frames_per_segment,
-                             allow_right=allow_right)
+                             allow_right=allow_right,
+                             grasp_heading_deg=grasp_heading_deg)
     result["existing_swift_mini_visual_proxy"]=True
     result["uses_existing_approved_IR40_90deg_gripper"]=True
     result["no_other_coffee_devices_or_tracking_cameras"]=True
@@ -408,11 +412,13 @@ def main():
     p.add_argument("--output",default="runs/fr5_swift_stand_programmed")
     p.add_argument("--vendor-dir",default="vendor")
     p.add_argument("--no-right-turn",action="store_true")
+    p.add_argument("--grasp-heading",type=float,default=0.)
     p.add_argument("--frames-per-segment",type=int,default=5)
     a=p.parse_args()
     result=render(a.output,vendor_dir=a.vendor_dir,
                   allow_right=not a.no_right_turn,
-                  frames_per_segment=a.frames_per_segment)
+                  frames_per_segment=a.frames_per_segment,
+                  grasp_heading_deg=a.grasp_heading)
     if result["status"]!="KINEMATIC_FR5_COMPLETE_PREVIEW_ONLY":
         raise SystemExit(2)
 
