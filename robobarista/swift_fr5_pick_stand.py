@@ -236,6 +236,46 @@ def plan_one_arm_demo(model,data,*,samples_per_segment=5,allow_right=True):
     ]
     q_prev=None;attempts=[];samples=[];failures=[]
     for i,(label,center,yaw_deg) in enumerate(recipe):
+        if label=="OPTIONAL_RIGHT_TWIST" and yaw_deg>0 and q_prev is not None:
+            # A straight interpolation between two IK branches passed through
+            # FR5 base/finger collision. This movement MUST follow continuous
+            # 1-degree CARTESIAN yaw setpoints with fresh six-joint IK.
+            for delta_yaw in np.linspace(0,yaw_deg,int(np.ceil(yaw_deg))+1)[1:]:
+                Rinc=Rotation.from_euler("z",delta_yaw,degrees=True).as_matrix()@neutral
+                target_inc=_tcp_target_from_basket(center,Rinc,tcp_to_basket)
+                candidates=[q_prev,*seeds]
+                picked=None
+                for cand in candidates:
+                    ik=compute_ik(model,data,tcp,qids,limits,
+                           target_inc[:3,3],target_inc[:3,:3],cand,max_evals=145)
+                    attempts.append({"step":label,"yaw_deg":float(delta_yaw),
+                         "solved":ik["solved"],"position_error_mm":ik["position_error_mm"],
+                         "rotation_error_deg":ik["rotation_error_deg"]})
+                    if not ik["solved"]:continue
+                    q=np.asarray(ik["q"]).copy()
+                    if np.max(np.abs(q-q_prev))>.18:
+                        attempts[-1]["reject_reason"]="joint jump > 0.18rad per 1deg";
+                        continue
+                    try:
+                        for stepq in _points(q_prev,q,4):
+                            _check_robot_kinematic_step(model,data,qids,stepq,True)
+                    except RuntimeError as err:
+                        attempts[-1]["reject_reason"]=str(err)
+                        continue
+                    picked=q
+                    break
+                if picked is None:
+                    failures.append({"phase":label,"yaw_deg":float(delta_yaw),
+                                     "reason":"Safe incremental wrist yaw unavailable",
+                                     "attempts":attempts[-len(candidates):]})
+                    break
+                for stepq in _points(q_prev,picked,4):
+                    samples.append({"phase":label,"q_rad":stepq.tolist(),
+                        "picked":True,"basket_target_xyz_m":center.tolist(),
+                        "yaw_target_deg":float(delta_yaw)})
+                q_prev=picked
+            if failures:break
+            continue
         R=Rotation.from_euler("z",yaw_deg,degrees=True).as_matrix()@neutral
         target=_tcp_target_from_basket(center,R,tcp_to_basket)
         selected=None
