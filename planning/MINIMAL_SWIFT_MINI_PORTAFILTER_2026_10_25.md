@@ -64,9 +64,24 @@ MuJoCo-`mj_contactForce` berechnet.
 Die drei Phasen ALIGN, GENTLE_LIFT und CONTACT_HOLD werden gefolgt
 von OPTIONAL_RIGHT_TWIST und HOLD.
 
-Die echten Ergebnisse müssen im Workflow verifiziert werden. Der
-Report gibt gemessene **virtuelle** Reaktionskraft, Servo-Torque,
-Horizontabweichung, unerwünschte XY-Verschiebung und Winkel aus.
+**Ausgeführt in GitHub Actions (25.10.2026), erfolgreich:**
+- 5/5 Struktur-/Geometrietests bestanden.
+- Zwei real gerenderte MuJoCo-MP4s (je 68 Frames).
+- Rechtsversuch: virtuelle Kontaktkraft maximal **2,523 N**,
+  maximaler tatsächlicher Z-Gelenkhub **69,085 mm**,
+  maximale berechnete Aufwärts-Servokraft **7,894 N**;
+  Rechtsdrehung über 5° nachgewiesen.
+- Vergleich ohne Rechtsdrehung: ebenfalls max. **2,523 N**
+  virtuelle Reaktionskraft; kein Links-/Rechtsdrehen.
+- XY-Ungenauigkeit **0 mm**, Korbneigung maximal **0,000001°**
+  (bedingt durch ausschließlich Z-Hub/Yaw, kein realer Roboter-Test).
+- Workflow: https://github.com/Coffee-Tobi/robocasa/actions/runs/40175762108
+- Videos und JSON-Berichte: https://github.com/Coffee-Tobi/robocasa/actions/runs/40175762108/artifacts/12592540304
+
+Die Kontaktflächen sind rotationssymmetrische Scheiben; der Test kann
+**nur Anheben, begrenzten Druck und Rechts-Yaw demonstrieren**, nicht
+wirkliche Bajonett-Verriegelung oder Freigabedrehmoment. Zahlen sind
+Simulationsmodelleffekte, keine OEM-Spezifikationen.
 
 ## Wichtigste Grenze
 
