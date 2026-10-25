@@ -1,0 +1,54 @@
+name: Swift Mini Dimensioned MuJoCo Visual Asset
+
+on:
+  pull_request:
+    paths:
+      - 'robobarista/swift_mini_visual_asset.py'
+      - 'tests/test_swift_mini_visual_asset.py'
+      - 'planning/SWIFT_MINI_ASSET_RESEARCH_2026_10_25.md'
+      - '.github/workflows/swift-mini-visual-asset.yml'
+  workflow_dispatch:
+
+jobs:
+  manufacturer-size-only-asset-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      MUJOCO_GL: osmesa
+      PYOPENGL_PLATFORM: osmesa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install MuJoCo OSMesa tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1
+          python -m pip install -r requirements.txt
+      - name: Verify manufacturer envelope and no pretend fixture accuracy
+        run: python -m pytest -q tests/test_swift_mini_visual_asset.py
+      - name: Render 3 orientations of the Swift Mini-only asset
+        run: python -m robobarista.swift_mini_visual_asset --output runs/swift_mini_reference
+      - name: Validate PNG outputs and explicit limitations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('runs/swift_mini_reference')
+          d=json.loads((p/'dimensions_and_limitations.json').read_text())
+          assert d['manufacturer_envelope_m']=={'width':.166,'depth':.322,'height':.449}
+          assert not d['measured_bayonet_center'] and not d['ready_to_replace_active_workcell']
+          for name in ('rb_swift_mini_front.png','rb_swift_mini_side.png',
+                       'rb_swift_mini_back.png'):
+              assert (p/name).stat().st_size > 5000, name
+          print('Static Swift Mini visual proxy: drawings rendered; contact CAD still missing.')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Swift-Mini-Dimensioned-Visual-Reference-ONLY
+          path: |
+            runs/swift_mini_reference/*.png
+            runs/swift_mini_reference/*.xml
+            runs/swift_mini_reference/*.json
