@@ -143,7 +143,7 @@ def build_minimal_scene(path):
     act=ET.SubElement(root,"actuator")
     ET.SubElement(act,"position",name="rb_pf_lift_servo",joint=JOINT_Z,
                   kp="600",kv="24",forcerange=f"0 {UP_FORCE_LIMIT_N}",
-                  forcelimited="true",ctrlrange="0 .082",ctrllimited="true")
+                  forcelimited="true",ctrlrange="0 .085",ctrllimited="true")
     ET.SubElement(act,"position",name="rb_pf_yaw_servo",joint=JOINT_YAW,
                   kp="10",kv=".3",forcerange=f"-{YAW_TORQUE_LIMIT_NM} {YAW_TORQUE_LIMIT_NM}",
                   forcelimited="true",ctrlrange="0 .27925268",ctrllimited="true")
@@ -161,14 +161,14 @@ def get_phases(t,*,with_right_turn=True):
     if t<2.:  # lift from z0 to commanded compliant touch
         u=np.clip((t-.4)/1.6,0,1)
         s=u*u*(3-2*u)
-        return "GENTLE_LIFT",.074*s,0.
-    if t<2.6:return "CONTACT_HOLD",.074,0.
+        return "GENTLE_LIFT",.082*s,0.
+    if t<2.6:return "CONTACT_HOLD",.082,0.
     if t<3.8:
         u=np.clip((t-2.6)/1.2,0,1)
         s=u*u*(3-2*u)
-        return "OPTIONAL_RIGHT_TWIST",.074,(
+        return "OPTIONAL_RIGHT_TWIST",.082,(
             np.deg2rad(RIGHT_TWIST_DEG)*s if with_right_turn else 0.)
-    return "HOLD",.074,(
+    return "HOLD",.082,(
         np.deg2rad(RIGHT_TWIST_DEG) if with_right_turn else 0.)
 
 
@@ -223,6 +223,8 @@ def simulate(output,*,fps=15,with_right_turn=True):
     max_xy_shift=0.0
     contact_max=0.0
     seen_right_rotation=False
+    max_actual_lift_m=0.
+    max_lift_servo_N=0.
     start_center=np.array([*PORT_ORIGIN_XY],float)
     frame_count=0
     last_phase=""
@@ -244,6 +246,8 @@ def simulate(output,*,fps=15,with_right_turn=True):
             if tilt>0.001 or shift>1e-5:
                 raise AssertionError("Non-horizontal basket or unintended XY translation")
             force=float(receiver_force_n(model,data))
+            max_actual_lift_m=max(max_actual_lift_m,float(data.qpos[zidx]))
+            max_lift_servo_N=max(max_lift_servo_N,float(data.actuator_force[z_act]))
             contact_max=max(contact_max,force)
             yaw=float(np.rad2deg(data.qpos[yawidx]))
             if yaw>5:seen_right_rotation=True
@@ -307,6 +311,10 @@ def simulate(output,*,fps=15,with_right_turn=True):
         "requested_optional_right_turn":with_right_turn,
         "right_turn_gt_5deg_reached":seen_right_rotation,
         "max_normal_contact_force_N_SIMULATED_ONLY":contact_max,
+        "max_actual_slide_z_m":max_actual_lift_m,
+        "max_actual_upward_motor_N":max_lift_servo_N,
+        "gap_before_upward_insert_m":(SOCKET_STOP_Z_M-.0025)-(BODY_START_Z_M+LIP_LOCAL_TOP_Z_M),
+
         "lift_actuator_force_guardrail_N":UP_FORCE_LIMIT_N,
         "right_torque_guardrail_Nm":YAW_TORQUE_LIMIT_NM,
         "no_real_machine_force_value_known":True,
