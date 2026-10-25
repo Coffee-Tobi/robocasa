@@ -78,6 +78,19 @@ def build_robot_holder_swift_scene(vendor_dir=Path("vendor"),grasp_heading_deg=0
     assert axial is not None, "Must use current axial 90deg IR40 tool"
     pf=axial.find("body[@name='"+GRASP_PROXY+"']")
     assert pf is not None, "Must re-use current gripped portafilter prototype"
+    # The old parked display independently drew its handle 14cm behind the
+    # basket with a 17mm GAP. The single held proxy had no obvious sleeve.
+    # Use the same basket-relative geoms at the stand and in the gripper.
+    # Geometry is a VISUAL concept, not scanned OEM portafilter CAD.
+    ET.SubElement(pf,"geom",name="rb_gripped_portafilter_custom_IR40_grip_sleeve",
+         type="box",pos="-.085 0 -.005",size=".064 .018 .018",
+         rgba=".13 .52 .54 1",mass="0",contype="0",conaffinity="0")
+    ET.SubElement(pf,"geom",name="rb_gripped_portafilter_grip_stop",
+         type="box",pos="-.019 0 -.005",size=".007 .025 .024",
+         rgba=".94 .69 .16 1",mass="0",contype="0",conaffinity="0")
+    ET.SubElement(pf,"geom",name="rb_gripped_portafilter_neck_bridge",
+         type="box",pos="-.143 0 -.005",size=".028 .021 .017",
+         rgba=".65 .69 .72 1",mass="0",contype="0",conaffinity="0")
     # No other held props. This scene contains ONLY grinder, holder and
     # the one portafilter kinematically exchanged at a frame.
     for e in list(axial):
@@ -133,20 +146,16 @@ def build_robot_holder_swift_scene(vendor_dir=Path("vendor"),grasp_heading_deg=0
     assert bowl is not None
     bowl_loc=np.fromstring(bowl.get("pos"),sep=" ")
     for g in list(pf.findall("geom")):
-        if g.get("name") not in PARKED_GEOMS:continue
+        if not g.get("name","").startswith("rb_gripped_portafilter_"):continue
         part=copy.deepcopy(g)
         part.set("name","rb_pf_stand_"+g.get("name"))
         xyz=np.fromstring(part.get("pos"),sep=" ")
-        # This parked copy is simplified: basket at centre, handle points
-        # toward the operator (-Y); gripper-held copy is verified by TCP FK.
-        if "basket" in g.get("name"):
-            location=(0,0,0)
-        elif "handle" in g.get("name"):
-            location=(0,-.14,-.0)
-        else:
-            location=(0,-.055,0)
-        part.set("pos",vec(location))
+        # Preserve EXACT original basket-relative rigid geometry at the
+        # parking fixture; cannot leave a detached 17-mm visual gap.
+        part.set("pos",vec(xyz-bowl_loc))
         parked.append(part)
+    # Put a clear model pivot on the IR40 sleeve instead of inventing another
+    # portafilter. This is geometry-only; grasp contact remains unmodeled.
     # An intentionally approximate thin insertion reference plane with
     # NO collision, so it cannot be mistaken for OEM compliant bayonet.
     ring=ET.SubElement(world,"body",name="rb_swift_mini_insertion_plane_proxy",
@@ -337,8 +346,8 @@ def plan_one_arm_demo(model,data,*,samples_per_segment=5,allow_right=True,grasp_
 
 
 def render(output_dir,*,vendor_dir="vendor",allow_right=True,
-           frames_per_segment=5,width=560,height=480,fps=8,
-           grasp_heading_deg=0.):
+           frames_per_segment=5,width=560,height=480,fps=12,
+           grasp_heading_deg=0.,west_view=False,insertion_only=False):
     out=Path(output_dir)
     out.mkdir(parents=True,exist_ok=True)
     scene=build_robot_holder_swift_scene(Path(vendor_dir),grasp_heading_deg=grasp_heading_deg)
@@ -356,50 +365,96 @@ def render(output_dir,*,vendor_dir="vendor",allow_right=True,
     if result["status"]!="KINEMATIC_FR5_COMPLETE_PREVIEW_ONLY":
         print(json.dumps(report,indent=2),flush=True)
         return report
-    renderer=mujoco.Renderer(model,width=width,height=height)
+    # Add purely a render-only fixed *virtual* camera to a second MJCF,
+    # AFTER planning the no-camera FR5 path. This cannot feed robot control.
+    if west_view:
+        camera_scene=ET.parse(scene)
+        world=camera_scene.getroot().find("worldbody")
+        view_eye=RECEIVER_XYZ+np.array([-.70,-.20,.19])
+        # From WEST (-X), 20cm south/front; face right/east (+X).
+        # West=quarter-turn around the grinder compared with south view.
+        view_focus=RECEIVER_XYZ+np.array([0.,-.065,-.055])
+        ET.SubElement(world,"camera",name="rb_WEST_video_view_only",
+            pos=vec(view_eye),quat=vec(look_at_quat(view_eye,view_focus)),
+            fovy="46")
+        rendering_scene=Path(scene).with_name("rb_fr5_swift_WEST_VIEW_RENDER_ONLY.xml")
+        camera_scene.write(rendering_scene,encoding="unicode")
+        movie_model=mujoco.MjModel.from_xml_path(str(rendering_scene))
+        movie_data=mujoco.MjData(movie_model)
+        render_qids,_=robot_qpos_addresses(movie_model)
+        report["west_view_eye_xyz_m"]=view_eye.tolist()
+        report["west_view_focus_xyz_m"]=view_focus.tolist()
+        report["west_view_is_only_offline_visualization"]=True
+        report["robot_camera_feedback_used"]=False
+    else:
+        movie_model=model
+        movie_data=data
+        render_qids=qids if False else robot_qpos_addresses(movie_model)[0]
+    renderer=mujoco.Renderer(movie_model,width=width,height=height)
     frame_dir=out/"frames"
     frame_dir.mkdir(exist_ok=True)
-    qids,_=robot_qpos_addresses(model)
-    parked_g=[i for i in range(model.ngeom)
-              if (mujoco.mj_id2name(model,mujoco.mjtObj.mjOBJ_GEOM,i) or "").startswith("rb_pf_stand_rb_gripped")]
-    held_g=[i for i in range(model.ngeom)
+    qids=render_qids
+    parked_g=[i for i in range(movie_model.ngeom)
+              if (mujoco.mj_id2name(movie_model,mujoco.mjtObj.mjOBJ_GEOM,i) or "").startswith("rb_pf_stand_rb_gripped")]
+    held_g=[i for i in range(movie_model.ngeom)
             if (mujoco.mj_id2name(model,mujoco.mjtObj.mjOBJ_GEOM,i) or "").startswith("rb_gripped_portafilter")]
     prefix="FR5 WITH PROTOTYPE IR40 HANDLE / NO CAMERA FEEDBACK"
     try:
-        for k,record in enumerate(result["samples"]):
-            data.qpos[qids]=record["q_rad"]
-            mujoco.mj_forward(model,data)
+        # Restrict the West view to the insertion and clockwise twist,
+        # not an arbitrary crop or replay of the previous movie.
+        selected_samples=([r for r in result["samples"] if r["phase"] in
+             ("ALIGN_BELOW_SWIFT","LIFT_INTO_RECEIVER","OPTIONAL_RIGHT_TWIST")]
+              if insertion_only else result["samples"])
+        report["frames_selected_for_view"]=len(selected_samples)
+        for k,record in enumerate(selected_samples):
+            movie_data.qpos[qids]=record["q_rad"]
+            mujoco.mj_forward(movie_model,movie_data)
             picked=record["picked"]
-            for i in parked_g:model.geom_rgba[i,3]=0 if picked else 1
-            for i in held_g:model.geom_rgba[i,3]=1 if picked else 0
-            cam=mujoco.MjvCamera()
-            cam.type=mujoco.mjtCamera.mjCAMERA_FREE
-            cam.lookat[:]=[-.31,-.11,1.01]
-            cam.azimuth=138;cam.elevation=-20;cam.distance=1.26
-            renderer.update_scene(data,camera=cam)
-            main=Image.fromarray(renderer.render().copy())
-            cam.lookat[:]=RECEIVER_XYZ
-            cam.azimuth=145;cam.elevation=-15;cam.distance=.58
-            renderer.update_scene(data,camera=cam)
-            close=Image.fromarray(renderer.render().copy())
-            canvas=Image.new("RGB",(width*2,height+78),(19,28,39))
-            canvas.paste(main,(0,40));canvas.paste(close,(width,40))
-            d=ImageDraw.Draw(canvas)
-            d.text((12,10),prefix,fill=(232,244,249))
-            d.text((12,height+51),
-                f"{record['phase']} | GRASP IS VISUAL; IK NOT TORQUE CONTROL",
-                fill=(251,219,160))
+            for i in parked_g:movie_model.geom_rgba[i,3]=0 if picked else 1
+            for i in held_g:movie_model.geom_rgba[i,3]=1 if picked else 0
+            if west_view:
+                renderer.update_scene(movie_data,camera="rb_WEST_video_view_only")
+                frame=Image.fromarray(renderer.render().copy()).resize(
+                    (960,960),Image.Resampling.LANCZOS)
+                canvas=Image.new("RGB",(960,1038),(19,28,39))
+                canvas.paste(frame,(0,42))
+                d=ImageDraw.Draw(canvas)
+                d.text((15,12),"ECHTER WESTBLICK  |  Arm + IR40 + Siebtraeger",
+                    fill=(232,244,249))
+                d.text((15,1011),
+                    f"{record['phase']} | +X-Blick aus WEST | nur Renderkamera",
+                    fill=(251,219,160))
+            else:
+                cam=mujoco.MjvCamera()
+                cam.type=mujoco.mjtCamera.mjCAMERA_FREE
+                cam.lookat[:]=[-.31,-.11,1.01]
+                cam.azimuth=138;cam.elevation=-20;cam.distance=1.26
+                renderer.update_scene(movie_data,camera=cam)
+                main=Image.fromarray(renderer.render().copy())
+                cam.lookat[:]=RECEIVER_XYZ
+                cam.azimuth=145;cam.elevation=-15;cam.distance=.58
+                renderer.update_scene(movie_data,camera=cam)
+                close=Image.fromarray(renderer.render().copy())
+                canvas=Image.new("RGB",(width*2,height+78),(19,28,39))
+                canvas.paste(main,(0,40));canvas.paste(close,(width,40))
+                d=ImageDraw.Draw(canvas)
+                d.text((12,10),prefix,fill=(232,244,249))
+                d.text((12,height+51),
+                    f"{record['phase']} | GRASP IS VISUAL; IK NOT TORQUE CONTROL",
+                    fill=(251,219,160))
             canvas.save(frame_dir/f"fr5_{k:04d}.png")
     finally:
         renderer.close()
     if not shutil.which("ffmpeg"):
         raise RuntimeError("ffmpeg required for movie")
-    movie=out/"fr5_stand_pick_and_swift_insert_UNCALIBRATED.mp4"
+    movie=out/("FR5_SWIFT_ECHTE_WESTANSICHT.mp4" if west_view else
+               "fr5_stand_pick_and_swift_insert_UNCALIBRATED.mp4")
     subprocess.run(["ffmpeg","-y","-loglevel","error","-framerate",str(fps),
                    "-i",str(frame_dir/"fr5_%04d.png"),"-c:v","libx264",
                    "-pix_fmt","yuv420p",str(movie)],check=True)
     report["mp4"]=movie.name
-    report["video_frames"]=len(result["samples"])
+    report["video_frames"]=len(selected_samples)
+    report["connected_portafilter_handle_visual_geometry"]=True
     report["video_file_size"]=movie.stat().st_size
     (out/"summary.json").write_text(json.dumps(report,indent=2))
     (out/"kinematic_joints_NOT_FOR_HARDWARE.json").write_text(json.dumps(result["samples"],indent=2))
@@ -414,11 +469,14 @@ def main():
     p.add_argument("--no-right-turn",action="store_true")
     p.add_argument("--grasp-heading",type=float,default=0.)
     p.add_argument("--frames-per-segment",type=int,default=5)
+    p.add_argument("--west-view",action="store_true")
+    p.add_argument("--insertion-only",action="store_true")
     a=p.parse_args()
     result=render(a.output,vendor_dir=a.vendor_dir,
                   allow_right=not a.no_right_turn,
                   frames_per_segment=a.frames_per_segment,
-                  grasp_heading_deg=a.grasp_heading)
+                  grasp_heading_deg=a.grasp_heading,
+                  west_view=a.west_view,insertion_only=a.insertion_only)
     if result["status"]!="KINEMATIC_FR5_COMPLETE_PREVIEW_ONLY":
         raise SystemExit(2)
 
