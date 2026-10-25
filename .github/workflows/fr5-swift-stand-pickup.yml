@@ -27,7 +27,12 @@ jobs:
           python -m pip install -r requirements.txt
       - name: Validate isolated cell and manufacturer's abstract machine limits
         run: python -m pytest -q tests/test_swift_mini_portafilter_only.py tests/test_swift_fr5_pick_stand.py
-      - name: Attempt actual 6-joint FK and independent 6D IK for every stage
+      - name: Execute reachable FR5 pickup and insertion without unproven twist
+        run: |
+          python -m robobarista.swift_fr5_pick_stand \
+             --output runs/fr5_swift_no_right --frames-per-segment 5 --no-right-turn
+      - name: Investigate extra right-twist (fail closed)
+
         continue-on-error: true
         run: |
           python -m robobarista.swift_fr5_pick_stand \
@@ -37,6 +42,11 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
+          safe=Path('runs/fr5_swift_no_right/summary.json')
+          a=json.loads(safe.read_text())
+          assert a['status']=='KINEMATIC_FR5_COMPLETE_PREVIEW_ONLY',a.get('first_failure')
+          assert (safe.parent/a['mp4']).stat().st_size>10000
+          print('Pickup and insertion-only video confirmed:', a['mp4'])
           p=Path('runs/fr5_swift_stand_pick/summary.json')
           if not p.exists():
               print('No report. Build/integration exception.'); raise SystemExit(2)
@@ -58,3 +68,5 @@ jobs:
           path: |
             runs/fr5_swift_stand_pick/*.mp4
             runs/fr5_swift_stand_pick/summary.json
+            runs/fr5_swift_no_right/*.mp4
+            runs/fr5_swift_no_right/summary.json
