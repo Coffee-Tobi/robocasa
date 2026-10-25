@@ -1,0 +1,113 @@
+name: FR5 Swift Mini Stand Pickup -- Camera-free IK
+
+on:
+  pull_request:
+    paths:
+      - 'robobarista/swift_fr5_pick_stand.py'
+      - 'tests/test_swift_fr5_pick_stand.py'
+      - '.github/workflows/fr5-swift-stand-pickup.yml'
+  workflow_dispatch:
+
+jobs:
+  fr5-station-pick-and-grinder-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    env:
+      MUJOCO_GL: osmesa
+      PYOPENGL_PLATFORM: osmesa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install FR5 scene and offscreen renderer
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libosmesa6-dev libgl1 ffmpeg
+          python -m pip install -r requirements.txt
+      - name: Validate isolated cell and manufacturer's abstract machine limits
+        run: python -m pytest -q tests/test_swift_mini_portafilter_only.py tests/test_swift_fr5_pick_stand.py
+      - name: Execute reachable FR5 pickup and insertion without unproven twist
+        run: |
+          python -m robobarista.swift_fr5_pick_stand \
+             --output runs/fr5_swift_no_right --frames-per-segment 5 --no-right-turn
+      - name: Render genuine fixed WEST viewpoint at +0.50 m left +0.20 m forward
+        run: |
+          python -m robobarista.swift_fr5_pick_stand \
+            --output runs/fr5_west_insertion \
+            --frames-per-segment 5 --grasp-heading -30 \
+            --west-view --insertion-only
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from PIL import Image,ImageDraw
+          p=Path('runs/fr5_west_insertion')
+          d=json.loads((p/'summary.json').read_text())
+          assert d['status']=='KINEMATIC_FR5_COMPLETE_PREVIEW_ONLY',d.get('first_failure')
+          assert d['robot_camera_feedback_used'] is False
+          assert d['tracking_cameras']==0
+          assert d['connected_portafilter_handle_visual_geometry'] is True
+          assert (p/d['mp4']).stat().st_size>25000
+          fs=sorted((p/'frames').glob('fr5_*.png'))
+          selected=[fs[0],fs[len(fs)//2],fs[-1]]
+          imgs=[Image.open(f).convert('RGB').resize((520,562)) for f in selected]
+          board=Image.new('RGB',(520*3,562),'#17202a')
+          for i,im in enumerate(imgs): board.paste(im,(i*520,0))
+          board.save(p/'west_start_middle_end.png')
+          print('WEST camera offline render:',p/d['mp4'],'frames',len(fs))
+          print('world eye',d['west_view_eye_xyz_m'],'focus',d['west_view_focus_xyz_m'])
+          PY
+      - name: Investigate extra right-twist (fail closed)
+
+        continue-on-error: true
+        run: |
+          python -m robobarista.swift_fr5_pick_stand \
+             --output runs/fr5_swift_stand_pick --frames-per-segment 5
+      - name: Test alternative fixed stand orientations for gentle clockwise twist
+        continue-on-error: true
+        run: |
+          for deg in 30 -30 60 -60 90; do
+            echo "===== Fixed holder heading $deg degrees ====="
+            tag=$(echo "$deg" | sed 's/-/m/')
+            python -m robobarista.swift_fr5_pick_stand \
+              --output "runs/fr5_swift_grasp_${tag}" \
+              --frames-per-segment 5 --grasp-heading "$deg" || true
+          done
+      - name: Print blocked conditions without claiming successful insertion
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          safe=Path('runs/fr5_swift_no_right/summary.json')
+          a=json.loads(safe.read_text())
+          assert a['status']=='KINEMATIC_FR5_COMPLETE_PREVIEW_ONLY',a.get('first_failure')
+          assert (safe.parent/a['mp4']).stat().st_size>10000
+          print('Pickup and insertion-only video confirmed:', a['mp4'])
+          p=Path('runs/fr5_swift_stand_pick/summary.json')
+          if not p.exists():
+              print('No report. Build/integration exception.'); raise SystemExit(2)
+          d=json.loads(p.read_text())
+          print(json.dumps(d,indent=2))
+          if d['status']=='KINEMATIC_FR5_COMPLETE_PREVIEW_ONLY':
+              assert (p/d['mp4']).stat().st_size>10000
+              assert d['tracking_cameras']==0
+              assert d['robot_force_control_executed']==False
+              print('Original FR5 6 joint IK playback video available; no grasp force.')
+          else:
+              print('BLOCKED; no safe full path or movie claimed.',d['first_failure'])
+          PY
+      - name: Upload video/report only, not external model meshes
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: FR5-SwiftMini-Pickup-IK-Provenance
+          path: |
+            runs/fr5_swift_stand_pick/*.mp4
+            runs/fr5_swift_stand_pick/summary.json
+            runs/fr5_swift_no_right/*.mp4
+            runs/fr5_swift_no_right/summary.json
+            runs/fr5_west_insertion/*.mp4
+            runs/fr5_west_insertion/*.png
+            runs/fr5_west_insertion/summary.json
+            runs/fr5_swift_grasp_*/*.mp4
+            runs/fr5_swift_grasp_*/summary.json
